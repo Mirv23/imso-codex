@@ -18,11 +18,5 @@
       "src": "/(.*)",
       "dest": "imso_backend/wsgi.py"
     }
-  ],
-  "functions": {
-    "imso_backend/wsgi.py": {
-      "memory": 512,
-      "maxDuration": 30
-    }
-  }
+  ]
 }
