@@ -1,0 +1,107 @@
+{% extends "admin/base_site.html" %}
+{% load i18n static %}
+
+{% block extrastyle %}{{ block.super }}
+<style>
+  .login #header {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: 10px;
+    padding: 32px 24px 16px;
+    flex-direction: column;
+  }
+
+  .login #header .brand-icon {
+    width: 48px;
+    height: 48px;
+    font-size: 20px;
+    border-radius: 14px;
+  }
+
+  .login #header h1 {
+    font-size: 20px;
+    text-align: center;
+  }
+
+  .login #content {
+    border-radius: 0 0 var(--radius) var(--radius);
+    border-top: 0;
+    padding-top: 0;
+  }
+
+  .login .form-row {
+    flex-direction: column;
+  }
+
+  .login .form-row label {
+    font-size: 13px;
+    font-weight: 600;
+    color: var(--text);
+    margin-bottom: 6px;
+    display: block;
+  }
+
+  .login .form-row input {
+    width: 100%;
+    padding: 10px 12px;
+    border: 1px solid var(--border);
+    border-radius: 8px;
+    font-size: 14px;
+    transition: border-color .15s, box-shadow .15s;
+  }
+
+  .login .form-row input:focus {
+    border-color: var(--primary);
+    box-shadow: 0 0 0 3px rgba(45,106,79,0.10);
+    outline: 0;
+  }
+
+  .login .submit-row input {
+    padding: 10px 24px;
+    font-size: 14px;
+    font-weight: 600;
+    border-radius: 8px;
+    width: 100%;
+  }
+
+  .login-footer-text {
+    text-align: center;
+    font-size: 12px;
+    color: var(--muted);
+    padding: 16px 0 0;
+    border-top: 1px solid var(--border);
+    margin-top: 20px;
+  }
+</style>
+{% endblock %}
+
+{% block content %}
+<div id="content-main">
+  <form action="{{ app_path }}" method="post" id="login-form">{% csrf_token %}
+    <div class="form-row">
+      {{ form.username.errors }}
+      <label for="id_username">{{ form.username.label }}</label>
+      {{ form.username }}
+    </div>
+    <div class="form-row">
+      {{ form.password.errors }}
+      <label for="id_password">{{ form.password.label }}</label>
+      {{ form.password }}
+      <input type="hidden" name="next" value="{{ next }}">
+    </div>
+    {% url 'admin_password_reset' as password_reset_url %}
+    {% if password_reset_url %}
+    <div class="password-reset-link">
+      <a href="{{ password_reset_url }}">{% translate 'Forgotten your password or username?' %}</a>
+    </div>
+    {% endif %}
+    <div class="submit-row">
+      <input type="submit" value="{% translate 'Log in' %}">
+    </div>
+  </form>
+  <div class="login-footer-text">
+    IMSO Haiti &mdash; Panel d'administration
+  </div>
+</div>
+{% endblock %}

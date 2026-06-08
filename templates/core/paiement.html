@@ -1,0 +1,489 @@
+<!DOCTYPE html>
+<html lang="fr">
+{% load static %}<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>Paiement — IMSO Haiti</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin="">
+<style>
+@font-face {
+  font-family: 'Inter';
+  font-style: normal;
+  font-weight: 400; font-display: swap;
+  src: url("{% static 'adminpanel/assets/12ce9fa8-1b98-485d-a757-05e48e30b7a4.woff2' %}") format('woff2');
+  unicode-range: U+0000-00FF;
+}
+@font-face {
+  font-family: 'Inter';
+  font-style: normal;
+  font-weight: 500; font-display: swap;
+  src: url("{% static 'adminpanel/assets/12ce9fa8-1b98-485d-a757-05e48e30b7a4.woff2' %}") format('woff2');
+  unicode-range: U+0000-00FF;
+}
+@font-face {
+  font-family: 'Inter';
+  font-style: normal;
+  font-weight: 600; font-display: swap;
+  src: url("{% static 'adminpanel/assets/12ce9fa8-1b98-485d-a757-05e48e30b7a4.woff2' %}") format('woff2');
+  unicode-range: U+0000-00FF;
+}
+@font-face {
+  font-family: 'Inter';
+  font-style: normal;
+  font-weight: 700; font-display: swap;
+  src: url("{% static 'adminpanel/assets/12ce9fa8-1b98-485d-a757-05e48e30b7a4.woff2' %}") format('woff2');
+  unicode-range: U+0000-00FF;
+}
+@font-face {
+  font-family: 'JetBrains Mono';
+  font-style: normal;
+  font-weight: 400; font-display: swap;
+  src: url("{% static 'adminpanel/assets/93ecb46d-c0a4-41a1-b97d-fda679f97fb5.woff2' %}") format('woff2');
+  unicode-range: U+0000-00FF;
+}
+:root {
+  --primary: #2D6A4F;
+  --primary-600: #245742;
+  --primary-light: #E8F5EE;
+  --accent: #F4A261;
+  --success: #10B981;
+  --warning: #F59E0B;
+  --danger: #EF4444;
+  --text: #111827;
+  --muted: #6B7280;
+  --surface: #FFFFFF;
+  --bg: #F7F8FA;
+  --border: #E5E7EB;
+  --radius: 12px;
+  --radius-lg: 16px;
+  --shadow-sm: 0 1px 2px rgba(17,24,39,0.04);
+  --shadow-md: 0 4px 14px -2px rgba(17,24,39,0.06), 0 2px 4px rgba(17,24,39,0.04);
+  --shadow-lg: 0 20px 40px -12px rgba(17,24,39,0.18), 0 8px 16px -8px rgba(17,24,39,0.08);
+  --font-sans: 'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+  --font-mono: 'JetBrains Mono', monospace;
+}
+* { box-sizing: border-box; }
+html { scroll-behavior: smooth; }
+body {
+  margin: 0; padding: 0;
+  font-family: var(--font-sans);
+  color: var(--text);
+  background: var(--bg);
+  -webkit-font-smoothing: antialiased;
+  font-size: 14px;
+  line-height: 1.5;
+}
+img { max-width: 100%; display: block; }
+a { color: var(--primary); text-decoration: none; }
+a:hover { color: var(--primary-600); }
+.container { width: 100%; max-width: 640px; margin: 0 auto; padding: 0 20px; }
+
+/* Header */
+.header {
+  background: var(--surface);
+  border-bottom: 1px solid var(--border);
+  padding: 16px 0;
+  position: sticky;
+  top: 0;
+  z-index: 10;
+}
+.header-inner {
+  display: flex; align-items: center; justify-content: space-between;
+  max-width: 640px; margin: 0 auto; padding: 0 20px;
+}
+.header-logo {
+  display: flex; align-items: center; gap: 10px;
+  font-weight: 700; font-size: 16px; color: var(--text);
+}
+.header-logo-icon {
+  width: 32px; height: 32px; border-radius: 8px;
+  background: linear-gradient(135deg, var(--primary), #3a8862);
+  display: grid; place-items: center;
+  color: #fff; font-weight: 800; font-size: 13px;
+}
+.header-badge {
+  font-size: 11px; font-weight: 600;
+  background: var(--primary-light); color: var(--primary);
+  padding: 3px 8px; border-radius: 999px;
+}
+
+/* Card */
+.card {
+  background: var(--surface);
+  border: 1px solid var(--border);
+  border-radius: var(--radius-lg);
+  box-shadow: var(--shadow-sm);
+  padding: 28px;
+  margin: 24px 0;
+}
+.card-title {
+  font-size: 18px; font-weight: 700; letter-spacing: -0.02em;
+  margin: 0 0 6px;
+}
+.card-sub {
+  font-size: 13px; color: var(--muted);
+  margin: 0 0 20px;
+}
+
+/* Detail rows */
+.detail-row {
+  display: flex; justify-content: space-between; align-items: center;
+  padding: 10px 0;
+  border-bottom: 1px solid #F3F4F6;
+  font-size: 14px;
+}
+.detail-row:last-child { border-bottom: 0; }
+.detail-label { color: var(--muted); font-weight: 500; }
+.detail-value { font-weight: 600; text-align: right; }
+.detail-value.mono { font-family: var(--font-mono); font-size: 13px; }
+.detail-value.amount { font-size: 20px; color: var(--primary); }
+
+/* Provider cards */
+.providers { display: flex; flex-direction: column; gap: 10px; margin: 16px 0; }
+.provider-card {
+  display: flex; align-items: center; gap: 14px;
+  padding: 16px 18px;
+  border: 1.5px solid var(--border);
+  border-radius: var(--radius);
+  cursor: pointer;
+  transition: all .2s;
+  background: #fff;
+  position: relative;
+}
+.provider-card:hover {
+  border-color: var(--primary);
+  background: var(--primary-light);
+  transform: translateY(-1px);
+}
+.provider-card.selected {
+  border-color: var(--primary);
+  background: var(--primary-light);
+  box-shadow: 0 0 0 3px rgba(45,106,79,0.10);
+}
+.provider-card.selected::after {
+  content: '✓';
+  position: absolute;
+  top: 8px; right: 10px;
+  font-size: 14px; font-weight: 700;
+  color: var(--primary);
+}
+.provider-icon {
+  width: 44px; height: 44px;
+  border-radius: 12px;
+  display: grid; place-items: center;
+  font-size: 18px;
+  flex-shrink: 0;
+}
+.provider-icon.green { background: var(--primary-light); color: var(--primary); }
+.provider-icon.amber { background: #FEF3E2; color: #C2410C; }
+.provider-icon.blue { background: #E0F2FE; color: #0369A1; }
+.provider-icon.violet { background: #EDE9FE; color: #6D28D9; }
+.provider-icon.gray { background: #F3F4F6; color: var(--muted); }
+.provider-info { flex: 1; min-width: 0; }
+.provider-name { font-weight: 600; font-size: 14.5px; }
+.provider-desc { font-size: 12.5px; color: var(--muted); margin-top: 2px; line-height: 1.4; }
+
+/* Button */
+.btn {
+  display: inline-flex; align-items: center; justify-content: center; gap: 8px;
+  padding: 12px 24px;
+  border-radius: 10px;
+  font-weight: 600; font-size: 14px;
+  border: 1px solid var(--border);
+  background: #fff;
+  color: var(--text);
+  cursor: pointer;
+  transition: all .15s;
+  width: 100%;
+}
+.btn:hover { background: var(--bg); }
+.btn:active { transform: scale(0.98); }
+.btn.primary {
+  background: var(--primary); color: #fff; border-color: var(--primary);
+}
+.btn.primary:hover { background: var(--primary-600); }
+.btn.primary:disabled { opacity: .5; cursor: not-allowed; transform: none; }
+
+/* Success */
+.success-state { text-align: center; padding: 20px 0; }
+.success-icon {
+  width: 64px; height: 64px;
+  border-radius: 50%;
+  background: rgba(16,185,129,0.10);
+  color: #047857;
+  display: inline-flex; align-items: center; justify-content: center;
+  margin-bottom: 16px;
+}
+.success-icon svg { width: 28px; height: 28px; }
+.success-title { font-size: 20px; font-weight: 700; margin: 0 0 8px; }
+.success-sub { color: var(--muted); margin: 0 0 4px; font-size: 14px; }
+.success-ref { font-family: var(--font-mono); font-size: 13px; color: var(--muted); background: var(--bg); padding: 4px 10px; border-radius: 6px; display: inline-block; margin-top: 8px; }
+
+.instructions-box {
+  background: #FFFBEB;
+  border: 1px solid #FDE68A;
+  border-radius: 10px;
+  padding: 16px;
+  margin: 16px 0;
+  font-size: 13.5px;
+  line-height: 1.6;
+  white-space: pre-line;
+}
+.instructions-box strong { color: #92400E; }
+
+.loading {
+  text-align: center; padding: 40px 20px;
+  color: var(--muted);
+}
+.spinner {
+  width: 32px; height: 32px;
+  border: 3px solid var(--border);
+  border-top-color: var(--primary);
+  border-radius: 50%;
+  animation: spin .7s linear infinite;
+  margin: 0 auto 12px;
+}
+@keyframes spin { to { transform: rotate(360deg); } }
+
+.footer-text {
+  text-align: center;
+  font-size: 12px; color: var(--muted);
+  padding: 24px 0 40px;
+}
+
+.error-msg {
+  background: rgba(239,68,68,0.10);
+  color: #B91C1C;
+  border: 1px solid rgba(239,68,68,0.20);
+  border-radius: 8px;
+  padding: 12px 16px;
+  font-size: 13px;
+  font-weight: 500;
+  margin-bottom: 16px;
+}
+
+@media (max-width: 500px) {
+  .card { padding: 20px; }
+  .provider-card { padding: 12px 14px; }
+}
+</style>
+</head>
+<body>
+<header class="header">
+  <div class="header-inner">
+    <div class="header-logo">
+      <div class="header-logo-icon">I</div>
+      <span>IMSO Haiti</span>
+    </div>
+    <span class="header-badge">Paiement sécurisé</span>
+  </div>
+</header>
+
+<main class="container">
+  <div id="app">
+    <div class="loading" id="loading">
+      <div class="spinner"></div>
+      <p>Chargement...</p>
+    </div>
+  </div>
+</main>
+
+<div class="footer-text">
+  IMSO Haiti &copy; 2026 &mdash; Impact Mutuelle de Solidarité
+</div>
+
+<script>
+const DATA = {
+  type: '{{ payment_purpose }}',
+  typeLabel: '{{ payment_label|escapejs }}',
+  amount: {{ amount_htg|default:"0" }},
+  payerName: '{{ payer_name|escapejs }}',
+  payerPhone: '{{ payer_phone|escapejs }}',
+  payerEmail: '{{ payer_email|escapejs }}',
+  bookingId: {{ booking_id|default:"null" }},
+  enrollmentId: {{ enrollment_id|default:"null" }},
+  providers: {{ providers_json|safe }}
+};
+
+function formatMoney(n) {
+  return Number(n).toLocaleString('fr-FR') + ' HTG';
+}
+
+function getProviderIcon(type) {
+  const icons = {
+    manual: '💵', moncash: '📱', natcash: '📱',
+    bank: '🏦', cash: '💰', stripe: '💳', other: '🔗'
+  };
+  return icons[type] || '💳';
+}
+
+function getProviderColor(type) {
+  const colors = {
+    manual: 'gray', moncash: 'green', natcash: 'blue',
+    bank: 'violet', cash: 'amber', stripe: 'violet', other: 'gray'
+  };
+  return colors[type] || 'gray';
+}
+
+function getProviderLabel(type) {
+  const labels = {
+    manual: 'Instructions de paiement', moncash: 'Payer avec MonCash',
+    natcash: 'Payer avec NatCash', bank: 'Virement bancaire',
+    cash: 'Payer en espèces', stripe: 'Payer par carte', other: 'Paiement'
+  };
+  return labels[type] || 'Paiement';
+}
+
+let selectedProvider = null;
+
+function render() {
+  const app = document.getElementById('app');
+  const loading = document.getElementById('loading');
+  loading.style.display = 'none';
+
+  if (DATA.providers.length === 0) {
+    app.innerHTML = `
+      <div class="card" style="text-align:center;padding:40px;">
+        <div style="font-size:48px;margin-bottom:12px;">🔒</div>
+        <h2 class="card-title">Aucun moyen de paiement disponible</h2>
+        <p class="card-sub">Veuillez réessayer plus tard ou nous contacter directement.</p>
+        <a href="/" class="btn" style="display:inline-flex;width:auto;">Retour à l'accueil</a>
+      </div>
+    `;
+    return;
+  }
+
+  app.innerHTML = `
+    <div class="card">
+      <h2 class="card-title">Paiement</h2>
+      <p class="card-sub">${DATA.typeLabel}</p>
+
+      <div class="detail-row">
+        <span class="detail-label">Montant</span>
+        <span class="detail-value amount">${DATA.amount > 0 ? formatMoney(DATA.amount) : 'À définir'}</span>
+      </div>
+      <div class="detail-row">
+        <span class="detail-label">Nom</span>
+        <span class="detail-value">${escHtml(DATA.payerName)}</span>
+      </div>
+      <div class="detail-row">
+        <span class="detail-label">Téléphone</span>
+        <span class="detail-value mono">${escHtml(DATA.payerPhone)}</span>
+      </div>
+    </div>
+
+    <div class="card">
+      <h2 class="card-title">Choisissez votre moyen de paiement</h2>
+      <p class="card-sub">Sélectionnez le mode qui vous convient.</p>
+      <div class="providers" id="providersList">
+        ${DATA.providers.map(p => `
+          <div class="provider-card" data-id="${p.id}" onclick="selectProvider(${p.id})">
+            <div class="provider-icon ${getProviderColor(p.provider_type)}">
+              ${getProviderIcon(p.provider_type)}
+            </div>
+            <div class="provider-info">
+              <div class="provider-name">${escHtml(p.name)}</div>
+              <div class="provider-desc">${getProviderLabel(p.provider_type)}${p.instructions ? ' &middot; Instructions fournies' : ''}</div>
+            </div>
+          </div>
+        `).join('')}
+      </div>
+      <div id="instructionsArea"></div>
+      <button class="btn primary" id="payBtn" style="margin-top:16px;" disabled onclick="processPayment()">
+        Payer
+      </button>
+    </div>
+  `;
+}
+
+function selectProvider(id) {
+  selectedProvider = id;
+  document.querySelectorAll('.provider-card').forEach(c => c.classList.remove('selected'));
+  document.querySelector(`.provider-card[data-id="${id}"]`).classList.add('selected');
+  document.getElementById('payBtn').disabled = false;
+
+  const provider = DATA.providers.find(p => p.id === id);
+  const area = document.getElementById('instructionsArea');
+  if (provider && provider.instructions) {
+    area.innerHTML = `<div class="instructions-box"><strong>${escHtml(provider.name)}</strong>\n\n${escHtml(provider.instructions)}</div>`;
+  } else {
+    area.innerHTML = '';
+  }
+}
+
+function escHtml(s) {
+  if (!s) return '';
+  const d = document.createElement('div');
+  d.textContent = s;
+  return d.innerHTML;
+}
+
+async function processPayment() {
+  if (!selectedProvider) return;
+  const btn = document.getElementById('payBtn');
+  btn.disabled = true;
+  btn.textContent = 'Traitement...';
+
+  try {
+    const typePath = DATA.type === 'venue' ? 'reservation' : 'cours';
+    const id = DATA.type === 'venue' ? DATA.bookingId : DATA.enrollmentId;
+
+    const res = await fetch('/api/paiement/' + typePath + '/' + id + '/', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json', 'X-CSRFToken': '{{ csrf_token }}' },
+      body: JSON.stringify({
+        provider_id: selectedProvider,
+        payer_name: DATA.payerName,
+        payer_phone: DATA.payerPhone,
+        payer_email: DATA.payerEmail,
+      })
+    });
+
+    const data = await res.json();
+    if (!data.ok) throw new Error(data.error || 'Erreur de paiement');
+
+    if (data.redirect_url) {
+      window.location.href = data.redirect_url;
+      return;
+    }
+
+    showSuccess(data);
+
+  } catch (e) {
+    const app = document.getElementById('app');
+    app.innerHTML = `
+      <div class="card">
+        <div class="error-msg">${escHtml(e.message)}</div>
+        <button class="btn primary" onclick="location.reload()">Réessayer</button>
+      </div>
+    `;
+  }
+}
+
+function showSuccess(data) {
+  const app = document.getElementById('app');
+  let message = 'Votre demande de paiement a été enregistrée. Un administrateur validera votre réservation sous 24h.';
+  if (DATA.type === 'course') {
+    message = 'Votre inscription est en attente de confirmation de paiement. Vous recevrez une confirmation sous 24h.';
+  }
+
+  app.innerHTML = `
+    <div class="card">
+      <div class="success-state">
+        <div class="success-icon">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.6" stroke-linecap="round" stroke-linejoin="round"><polyline points="20 6 9 17 4 12"></polyline></svg>
+        </div>
+        <h2 class="success-title">Demande envoyée !</h2>
+        <p class="success-sub">${message}</p>
+        <span class="success-ref">Réf: ${escHtml(data.reference)}</span>
+      </div>
+      <a href="/" class="btn primary" style="margin-top:16px;">Retour à l'accueil</a>
+    </div>
+  `;
+}
+
+render();
+</script>
+</body>
+</html>

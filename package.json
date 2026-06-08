@@ -1,0 +1,11 @@
+{
+  "name": "imso-website",
+  "version": "1.0.0",
+  "private": true,
+  "description": "Site IMSO avec backend Django pret pour Vercel",
+  "scripts": {
+    "dev": "python manage.py runserver",
+    "migrate": "python manage.py migrate",
+    "createsuperuser": "python manage.py createsuperuser"
+  }
+}
