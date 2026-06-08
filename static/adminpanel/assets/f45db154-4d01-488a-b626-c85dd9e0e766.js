@@ -1,23 +1,54 @@
 const TITLES = {
-  dashboard: { t: 'Tableau de bord', s: 'Vue d\'ensemble de votre plateforme · Mardi 14 mai 2026' },
+  dashboard: { t: 'Tableau de bord', s: 'Vue d\'ensemble de votre plateforme' },
   members: { t: 'Membres', s: 'Gérez les inscriptions et les statuts des apprenants' },
   courses: { t: 'Cours & Contenu', s: 'Publiez vos cours, ebooks et ressources pédagogiques' },
-  room: { t: 'Salle & Réservations', s: 'Gérez les locations de la salle IMSO · 3 750 HTG / heure' },
-  payments: { t: 'Paiements', s: 'Tous les paiements traités via opérateurs haïtiens · MonCash, NatCash, Sogebank, Unibank, Capital Bank, Cash' },
-  ai: { t: 'Agents IA', s: 'Créateur de contenu & Qualificateur de leads · Pilotés par Claude Haiku' },
+  room: { t: 'Salle & Réservations', s: 'Gérez les locations de la salle IMSO' },
+  payments: { t: 'Paiements', s: 'Tous les paiements traités via opérateurs haïtiens' },
+  ai: { t: 'Agents IA', s: 'Créateur de contenu & Qualificateur de leads' },
   stats: { t: 'Statistiques', s: 'Analyses détaillées, rétention par cohorte et exports' },
   settings: { t: 'Paramètres', s: 'Configurations de la plateforme' },
 };
 
 function Header({ view }) {
   const [notif, setNotif] = useState(false);
+  const [unreadCount, setUnreadCount] = useState(0);
   const meta = TITLES[view] || TITLES.dashboard;
   const ref = useRef(null);
+  const { data: notifs, loading: notifLoading, refetch } = useAPI('/dashboard/api/notifications/');
+  const lastSince = useRef(new Date().toISOString());
+
   useEffect(() => {
     const h = (e) => { if (ref.current && !ref.current.contains(e.target)) setNotif(false); };
     document.addEventListener('mousedown', h);
     return () => document.removeEventListener('mousedown', h);
   }, []);
+
+  // Poll for new notifications every 15s
+  useEffect(() => {
+    const interval = setInterval(async () => {
+      try {
+        const res = await fetch('/dashboard/api/notifications/check/?since=' + encodeURIComponent(lastSince.current));
+        const data = await res.json();
+        if (data.notifications && data.notifications.length > 0) {
+          lastSince.current = new Date().toISOString();
+          refetch();
+        }
+        if (data.unread_count !== undefined) setUnreadCount(data.unread_count);
+      } catch {}
+    }, 15000);
+    return () => clearInterval(interval);
+  }, [refetch]);
+
+  const list = Array.isArray(notifs) ? notifs : [];
+
+  const markAllRead = () => {
+    apiPost('/dashboard/api/notifications/read-all/', {}).then(() => refetch()).catch(() => {});
+  };
+
+  const markRead = (id) => {
+    apiPost('/dashboard/api/notifications/' + id + '/read/', {}).then(() => refetch()).catch(() => {});
+  };
+
   return (
     <header className="header">
       <div>
@@ -33,21 +64,25 @@ function Header({ view }) {
         <div ref={ref} style={{ position: 'relative' }}>
           <button className="icon-btn" onClick={() => setNotif(v => !v)}>
             <I.bell size={18}/>
-            <span className="dot"></span>
+            {unreadCount > 0 && <span className="dot"></span>}
           </button>
           {notif && (
             <div className="pop">
               <div className="pop-head">
                 <span>Notifications</span>
-                <button className="btn sm ghost">Tout marquer lu</button>
+                <button className="btn sm ghost" onClick={markAllRead}>Tout marquer lu</button>
               </div>
               <div className="pop-list">
-                {NOTIFS.map(n => (
-                  <div key={n.id} className={`pop-item ${n.read ? 'read' : ''}`}>
-                    <div className="pop-dot"/>
+                {notifLoading ? (
+                  <div className="pop-item" style={{ justifyContent: 'center', color: 'var(--muted)' }}>Chargement...</div>
+                ) : list.length === 0 ? (
+                  <div className="pop-item" style={{ justifyContent: 'center', color: 'var(--muted)' }}>Aucune notification</div>
+                ) : list.map(n => (
+                  <div key={n.id} className={`pop-item ${n.is_read ? 'read' : ''}`} onClick={() => !n.is_read && markRead(n.id)} style={{ cursor: !n.is_read ? 'pointer' : 'default' }}>
+                    <div className="pop-dot" style={{ opacity: n.is_read ? 0 : 1 }}/>
                     <div style={{ flex: 1 }}>
-                      <div className="pop-msg">{n.msg}</div>
-                      <div className="pop-time">{n.time}</div>
+                      <div className="pop-msg">{n.message}</div>
+                      <div className="pop-time">{fmtDateTime(n.created_at)}</div>
                     </div>
                   </div>
                 ))}

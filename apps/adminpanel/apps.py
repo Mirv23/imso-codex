@@ -5,3 +5,6 @@ class AdminpanelConfig(AppConfig):
     default_auto_field = "django.db.models.BigAutoField"
     name = "apps.adminpanel"
     verbose_name = "IMSO administration"
+
+    def ready(self):
+        import apps.adminpanel.signals  # noqa

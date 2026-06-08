@@ -1,15 +1,16 @@
 function CourseCard({ c, i, onToggle }) {
-  const ico = c.cat === 'Théologie' ? <I.book size={28}/> :
-              c.cat === 'Bible' ? <I.fileText size={28}/> :
-              c.cat === 'Leadership' ? <I.spark size={28}/> :
-              c.cat === 'Ministère' ? <I.users size={28}/> :
-              c.cat === 'Évangélisation' ? <I.mail size={28}/> :
+  const ico = c.category === 'Théologie' ? <I.book size={28}/> :
+              c.category === 'Bible' ? <I.fileText size={28}/> :
+              c.category === 'Leadership' ? <I.spark size={28}/> :
+              c.category === 'Ministère' ? <I.users size={28}/> :
+              c.category === 'Évangélisation' ? <I.mail size={28}/> :
               <I.ai size={28}/>;
+  const revenue = (c.enrollments_count || 0) * (c.price_htg || 0);
   return (
     <div className="course-card fade-in" style={{ animationDelay: `${0.04 * i}s` }}>
-      <div className={`course-thumb ${c.thumb}`}>
-        <span className="ttag">{c.cat}</span>
-        <span className="duration">{c.duration}</span>
+      <div className="course-thumb green">
+        <span className="ttag">{c.category}</span>
+        <span className="duration">{c.instructor || ''}</span>
         <div style={{ position: 'relative', zIndex: 1, opacity: 0.88 }}>
           {ico}
         </div>
@@ -17,15 +18,15 @@ function CourseCard({ c, i, onToggle }) {
       <div className="course-body">
         <div className="course-title">{c.title}</div>
         <div className="course-meta-row">
-          <div className="m"><I.users size={14}/> <b>{fmtNum(c.students)}</b> inscrits</div>
-          <div className="m"><I.cash size={14}/> <b>{fmtNum(c.revenue)}</b> HTG</div>
+          <div className="m"><I.users size={14}/> <b>{fmtNum(c.enrollments_count || 0)}</b> inscrits</div>
+          <div className="m"><I.cash size={14}/> <b>{fmtNum(revenue)}</b> HTG</div>
         </div>
         <div className="course-foot">
           <label className="toggle">
-            <input type="checkbox" checked={c.status} onChange={() => onToggle(c.id)}/>
+            <input type="checkbox" checked={c.is_active} onChange={() => onToggle(c)}/>
             <span className="track"></span>
-            <span className="lbl" style={{ color: c.status ? 'var(--primary)' : 'var(--muted)', fontWeight: 600 }}>
-              {c.status ? 'Publié' : 'Brouillon'}
+            <span className="lbl" style={{ color: c.is_active ? 'var(--primary)' : 'var(--muted)', fontWeight: 600 }}>
+              {c.is_active ? 'Publié' : 'Brouillon'}
             </span>
           </label>
           <button className="btn sm ghost"><I.more size={16}/></button>
@@ -131,11 +132,28 @@ function CourseDrawer({ open, onClose }) {
 }
 
 function Courses() {
-  const [list, setList] = useState(COURSES);
+  const { data: courses, loading, error, refetch } = useAPI('/dashboard/api/courses/');
   const [open, setOpen] = useState(false);
-  const toggle = (id) => setList(l => l.map(c => c.id === id ? { ...c, status: !c.status } : c));
-  const totalRevenue = list.reduce((s, c) => s + c.revenue, 0);
-  const totalStudents = list.reduce((s, c) => s + c.students, 0);
+  const list = Array.isArray(courses) ? courses : [];
+
+  const toggle = (c) => {
+    apiPut('/dashboard/api/courses/' + c.id + '/', { is_active: !c.is_active })
+      .then(() => refetch())
+      .catch(() => alert('Erreur lors de la mise à jour'));
+  };
+
+  const totalRevenue = list.reduce((s, c) => s + (c.enrollments_count || 0) * (c.price_htg || 0), 0);
+  const totalStudents = list.reduce((s, c) => s + (c.enrollments_count || 0), 0);
+
+  if (loading) return <div className="content"><div className="loading" style={{ padding: 48, textAlign: 'center', color: 'var(--muted)' }}>Chargement...</div></div>;
+  if (error) return (
+    <div className="content">
+      <div className="card" style={{ padding: 48, textAlign: 'center' }}>
+        <div style={{ color: 'var(--danger)', marginBottom: 12 }}>Erreur de chargement</div>
+        <button className="btn primary" onClick={refetch}>Réessayer</button>
+      </div>
+    </div>
+  );
 
   return (
     <div className="content">
@@ -154,7 +172,7 @@ function Courses() {
           <div>
             <div style={{ fontSize: 12.5, color: 'var(--muted)' }}>Publiés</div>
             <div style={{ fontSize: 22, fontWeight: 700, letterSpacing: '-0.02em' }} className="num">
-              {list.filter(c => c.status).length}<span style={{ color: 'var(--muted)', fontWeight: 500 }}>/{list.length}</span>
+              {list.filter(c => c.is_active).length}<span style={{ color: 'var(--muted)', fontWeight: 500 }}>/{list.length}</span>
             </div>
           </div>
         </div>

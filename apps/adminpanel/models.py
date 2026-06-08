@@ -240,3 +240,28 @@ class DashboardMetric(TimestampedModel):
 
     def __str__(self):
         return self.label
+
+
+class AdminNotification(models.Model):
+    class NotificationType(models.TextChoices):
+        NEW_BOOKING = "new_booking", "Nouvelle réservation"
+        NEW_PAYMENT = "new_payment", "Nouveau paiement"
+        NEW_CONTACT = "new_contact", "Nouveau message"
+        NEW_ENROLLMENT = "new_enrollment", "Nouvelle inscription"
+        PAYMENT_RECEIVED = "payment_received", "Paiement reçu"
+        BOOKING_CONFIRMED = "booking_confirmed", "Réservation confirmée"
+        BOOKING_CANCELLED = "booking_cancelled", "Réservation annulée"
+
+    message = models.CharField(max_length=255)
+    notification_type = models.CharField(
+        max_length=30, choices=NotificationType.choices
+    )
+    related_id = models.PositiveIntegerField(null=True, blank=True)
+    is_read = models.BooleanField(default=False)
+    created_at = models.DateTimeField(auto_now_add=True)
+
+    class Meta:
+        ordering = ["-created_at"]
+
+    def __str__(self):
+        return f"[{self.get_notification_type_display()}] {self.message}"

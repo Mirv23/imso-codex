@@ -17,19 +17,25 @@ function MetricCard({ ico, color, label, value, prefix = '', suffix = '', trend,
 }
 
 function MembersTable() {
-  const [sort, setSort] = useState({ k: 'date', dir: 'desc' });
-  const rows = MEMBERS.slice(0, 6);
+  const { data: members, loading } = useAPI('/dashboard/api/members/?per_page=6');
+  const [sort, setSort] = useState({ k: 'joined_at', dir: 'desc' });
+  const rows = Array.isArray(members) ? members.slice(0, 6) : [];
   const sorted = [...rows].sort((a, b) => {
-    if (sort.k === 'name') return sort.dir === 'asc' ? a.name.localeCompare(b.name) : b.name.localeCompare(a.name);
+    if (sort.k === 'name') {
+      const aN = (a.first_name+' '+a.last_name).trim();
+      const bN = (b.first_name+' '+b.last_name).trim();
+      return sort.dir === 'asc' ? aN.localeCompare(bN) : bN.localeCompare(aN);
+    }
     return 0;
   });
   const headers = [
     { k: 'name', l: 'Membre' },
     { k: 'gei', l: 'GEI' },
     { k: 'status', l: 'Statut' },
-    { k: 'date', l: 'Inscription' },
+    { k: 'joined_at', l: 'Inscription' },
     { k: 'act', l: '' },
   ];
+  if (loading) return <div className="loading" style={{ padding: 24, textAlign: 'center', color: 'var(--muted)' }}>Chargement...</div>;
   return (
     <table className="table">
       <thead>
@@ -50,66 +56,76 @@ function MembersTable() {
         </tr>
       </thead>
       <tbody className="row-anim">
-        {sorted.map((m, i) => (
-          <tr key={m.id} style={{ animationDelay: `${0.05 * i}s` }}>
-            <td>
-              <div className="name-cell">
-                <div className={`avatar sm ${m.avatar}`}>{m.initials}</div>
-                <div className="name-meta">
-                  <div className="nm">{m.name}</div>
-                  <div className="em">{m.email}</div>
+        {sorted.map((m, i) => {
+          const name = (m.first_name+' '+m.last_name).trim();
+          const geiName = typeof m.gei === 'object' && m.gei ? m.gei.name || m.gei.code || m.gei : m.gei || '';
+          return (
+            <tr key={m.id} style={{ animationDelay: `${0.05 * i}s` }}>
+              <td>
+                <div className="name-cell">
+                  <div className={`avatar sm ${avatarColor(name)}`}>{initials(m.first_name, m.last_name)}</div>
+                  <div className="name-meta">
+                    <div className="nm">{name}</div>
+                    <div className="em">{m.email}</div>
+                  </div>
                 </div>
-              </div>
-            </td>
-            <td><span className={`gei ${m.gei}`}>{m.gei}</span></td>
-            <td>
-              <span className={`pill dot ${m.status === 'Actif' ? 'green' : m.status === 'Attente' ? 'amber' : 'red'}`}>
-                {m.status}
-              </span>
-            </td>
-            <td style={{ color: 'var(--muted)' }}>{m.date}</td>
-            <td><button className="btn sm ghost" onClick={() => alert(`Profil de ${m.name}`)}>Voir <I.chevronR size={12}/></button></td>
-          </tr>
-        ))}
+              </td>
+              <td><span className={`gei`}>{geiName}</span></td>
+              <td>
+                <span className={`pill dot ${m.status === 'Actif' ? 'green' : m.status === 'Attente' ? 'amber' : 'red'}`}>
+                  {m.status}
+                </span>
+              </td>
+              <td style={{ color: 'var(--muted)' }}>{fmtDate(m.joined_at)}</td>
+              <td><button className="btn sm ghost" onClick={() => alert(`Profil de ${name}`)}>Voir <I.chevronR size={12}/></button></td>
+            </tr>
+          );
+        })}
       </tbody>
     </table>
   );
 }
 
 function PaymentsTable() {
+  const { data: payments, loading } = useAPI('/dashboard/api/payments/?per_page=6');
+  const rows = Array.isArray(payments) ? payments.slice(0, 6) : [];
+  if (loading) return <div className="loading" style={{ padding: 24, textAlign: 'center', color: 'var(--muted)' }}>Chargement...</div>;
   return (
     <table className="table">
       <thead>
         <tr>
-          <th>Membre</th>
-          <th>Cours</th>
+          <th>Client</th>
+          <th>Motif</th>
           <th style={{ textAlign: 'right' }}>Montant</th>
-          <th>Méthode</th>
+          <th>Opérateur</th>
           <th>Statut</th>
         </tr>
       </thead>
       <tbody className="row-anim">
-        {PAYMENTS.map((p, i) => (
-          <tr key={p.id} style={{ animationDelay: `${0.05 * i}s` }}>
-            <td>
-              <div style={{ fontWeight: 600 }}>{p.member}</div>
-              <div style={{ fontSize: 11.5, color: 'var(--muted)' }}>{p.date}</div>
-            </td>
-            <td style={{ color: 'var(--muted)' }} className="truncate" >{p.course}</td>
-            <td className="num mono" style={{ textAlign: 'right', fontWeight: 600 }}>
-              {fmtNum(p.amount)}
-              <span style={{ color: 'var(--muted)', fontWeight: 500, fontSize: 11, marginLeft: 3 }}>HTG</span>
-            </td>
-            <td>
-              <span className={`pill ${p.method === 'MonCash' ? 'amber' : 'violet'}`}>{p.method}</span>
-            </td>
-            <td>
-              <span className={`pill dot ${p.status === 'Réussi' ? 'green' : p.status === 'En attente' ? 'amber' : 'red'}`}>
-                {p.status}
-              </span>
-            </td>
-          </tr>
-        ))}
+        {rows.map((p, i) => {
+          const provider = typeof p.provider === 'object' && p.provider ? p.provider.name || p.provider : p.provider__name || '';
+          return (
+            <tr key={p.id} style={{ animationDelay: `${0.05 * i}s` }}>
+              <td>
+                <div style={{ fontWeight: 600 }}>{p.payer_name}</div>
+                <div style={{ fontSize: 11.5, color: 'var(--muted)' }}>{fmtDateTime(p.created_at)}</div>
+              </td>
+              <td style={{ color: 'var(--muted)' }} className="truncate">{p.purpose || p.reference}</td>
+              <td className="num mono" style={{ textAlign: 'right', fontWeight: 600 }}>
+                {fmtNum(p.amount_htg)}
+                <span style={{ color: 'var(--muted)', fontWeight: 500, fontSize: 11, marginLeft: 3 }}>HTG</span>
+              </td>
+              <td>
+                <span className={`pill ${provider === 'MonCash' ? 'amber' : 'violet'}`}>{provider}</span>
+              </td>
+              <td>
+                <span className={`pill dot ${p.status === 'Réussi' || p.status === 'Confirmé' ? 'green' : p.status === 'En attente' ? 'amber' : 'red'}`}>
+                  {p.status}
+                </span>
+              </td>
+            </tr>
+          );
+        })}
       </tbody>
     </table>
   );
@@ -183,7 +199,7 @@ function Dashboard() {
               <button className="btn sm">6 mois <I.chevron size={12}/></button>
             </div>
           </div>
-          <LineChart data={REVENUE} color="#2D6A4F"/>
+          <LineChart data={[]} color="#2D6A4F"/>
         </div>
 
         <div className="card fade-in d5">
@@ -194,16 +210,7 @@ function Dashboard() {
             </div>
             <button className="btn sm ghost"><I.more size={16}/></button>
           </div>
-          <DonutChart data={CATEGORIES}/>
-          <div className="donut-legend">
-            {CATEGORIES.map((c, i) => (
-              <div key={i} className="legend-row">
-                <div className="sw" style={{ background: c.color }}/>
-                <div className="lbl">{c.name}</div>
-                <div className="pct">{c.value}%</div>
-              </div>
-            ))}
-          </div>
+          <DonutChart data={[]}/>
         </div>
       </div>
 

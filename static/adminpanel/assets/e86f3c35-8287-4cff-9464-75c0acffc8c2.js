@@ -1,5 +1,4 @@
 /* ===== Salle & Réservations ===== */
-/* Mock bookings (current week starting Monday) */
 const ROOM_PRICE = 3750; // HTG / heure
 const ROOM_CAP = { sans: 60, avec: 40 };
 
@@ -14,8 +13,11 @@ const ET_MAP = Object.fromEntries(EVENT_TYPES.map(e => [e.id, e]));
 
 /* Build current week (Monday based) */
 function getWeek(offset = 0) {
-  const now = new Date(2026, 4, 11); // pinned Monday 11 May 2026 for stable demo
-  now.setDate(now.getDate() + offset * 7);
+  const now = new Date();
+  now.setHours(0,0,0,0);
+  const day = now.getDay();
+  const diff = now.getDate() - day + (day === 0 ? -6 : 1);
+  now.setDate(diff + offset * 7);
   return Array.from({ length: 7 }, (_, i) => {
     const d = new Date(now);
     d.setDate(now.getDate() + i);
@@ -27,36 +29,28 @@ const DAY_NAMES = ['Lun', 'Mar', 'Mer', 'Jeu', 'Ven', 'Sam', 'Dim'];
 const MONTHS = ['janv.', 'févr.', 'mars', 'avr.', 'mai', 'juin', 'juil.', 'août', 'sept.', 'oct.', 'nov.', 'déc.'];
 const HOURS = Array.from({ length: 14 }, (_, i) => 8 + i); // 08h → 21h
 
-/* Bookings on the current pinned week (week of 11 May 2026) */
-const ROOM_BOOKINGS = [
-  // day 0..6 corresponds to that week
-  { id:'r1', day:0, start:9,  end:12, type:'seminaire', config:'avec', client:'Cabinet KPMG Haïti',           org:'Séminaire trimestriel',     people:38, status:'Confirmé', payment:'Stripe',  contact:'+509 3811 4527' },
-  { id:'r2', day:1, start:14, end:17, type:'conference', config:'sans', client:'Église Évangélique de PAP',   org:'Conférence pastorale',      people:55, status:'Confirmé', payment:'MonCash', contact:'+509 3742 0918' },
-  { id:'r3', day:2, start:18, end:21, type:'culte',     config:'sans', client:'Ministère Bethel',            org:'Veillée de prière',         people:50, status:'Confirmé', payment:'MonCash', contact:'+509 4220 7733' },
-  { id:'r4', day:3, start:8,  end:11, type:'seminaire', config:'avec', client:'IMSO Haïti',                  org:'Formation interne',          people:30, status:'Confirmé', payment:'Interne', contact:'admin@imso.ht' },
-  { id:'r5', day:4, start:16, end:21, type:'mariage',   config:'avec', client:'Famille Joseph–Pierre',       org:'Cérémonie de mariage',      people:40, status:'Confirmé', payment:'Stripe',  contact:'+509 3699 1284' },
-  { id:'r6', day:5, start:10, end:14, type:'mariage',   config:'avec', client:'Famille Désir–Cadet',         org:'Réception civile',          people:40, status:'En attente', payment:'MonCash', contact:'+509 3404 5566' },
-  { id:'r7', day:5, start:15, end:18, type:'autre',     config:'sans', client:'Comité jeunesse Cap-Haïtien', org:'Soirée culturelle',         people:48, status:'Confirmé', payment:'MonCash', contact:'+509 3955 4012' },
-  { id:'r8', day:6, start:13, end:17, type:'conference', config:'sans', client:'Coopérative Agricole Sud',   org:'Assemblée générale',        people:60, status:'Option',   payment:'À régler', contact:'+509 3722 9911' },
-  { id:'r9', day:0, start:18, end:21, type:'seminaire', config:'avec', client:'Wealth Academy Haïti',        org:'Atelier finance',           people:32, status:'Confirmé', payment:'Stripe',  contact:'+509 3677 8800' },
-];
-
-/* Upcoming reservations (next 30 days, mixed) */
-const UPCOMING = [
-  { id:'u1', date:'22 mai 2026', start:'14:00', end:'18:00', client:'Famille Bélizaire',          type:'mariage',    config:'avec', amount:15000, status:'Confirmé',  payment:'Stripe' },
-  { id:'u2', date:'24 mai 2026', start:'09:00', end:'12:00', client:'Banque Nationale de Crédit', type:'seminaire',  config:'avec', amount:11250, status:'Confirmé',  payment:'Stripe' },
-  { id:'u3', date:'27 mai 2026', start:'18:00', end:'21:00', client:'Église Bonne Nouvelle',      type:'culte',      config:'sans', amount:11250, status:'En attente', payment:'MonCash' },
-  { id:'u4', date:'29 mai 2026', start:'10:00', end:'17:00', client:'Forum jeunesse Haïti',       type:'conference', config:'sans', amount:26250, status:'Confirmé',  payment:'MonCash' },
-  { id:'u5', date:'05 juin 2026',start:'15:00', end:'22:00', client:'Famille Théodore–Auguste',   type:'mariage',    config:'avec', amount:26250, status:'Option',    payment:'À régler' },
-];
-
 const fmtDay = (d) => `${d.getDate()} ${MONTHS[d.getMonth()]}`;
 const fmtPad = (n) => String(n).padStart(2, '0') + 'h';
 
+function parseHour(t) {
+  if (!t) return 0;
+  const p = t.split(':');
+  return parseInt(p[0]) || 0;
+}
+
+function isSameDate(a, b) {
+  return a.getDate() === b.getDate() && a.getMonth() === b.getMonth() && a.getFullYear() === b.getFullYear();
+}
+
 function bookingColor(type) { return ET_MAP[type].color; }
 
-function RoomKPIs() {
-  const totalHours = ROOM_BOOKINGS.reduce((s, b) => s + (b.end - b.start), 0);
+function useBookings() {
+  const { data, loading, error, refetch } = useAPI('/dashboard/api/bookings/');
+  return { bookings: Array.isArray(data) ? data : [], loading, error, refetch };
+}
+
+function RoomKPIs({ weekBookings }) {
+  const totalHours = weekBookings.reduce((s, b) => s + (b.end - b.start), 0);
   const revenueWeek = totalHours * ROOM_PRICE;
   const slotsAvail = 7 * HOURS.length - totalHours;
   const occupancy = Math.round((totalHours / (7 * HOURS.length)) * 100);
@@ -66,7 +60,7 @@ function RoomKPIs() {
       <div className="metric fade-in d1">
         <div className="metric-ico green"><I.calendar size={20}/></div>
         <div className="metric-label">Réservations cette semaine</div>
-        <div className="metric-value num">{ROOM_BOOKINGS.length}</div>
+        <div className="metric-value num">{weekBookings.length}</div>
         <div className="metric-foot">
           <span className="pill green"><I.trend size={11} stroke={2.5}/> +3 vs sem. dernière</span>
           <Sparkline data={[3,4,5,6,7,8,9]} color="#10B981"/>
@@ -102,14 +96,14 @@ function RoomKPIs() {
   );
 }
 
-function WeekCalendar({ weekOffset, onWeekChange, onSlotClick, onBookingClick }) {
+function WeekCalendar({ weekOffset, onWeekChange, onSlotClick, onBookingClick, bookings }) {
   const week = getWeek(weekOffset);
-  const today = new Date(2026, 4, 21); // pinned "today"
-  const isSameDay = (a, b) => a.getDate() === b.getDate() && a.getMonth() === b.getMonth();
+  const today = new Date();
+  today.setHours(0,0,0,0);
 
   // Group bookings by day
   const bookingsByDay = Array.from({ length: 7 }, () => []);
-  ROOM_BOOKINGS.forEach(b => bookingsByDay[b.day].push(b));
+  (bookings || []).forEach(b => bookingsByDay[b.day].push(b));
 
   const slotH = 52; // px per hour
 
@@ -119,7 +113,7 @@ function WeekCalendar({ weekOffset, onWeekChange, onSlotClick, onBookingClick })
         <div>
           <div className="card-title">Calendrier hebdomadaire</div>
           <div className="card-sub">
-            Semaine du {fmtDay(week[0])} au {fmtDay(week[6])} 2026
+            Semaine du {fmtDay(week[0])} au {fmtDay(week[6])}
             · Cliquez sur un créneau libre pour réserver
           </div>
         </div>
@@ -341,10 +335,10 @@ function RoomSetupCard() {
   );
 }
 
-function EventDistribution() {
+function EventDistribution({ weekBookings }) {
   const counts = EVENT_TYPES.map(t => ({
     ...t,
-    count: ROOM_BOOKINGS.filter(b => b.type === t.id).length,
+    count: weekBookings.filter(b => b.event_type === t.id).length,
   }));
   const total = counts.reduce((s, c) => s + c.count, 0) || 1;
   return (
@@ -383,13 +377,19 @@ function EventDistribution() {
   );
 }
 
-function UpcomingTable({ onNew }) {
+function UpcomingTable({ onNew, bookings }) {
+  const now = new Date();
+  const upcoming = (bookings || []).filter(b => {
+    const d = new Date(b.event_date + 'T' + (b.start_time || '00:00'));
+    return d >= now;
+  }).sort((a, b) => new Date(a.event_date) - new Date(b.event_date)).slice(0, 10);
+
   return (
     <div className="card fade-in d7" style={{ marginTop: 18 }}>
       <div className="card-head" style={{ borderBottom: '1px solid var(--border-soft)', paddingBottom: 14 }}>
         <div>
           <div className="card-title">Réservations à venir</div>
-          <div className="card-sub">{UPCOMING.length} prochaines locations · Mis à jour il y a quelques secondes</div>
+          <div className="card-sub">{upcoming.length} prochaines locations · Mis à jour en temps réel</div>
         </div>
         <div className="stack">
           <button className="btn sm"><I.filter size={14}/> Filtrer</button>
@@ -405,14 +405,17 @@ function UpcomingTable({ onNew }) {
             <th>Créneau</th>
             <th>Configuration</th>
             <th style={{ textAlign:'right' }}>Montant</th>
-            <th>Paiement</th>
             <th>Statut</th>
             <th style={{ textAlign:'right' }}>Actions</th>
           </tr>
         </thead>
         <tbody className="row-anim">
-          {UPCOMING.map((u, i) => {
-            const et = ET_MAP[u.type];
+          {upcoming.length === 0 ? (
+            <tr><td colSpan="7" className="empty">Aucune réservation à venir.</td></tr>
+          ) : upcoming.map((u, i) => {
+            const et = ET_MAP[u.event_type] || ET_MAP.autre;
+            const hours = (parseHour(u.end_time) - parseHour(u.start_time)) || 0;
+            const amount = hours * ROOM_PRICE;
             return (
               <tr key={u.id} style={{ animationDelay: `${0.04 * i}s` }}>
                 <td>
@@ -425,23 +428,20 @@ function UpcomingTable({ onNew }) {
                       {I[et.ico] ? I[et.ico]({ size: 16 }) : <I.spark size={16}/>}
                     </div>
                     <div>
-                      <div style={{ fontWeight:600 }}>{u.client}</div>
+                      <div style={{ fontWeight:600 }}>{u.requester_name}</div>
                       <div style={{ fontSize:11.5, color:'var(--muted)' }}>{et.label}</div>
                     </div>
                   </div>
                 </td>
-                <td style={{ color:'var(--muted)' }}>{u.date}</td>
-                <td className="mono" style={{ fontWeight:600 }}>{u.start} – {u.end}</td>
+                <td style={{ color:'var(--muted)' }}>{fmtDate(u.event_date)}</td>
+                <td className="mono" style={{ fontWeight:600 }}>{u.start_time} – {u.end_time}</td>
                 <td>
-                  <span className="pill" style={{ background: u.config==='avec' ? 'rgba(244,162,97,0.12)' : 'rgba(45,106,79,0.10)', color: u.config==='avec' ? '#B45309' : '#047857' }}>
-                    {u.config==='avec' ? <><I.table size={11} stroke={2.2}/> Avec tables · {ROOM_CAP.avec}</> : <><I.chair size={11} stroke={2.2}/> Sans tables · {ROOM_CAP.sans}</>}
+                  <span className="pill" style={{ background: u.setup==='avec' ? 'rgba(244,162,97,0.12)' : 'rgba(45,106,79,0.10)', color: u.setup==='avec' ? '#B45309' : '#047857' }}>
+                    {u.setup==='avec' ? <><I.table size={11} stroke={2.2}/> Avec tables · {ROOM_CAP.avec}</> : <><I.chair size={11} stroke={2.2}/> Sans tables · {ROOM_CAP.sans}</>}
                   </span>
                 </td>
                 <td className="num mono" style={{ textAlign:'right', fontWeight:700 }}>
-                  {fmtNum(u.amount)} <span style={{ color:'var(--muted)', fontSize:11, fontWeight:500 }}>HTG</span>
-                </td>
-                <td>
-                  <span className={`pill ${u.payment==='MonCash' ? 'amber' : u.payment==='Stripe' ? 'violet' : 'gray'}`}>{u.payment}</span>
+                  {fmtNum(amount)} <span style={{ color:'var(--muted)', fontSize:11, fontWeight:500 }}>HTG</span>
                 </td>
                 <td>
                   <span className={`pill dot ${u.status==='Confirmé' ? 'green' : u.status==='En attente' ? 'amber' : 'blue'}`}>{u.status}</span>
@@ -462,19 +462,32 @@ function UpcomingTable({ onNew }) {
   );
 }
 
-function BookingDrawer({ open, onClose, preset }) {
+function BookingDrawer({ open, onClose, preset, onCreated }) {
   const [type, setType] = useState('mariage');
   const [config, setConfig] = useState('sans');
   const [start, setStart] = useState('09:00');
   const [end, setEnd] = useState('12:00');
-  const [date, setDate] = useState('22 mai 2026');
+  const [date, setDate] = useState('');
   const [client, setClient] = useState('');
+  const [phone, setPhone] = useState('');
+  const [email, setEmail] = useState('');
+  const [guests, setGuests] = useState('30');
+  const [notes, setNotes] = useState('');
+  const [saving, setSaving] = useState(false);
 
   useEffect(() => {
-    if (preset && open) {
-      setDate(fmtDay(preset.date) + ' 2026');
-      setStart(String(preset.hour).padStart(2,'0') + ':00');
-      setEnd(String(preset.hour + 3).padStart(2,'0') + ':00');
+    if (open) {
+      if (preset && preset.date) {
+        const y = preset.date.getFullYear();
+        const m = String(preset.date.getMonth() + 1).padStart(2,'0');
+        const d = String(preset.date.getDate()).padStart(2,'0');
+        setDate(`${y}-${m}-${d}`);
+        setStart(String(preset.hour).padStart(2,'0') + ':00');
+        setEnd(String(preset.hour + 3).padStart(2,'0') + ':00');
+      } else {
+        const now = new Date();
+        setDate(now.toISOString().slice(0,10));
+      }
     }
   }, [preset, open]);
 
@@ -482,6 +495,33 @@ function BookingDrawer({ open, onClose, preset }) {
   const hEnd = parseInt(end.split(':')[0]);
   const dur = Math.max(0, hEnd - hStart);
   const total = dur * ROOM_PRICE;
+
+  const handleSubmit = async () => {
+    if (!client) { alert('Veuillez saisir le nom du client'); return; }
+    if (!date) { alert('Veuillez saisir une date'); return; }
+    setSaving(true);
+    try {
+      await apiPost('/dashboard/api/bookings/', {
+        requester_name: client,
+        requester_phone: phone,
+        requester_email: email,
+        event_type: type,
+        event_date: date,
+        start_time: start,
+        end_time: end,
+        guest_count: parseInt(guests) || 0,
+        setup: config,
+        notes: notes,
+        status: 'En attente',
+      });
+      if (onCreated) onCreated();
+      onClose();
+    } catch (e) {
+      alert('Erreur lors de la création : ' + e.message);
+    } finally {
+      setSaving(false);
+    }
+  };
 
   return (
     <React.Fragment>
@@ -526,18 +566,33 @@ function BookingDrawer({ open, onClose, preset }) {
             <input className="input" placeholder="ex: Famille Joseph–Pierre" value={client} onChange={e => setClient(e.target.value)}/>
           </div>
 
-          <div style={{ display:'grid', gridTemplateColumns:'1fr 1fr 1fr', gap: 12 }}>
+          <div style={{ display:'grid', gridTemplateColumns:'1fr 1fr', gap: 12 }}>
+            <div className="field">
+              <label>Téléphone</label>
+              <input className="input" placeholder="+509 3742 0918" value={phone} onChange={e => setPhone(e.target.value)}/>
+            </div>
+            <div className="field">
+              <label>Email</label>
+              <input className="input" type="email" placeholder="contact@exemple.ht" value={email} onChange={e => setEmail(e.target.value)}/>
+            </div>
+          </div>
+
+          <div style={{ display:'grid', gridTemplateColumns:'1fr 1fr 1fr 1fr', gap: 12 }}>
             <div className="field">
               <label>Date</label>
-              <input className="input" value={date} onChange={e => setDate(e.target.value)}/>
+              <input className="input" type="date" value={date} onChange={e => setDate(e.target.value)}/>
             </div>
             <div className="field">
               <label>Début</label>
-              <input className="input mono" value={start} onChange={e => setStart(e.target.value)}/>
+              <input className="input mono" type="time" value={start} onChange={e => setStart(e.target.value)}/>
             </div>
             <div className="field">
               <label>Fin</label>
-              <input className="input mono" value={end} onChange={e => setEnd(e.target.value)}/>
+              <input className="input mono" type="time" value={end} onChange={e => setEnd(e.target.value)}/>
+            </div>
+            <div className="field">
+              <label>Personnes</label>
+              <input className="input num" type="number" value={guests} onChange={e => setGuests(e.target.value)} min="1" max={ROOM_CAP.sans}/>
             </div>
           </div>
 
@@ -580,13 +635,8 @@ function BookingDrawer({ open, onClose, preset }) {
           </div>
 
           <div className="field">
-            <label>Contact (téléphone / email)</label>
-            <input className="input" placeholder="+509 3742 0918"/>
-          </div>
-
-          <div className="field">
             <label>Notes</label>
-            <textarea className="textarea" placeholder="Demandes particulières (sono, traiteur, etc.)"></textarea>
+            <textarea className="textarea" placeholder="Demandes particulières (sono, traiteur, etc.)" value={notes} onChange={e => setNotes(e.target.value)}></textarea>
           </div>
 
           <div style={{
@@ -613,8 +663,8 @@ function BookingDrawer({ open, onClose, preset }) {
         </div>
         <div className="drawer-foot">
           <button className="btn" onClick={onClose}>Enregistrer en option</button>
-          <button className="btn primary" onClick={() => { alert('Réservation confirmée (démo)'); onClose(); }}>
-            <I.check size={14}/> Confirmer & encaisser
+          <button className="btn primary" disabled={saving} onClick={handleSubmit}>
+            <I.check size={14}/> {saving ? 'Enregistrement...' : 'Confirmer & encaisser'}
           </button>
         </div>
       </div>
@@ -624,8 +674,9 @@ function BookingDrawer({ open, onClose, preset }) {
 
 function BookingDetailModal({ booking, onClose }) {
   if (!booking) return null;
-  const et = ET_MAP[booking.type];
-  const total = (booking.end - booking.start) * ROOM_PRICE;
+  const et = ET_MAP[booking.event_type] || ET_MAP.autre;
+  const hours = (parseHour(booking.end_time) - parseHour(booking.start_time)) || 0;
+  const total = hours * ROOM_PRICE;
   return (
     <div className="modal-overlay open" onClick={onClose}>
       <div className="modal" onClick={e => e.stopPropagation()} style={{ width: 480 }}>
@@ -643,8 +694,8 @@ function BookingDetailModal({ booking, onClose }) {
             }}>{I[et.ico] ? I[et.ico]({ size: 20 }) : <I.spark size={20}/>}</div>
             <div>
               <div style={{ fontSize:11, color:et.color, fontWeight:700, textTransform:'uppercase', letterSpacing:'0.08em' }}>{et.label}</div>
-              <div style={{ fontSize:18, fontWeight:700, letterSpacing:'-0.02em' }}>{booking.client}</div>
-              <div style={{ fontSize:12.5, color:'var(--muted)', marginTop:1 }}>{booking.org}</div>
+              <div style={{ fontSize:18, fontWeight:700, letterSpacing:'-0.02em' }}>{booking.requester_name}</div>
+              <div style={{ fontSize:12.5, color:'var(--muted)', marginTop:1 }}>{booking.notes}</div>
             </div>
             <button className="icon-btn" onClick={onClose} style={{ marginLeft:'auto' }}><I.close size={18}/></button>
           </div>
@@ -653,26 +704,26 @@ function BookingDetailModal({ booking, onClose }) {
           <div style={{ display:'grid', gridTemplateColumns:'1fr 1fr', gap:14 }}>
             <div>
               <div style={{ fontSize:11, color:'var(--muted)', textTransform:'uppercase', letterSpacing:'0.06em', fontWeight:600 }}>Créneau</div>
-              <div className="mono" style={{ fontSize:15, fontWeight:700, marginTop:4 }}>{fmtPad(booking.start)} – {fmtPad(booking.end)}</div>
-              <div style={{ fontSize:12, color:'var(--muted)' }}>{booking.end - booking.start} heures</div>
+              <div className="mono" style={{ fontSize:15, fontWeight:700, marginTop:4 }}>{booking.start_time} – {booking.end_time}</div>
+              <div style={{ fontSize:12, color:'var(--muted)' }}>{hours} heures</div>
             </div>
             <div>
               <div style={{ fontSize:11, color:'var(--muted)', textTransform:'uppercase', letterSpacing:'0.06em', fontWeight:600 }}>Configuration</div>
               <div style={{ fontSize:15, fontWeight:700, marginTop:4, display:'flex', alignItems:'center', gap:6 }}>
-                {booking.config==='avec' ? <I.table size={16}/> : <I.chair size={16}/>}
-                {booking.config==='avec' ? 'Avec tables' : 'Sans tables'}
+                {booking.setup==='avec' ? <I.table size={16}/> : <I.chair size={16}/>}
+                {booking.setup==='avec' ? 'Avec tables' : 'Sans tables'}
               </div>
-              <div style={{ fontSize:12, color:'var(--muted)' }}>{booking.people} personnes attendues</div>
+              <div style={{ fontSize:12, color:'var(--muted)' }}>{booking.guest_count || 0} personnes attendues</div>
             </div>
             <div>
               <div style={{ fontSize:11, color:'var(--muted)', textTransform:'uppercase', letterSpacing:'0.06em', fontWeight:600 }}>Contact</div>
-              <div className="mono" style={{ fontSize:13, fontWeight:600, marginTop:4 }}>{booking.contact}</div>
+              <div className="mono" style={{ fontSize:13, fontWeight:600, marginTop:4 }}>{booking.requester_phone || booking.requester_email}</div>
             </div>
             <div>
-              <div style={{ fontSize:11, color:'var(--muted)', textTransform:'uppercase', letterSpacing:'0.06em', fontWeight:600 }}>Paiement</div>
+              <div style={{ fontSize:11, color:'var(--muted)', textTransform:'uppercase', letterSpacing:'0.06em', fontWeight:600 }}>Date</div>
               <div style={{ marginTop:6 }}>
-                <span className={`pill ${booking.payment==='MonCash' ? 'amber' : booking.payment==='Stripe' ? 'violet' : 'gray'}`}>{booking.payment}</span>
-                <span className={`pill dot ${booking.status==='Confirmé' ? 'green' : booking.status==='En attente' ? 'amber' : 'blue'}`} style={{ marginLeft:4 }}>{booking.status}</span>
+                <span style={{ fontWeight:600 }}>{fmtDate(booking.event_date)}</span>
+                <span className={`pill dot ${booking.status==='Confirmé' ? 'green' : booking.status==='En attente' ? 'amber' : 'blue'}`} style={{ marginLeft:8 }}>{booking.status}</span>
               </div>
             </div>
           </div>
@@ -681,7 +732,7 @@ function BookingDetailModal({ booking, onClose }) {
             background:'var(--primary-light)', borderRadius:10,
             display:'flex', justifyContent:'space-between', alignItems:'baseline'
           }}>
-            <div style={{ fontSize:12, color:'var(--muted)' }}>{booking.end - booking.start}h × {fmtNum(ROOM_PRICE)} HTG</div>
+            <div style={{ fontSize:12, color:'var(--muted)' }}>{hours}h × {fmtNum(ROOM_PRICE)} HTG</div>
             <div style={{ fontSize:22, fontWeight:800, color:'var(--primary)', letterSpacing:'-0.02em' }} className="num">{fmtNum(total)} HTG</div>
           </div>
         </div>
@@ -696,29 +747,62 @@ function BookingDetailModal({ booking, onClose }) {
 }
 
 function Room() {
+  const { bookings, loading, error, refetch } = useBookings();
   const [weekOffset, setWeekOffset] = useState(0);
   const [drawer, setDrawer] = useState(false);
   const [preset, setPreset] = useState(null);
   const [detail, setDetail] = useState(null);
 
+  const week = getWeek(weekOffset);
+
+  // Transform bookings to calendar format
+  const weekBookings = [];
+  (bookings || []).forEach(b => {
+    if (!b.event_date) return;
+    const d = new Date(b.event_date + 'T00:00:00');
+    const dayIdx = week.findIndex(wd => isSameDate(wd, d));
+    if (dayIdx >= 0) {
+      weekBookings.push({
+        ...b,
+        day: dayIdx,
+        start: parseHour(b.start_time),
+        end: parseHour(b.end_time),
+        client: b.requester_name,
+        people: b.guest_count,
+        config: b.setup || 'sans',
+        contact: b.requester_phone || b.requester_email,
+      });
+    }
+  });
+
   const openSlot = (info) => { setPreset(info); setDrawer(true); };
   const closeDrawer = () => { setDrawer(false); setPreset(null); };
 
+  if (loading) return <div className="content"><div className="loading" style={{ padding: 48, textAlign: 'center', color: 'var(--muted)' }}>Chargement...</div></div>;
+  if (error) return (
+    <div className="content">
+      <div className="card" style={{ padding: 48, textAlign: 'center' }}>
+        <div style={{ color: 'var(--danger)', marginBottom: 12 }}>Erreur de chargement</div>
+        <button className="btn primary" onClick={refetch}>Réessayer</button>
+      </div>
+    </div>
+  );
+
   return (
     <div className="content">
-      <RoomKPIs/>
+      <RoomKPIs weekBookings={weekBookings}/>
 
       <div style={{ display:'grid', gridTemplateColumns:'1.6fr 1fr', gap: 18, marginTop: 18 }}>
-        <WeekCalendar weekOffset={weekOffset} onWeekChange={setWeekOffset} onSlotClick={openSlot} onBookingClick={setDetail}/>
+        <WeekCalendar weekOffset={weekOffset} onWeekChange={setWeekOffset} onSlotClick={openSlot} onBookingClick={setDetail} bookings={weekBookings}/>
         <div style={{ display:'flex', flexDirection:'column', gap: 18 }}>
           <RoomSetupCard/>
-          <EventDistribution/>
+          <EventDistribution weekBookings={bookings}/>
         </div>
       </div>
 
-      <UpcomingTable onNew={() => { setPreset(null); setDrawer(true); }}/>
+      <UpcomingTable onNew={() => { setPreset(null); setDrawer(true); }} bookings={bookings}/>
 
-      <BookingDrawer open={drawer} onClose={closeDrawer} preset={preset}/>
+      <BookingDrawer open={drawer} onClose={closeDrawer} preset={preset} onCreated={refetch}/>
       {detail && <BookingDetailModal booking={detail} onClose={() => setDetail(null)}/>}
     </div>
   );

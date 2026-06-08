@@ -1,11 +1,59 @@
 from django.urls import path
 
-from .views import DashboardView, dashboard_summary
-
+from .views import (
+    DashboardView,
+    booking_detail,
+    booking_list,
+    contact_detail,
+    contact_list,
+    course_create,
+    course_detail,
+    course_list,
+    dashboard_summary,
+    enrollment_detail,
+    enrollment_list,
+    gei_create,
+    gei_detail,
+    gei_list,
+    member_detail,
+    member_list,
+    notification_check,
+    notification_list,
+    notification_read,
+    notification_read_all,
+    payment_detail,
+    payment_list,
+    provider_create,
+    provider_detail,
+    provider_list,
+)
 
 app_name = "adminpanel"
 
 urlpatterns = [
     path("", DashboardView.as_view(), name="dashboard"),
     path("api/summary/", dashboard_summary, name="summary"),
+    path("api/members/", member_list, name="member-list"),
+    path("api/members/<int:pk>/", member_detail, name="member-detail"),
+    path("api/courses/", course_list, name="course-list"),
+    path("api/courses/create/", course_create, name="course-create"),
+    path("api/courses/<int:pk>/", course_detail, name="course-detail"),
+    path("api/bookings/", booking_list, name="booking-list"),
+    path("api/bookings/<int:pk>/", booking_detail, name="booking-detail"),
+    path("api/payments/", payment_list, name="payment-list"),
+    path("api/payments/<int:pk>/", payment_detail, name="payment-detail"),
+    path("api/contacts/", contact_list, name="contact-list"),
+    path("api/contacts/<int:pk>/", contact_detail, name="contact-detail"),
+    path("api/geis/", gei_list, name="gei-list"),
+    path("api/geis/create/", gei_create, name="gei-create"),
+    path("api/geis/<int:pk>/", gei_detail, name="gei-detail"),
+    path("api/providers/", provider_list, name="provider-list"),
+    path("api/providers/create/", provider_create, name="provider-create"),
+    path("api/providers/<int:pk>/", provider_detail, name="provider-detail"),
+    path("api/enrollments/", enrollment_list, name="enrollment-list"),
+    path("api/enrollments/<int:pk>/", enrollment_detail, name="enrollment-detail"),
+    path("api/notifications/", notification_list, name="notification-list"),
+    path("api/notifications/check/", notification_check, name="notification-check"),
+    path("api/notifications/<int:pk>/read/", notification_read, name="notification-read"),
+    path("api/notifications/read-all/", notification_read_all, name="notification-read-all"),
 ]

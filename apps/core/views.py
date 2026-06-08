@@ -165,10 +165,14 @@ class PaymentPageView(TemplateView):
 
 class PaymentProcessView(View):
     def post(self, request, type, id):
-        try:
-            data = json.loads(request.body.decode("utf-8"))
-        except json.JSONDecodeError:
-            return JsonResponse({"ok": False, "error": "JSON invalide"}, status=400)
+        # Handle both JSON and multipart form data
+        if request.content_type and "multipart/form-data" in request.content_type:
+            data = request.POST.dict()
+        else:
+            try:
+                data = json.loads(request.body.decode("utf-8"))
+            except json.JSONDecodeError:
+                return JsonResponse({"ok": False, "error": "JSON invalide"}, status=400)
 
         provider_id = data.get("provider_id")
         if not provider_id:
@@ -204,6 +208,27 @@ class PaymentProcessView(View):
             payer_phone = payer_phone or enrollment.member.phone
             payer_email = payer_email or enrollment.member.email
 
+        # Extract fields from JSON or form-data
+        transaction_id = ""
+        screenshot_file = None
+        if request.content_type and "application/json" in request.content_type:
+            transaction_id = data.get("transaction_id", "")
+        elif request.content_type and "multipart/form-data" in request.content_type:
+            transaction_id = request.POST.get("transaction_id", "")
+            screenshot_file = request.FILES.get("screenshot")
+
+        is_manual = provider.provider_type in (
+            PaymentProvider.ProviderType.MANUAL,
+            PaymentProvider.ProviderType.MONCASH,
+            PaymentProvider.ProviderType.NATCASH,
+            PaymentProvider.ProviderType.BANK,
+            PaymentProvider.ProviderType.CASH,
+        )
+
+        notes = f"Paiement initié via {provider.name}"
+        if transaction_id:
+            notes += f" · TX: {transaction_id}"
+
         payment = Payment.objects.create(
             purpose=purpose,
             provider=provider,
@@ -215,7 +240,7 @@ class PaymentProcessView(View):
             amount_htg=amount,
             venue_booking=booking,
             enrollment=enrollment,
-            notes=f"Paiement initié via {provider.name}",
+            notes=notes,
         )
 
         if provider.checkout_url:
@@ -226,13 +251,20 @@ class PaymentProcessView(View):
                 "redirect_url": provider.checkout_url,
             })
 
-        return JsonResponse({
+        resp = {
             "ok": True,
             "payment_id": payment.id,
             "reference": payment.reference,
             "message": "Paiement enregistré. En attente de validation.",
             "instructions": provider.instructions,
-        })
+            "is_manual": is_manual,
+        }
+
+        if is_manual and amount > 0:
+            resp["amount_htg"] = amount
+            resp["total_label"] = f"{amount:,} HTG"
+
+        return JsonResponse(resp)
 
 
 class PaymentConfirmationView(View):
@@ -246,6 +278,48 @@ class PaymentConfirmationView(View):
             "amount_htg": payment.amount_htg,
             "paid_at": payment.paid_at,
         })
+
+
+from django.views.decorators.csrf import csrf_exempt
+from django.views.decorators.http import require_http_methods
+
+
+@csrf_exempt
+@require_http_methods(["POST"])
+def confirm_manual_payment(request):
+    """Confirms a manual payment with transaction ID and optional screenshot."""
+    try:
+        data = json.loads(request.body.decode("utf-8"))
+    except json.JSONDecodeError:
+        # Try multipart form data
+        data = request.POST.dict()
+
+    reference = data.get("payment_reference")
+    if not reference:
+        return JsonResponse({"ok": False, "error": "Référence de paiement requise"}, status=400)
+
+    payment = get_object_or_404(Payment, reference=reference)
+
+    transaction_id = data.get("transaction_id", "")
+    screenshot_file = request.FILES.get("screenshot")
+
+    notes = payment.notes or ""
+    if transaction_id:
+        notes += f" | Confirmation manuelle - Transaction: {transaction_id}"
+    else:
+        notes += " | Confirmation manuelle (sans ID transaction)"
+    if screenshot_file:
+        notes += " + Screenshot fourni"
+
+    payment.notes = notes
+    payment.external_reference = transaction_id or payment.external_reference
+    payment.save(update_fields=["notes", "external_reference"])
+
+    return JsonResponse({
+        "ok": True,
+        "reference": payment.reference,
+        "message": "Confirmation reçue. Un administrateur validera sous 24h.",
+    })
 
 
 def get_active_providers(request):

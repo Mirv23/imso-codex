@@ -1,5 +1,14 @@
 /* ===== Settings View ===== */
 
+const PAY_METHODS = [
+  { id:'moncash',    name:'MonCash',     sub:'Digicel · Mobile money',          logo:'logos/moncash.webp',     color:'#E5202C', fee:'2.0%', txns:412 },
+  { id:'natcash',    name:'NatCash',     sub:'Natcom · Mobile money',           logo:'logos/natcash.png',      color:'#F39322', fee:'1.8%', txns:198 },
+  { id:'sogebank',   name:'Sogebank',    sub:'Virement bancaire · Sogexpress',  logo:'logos/sogebank.png',     color:'#1849A9', fee:'1.5%', txns:154 },
+  { id:'unibank',    name:'Unibank',     sub:'Virement bancaire · UniTransfert', logo:'logos/unibank.png',     color:'#0E4A9E', fee:'1.5%', txns:121 },
+  { id:'capitalbank',name:'Capital Bank',sub:'Virement bancaire · CapitalConnect', logo:'logos/capitalbank.png', color:'#E2231A', fee:'1.5%', txns:99  },
+  { id:'cash',       name:'Cash',        sub:'Espèces · Sur place IMSO',        logo:null,                     color:'#2D6A4F', fee:'0%',   txns:108 },
+];
+
 const SETTINGS_TABS = [
   { id: 'general',       label: 'Général',              icon: I.building,    group: 'Organisation' },
   { id: 'branding',      label: 'Marque & apparence',   icon: I.palette,     group: 'Organisation' },
