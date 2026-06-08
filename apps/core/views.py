@@ -22,8 +22,12 @@ class HomeView(TemplateView):
 
     def get_context_data(self, **kwargs):
         context = super().get_context_data(**kwargs)
-        context["active_courses"] = Course.objects.filter(is_active=True)
-        context["active_providers"] = PaymentProvider.objects.filter(is_active=True)
+        context["active_courses"] = Course.objects.filter(is_active=True).only(
+            "id", "title", "category", "city", "instructor", "price_htg", "capacity", "description", "public_slug"
+        )
+        context["active_providers"] = PaymentProvider.objects.filter(is_active=True).only(
+            "id", "name", "provider_type", "instructions", "checkout_url", "sort_order"
+        )
         return context
 
 
@@ -112,7 +116,9 @@ class PaymentPageView(TemplateView):
 
     def get_context_data(self, **kwargs):
         context = super().get_context_data(**kwargs)
-        providers = PaymentProvider.objects.filter(is_active=True)
+        providers = PaymentProvider.objects.filter(is_active=True).only(
+            "id", "name", "provider_type", "instructions", "checkout_url", "sort_order"
+        )
         context["providers"] = providers
         context["providers_json"] = json.dumps(list(providers.values(
             "id", "name", "provider_type", "instructions", "checkout_url", "sort_order"
@@ -141,7 +147,10 @@ class PaymentPageView(TemplateView):
             context["payer_email"] = booking.requester_email
             context["booking_id"] = booking.id
         elif payment_type == "cours":
-            enrollment = get_object_or_404(Enrollment, id=payment_id)
+            enrollment = get_object_or_404(
+                Enrollment.objects.select_related("member", "course"),
+                id=payment_id,
+            )
             context["enrollment"] = enrollment
             context["payment_purpose"] = "course"
             context["payment_label"] = f"Inscription - {enrollment.course.title if enrollment.course else 'Cours'}"
@@ -185,7 +194,10 @@ class PaymentProcessView(View):
                 booking.status = VenueBooking.Status.PAYMENT_PENDING
                 booking.save(update_fields=["status", "updated_at"])
         elif type == "cours":
-            enrollment = get_object_or_404(Enrollment, id=id)
+            enrollment = get_object_or_404(
+                Enrollment.objects.select_related("member", "course"),
+                id=id,
+            )
             purpose = Payment.Purpose.COURSE
             amount = enrollment.course.price_htg if enrollment.course else 0
             payer_name = payer_name or enrollment.member.get_full_name() or enrollment.member.first_name

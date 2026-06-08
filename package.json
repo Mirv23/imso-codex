@@ -6,6 +6,8 @@
   "scripts": {
     "dev": "python manage.py runserver",
     "migrate": "python manage.py migrate",
-    "createsuperuser": "python manage.py createsuperuser"
+    "createsuperuser": "python manage.py createsuperuser",
+    "collectstatic": "python manage.py collectstatic --noinput",
+    "build": "python manage.py collectstatic --noinput"
   }
 }

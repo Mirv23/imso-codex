@@ -1,14 +1,16 @@
+from django.contrib.auth.decorators import login_required
 from django.contrib.auth.mixins import LoginRequiredMixin
 from django.db.models import Sum
 from django.http import JsonResponse
+from django.utils.decorators import method_decorator
 from django.views.generic import TemplateView
 
 from .models import ContactRequest, Course, GEI, Member, VenueBooking
 
 
+@method_decorator(login_required(login_url="/django-admin/login/"), name="dispatch")
 class DashboardView(LoginRequiredMixin, TemplateView):
     template_name = "adminpanel/dashboard.html"
-    login_url = "/django-admin/login/"
 
     def get_context_data(self, **kwargs):
         context = super().get_context_data(**kwargs)
@@ -16,9 +18,8 @@ class DashboardView(LoginRequiredMixin, TemplateView):
         return context
 
 
+@login_required(login_url="/django-admin/login/")
 def dashboard_summary(request):
-    if not request.user.is_authenticated:
-        return JsonResponse({"detail": "Authentication required"}, status=401)
     return JsonResponse(get_dashboard_summary())
 
 
