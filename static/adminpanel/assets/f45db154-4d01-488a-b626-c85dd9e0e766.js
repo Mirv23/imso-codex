@@ -4,6 +4,9 @@ const TITLES = {
   courses: { t: 'Cours & Contenu', s: 'Publiez vos cours, ebooks et ressources pédagogiques' },
   room: { t: 'Salle & Réservations', s: 'Gérez les locations de la salle IMSO' },
   payments: { t: 'Paiements', s: 'Tous les paiements traités via opérateurs haïtiens' },
+  contacts: { t: 'Messages', s: 'Demandes de contact des visiteurs' },
+  geis: { t: 'GEI', s: 'Groupes d\'Entraide Intégrée' },
+  providers: { t: 'Moyens de paiement', s: 'Configurez les opérateurs de paiement' },
   ai: { t: 'Agents IA', s: 'Créateur de contenu & Qualificateur de leads' },
   stats: { t: 'Statistiques', s: 'Analyses détaillées, rétention par cohorte et exports' },
   settings: { t: 'Paramètres', s: 'Configurations de la plateforme' },
@@ -141,6 +144,9 @@ function App() {
           {view === 'courses' && <Courses/>}
           {view === 'room' && <Room/>}
           {view === 'payments' && <Payments/>}
+          {view === 'contacts' && <window.Contacts/>}
+          {view === 'geis' && <window.Geis/>}
+          {view === 'providers' && <window.Providers/>}
           {view === 'ai' && <AgentIA/>}
           {view === 'stats' && <Stats/>}
           {view === 'settings' && <Settings/>}

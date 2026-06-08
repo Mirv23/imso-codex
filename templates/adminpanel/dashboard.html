@@ -1141,6 +1141,7 @@
 <body>
 
 <div id="root"></div>
+{% csrf_token %}
 {{ summary|json_script:"dashboard-summary-data" }}
 <script>
 window.IMSO_DASHBOARD_SUMMARY = JSON.parse(document.getElementById('dashboard-summary-data').textContent);
