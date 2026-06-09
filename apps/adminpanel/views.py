@@ -38,8 +38,195 @@ class DashboardView(LoginRequiredMixin, TemplateView):
     def get_context_data(self, **kwargs: Any) -> dict[str, Any]:
         context = super().get_context_data(**kwargs)
         context["summary"] = get_dashboard_summary()
-        context["summary_json"] = json.dumps(context["summary"])
+        context["members_json"] = json.dumps(_serialize_members_for_react())
+        context["payments_json"] = json.dumps(_serialize_payments_for_react())
+        context["courses_json"] = json.dumps(_serialize_courses_for_react())
+        context["revenue_json"] = json.dumps(_serialize_revenue_for_react())
+        context["categories_json"] = json.dumps(_serialize_categories_for_react())
+        context["notifs_json"] = json.dumps(_serialize_notifs_for_react())
         return context
+
+
+_COLORS = ["#2D6A4F", "#1B4332", "#40916C", "#52B788", "#74C69D", "#95D5B2"]
+_AVATAR_CLASSES = ["warm", "blue", "purple", "teal", "rose", "amber"]
+_GEI_CODES: dict[int, str] = {}
+_GEI_COLORS = ["#2D6A4F", "#E67E22", "#2980B9", "#8E44AD", "#16A085", "#C0392B", "#D35400"]
+
+
+def _initials(name: str) -> str:
+    parts = name.strip().split()
+    if len(parts) >= 2:
+        return (parts[0][0] + parts[-1][0]).upper()
+    return (parts[0][:2]).upper() if parts else ""
+
+
+def _status_label(status: str) -> str:
+    return {"active": "Actif", "paused": "Attente", "alumni": "Suspendu", "prospect": "Prospect"}.get(status, status)
+
+
+def _relative_time(dt) -> str:
+    if not dt:
+        return ""
+    now = timezone.now()
+    diff = now - dt
+    if diff < timedelta(minutes=1):
+        return "il y a quelques secondes"
+    if diff < timedelta(hours=1):
+        m = int(diff.total_seconds() / 60)
+        return f"il y a {m} min"
+    if diff < timedelta(days=1):
+        h = int(diff.total_seconds() / 3600)
+        return f"il y a {h}h"
+    if diff < timedelta(days=7):
+        d = diff.days
+        return f"il y a {d}j"
+    return dt.strftime("%d %b %Y")
+
+
+def _month_abbr(dt) -> str:
+    months = ["", "Jan", "Fév", "Mar", "Avr", "Mai", "Jun", "Jul", "Aoû", "Sep", "Oct", "Nov", "Déc"]
+    return months[dt.month]
+
+
+def _get_gei_code(gei_id: int | None) -> str:
+    if gei_id is None:
+        return ""
+    if gei_id not in _GEI_CODES:
+        try:
+            g = GEI.objects.get(pk=gei_id)
+            _GEI_CODES[gei_id] = g.city.upper()[:3]
+        except GEI.DoesNotExist:
+            _GEI_CODES[gei_id] = ""
+    return _GEI_CODES[gei_id]
+
+
+def _prefetch_gei_codes() -> None:
+    for g in GEI.objects.all():
+        _GEI_CODES[g.pk] = g.city.upper()[:3]
+
+
+def _serialize_members_for_react() -> list[dict[str, Any]]:
+    _prefetch_gei_codes()
+    qs = Member.objects.select_related("gei").all()[:50]
+    result = []
+    for i, m in enumerate(qs):
+        name = f"{m.first_name} {m.last_name}"
+        gei_code = _get_gei_code(m.gei_id) if m.gei_id else ""
+        result.append({
+            "id": str(m.pk),
+            "name": name,
+            "email": m.email or "",
+            "gei": gei_code,
+            "status": _status_label(m.status),
+            "date": m.created_at.strftime("%d %b %Y") if m.created_at else "",
+            "avatar": _AVATAR_CLASSES[i % len(_AVATAR_CLASSES)],
+            "initials": _initials(name),
+            "phone": m.phone or "",
+        })
+    return result
+
+
+def _serialize_payments_for_react() -> list[dict[str, Any]]:
+    qs = Payment.objects.select_related("provider", "enrollment__member", "enrollment__course").all()[:20]
+    result = []
+    for p in qs:
+        member_name = p.payer_name
+        course_title = ""
+        if p.enrollment and p.enrollment.course:
+            course_title = p.enrollment.course.title
+        elif p.purpose == "venue" and p.venue_booking:
+            course_title = f"Réservation: {p.venue_booking.event_type}"
+
+        provider_type = p.provider.provider_type if p.provider else "manual"
+        method = {"moncash": "MonCash", "stripe": "Stripe", "natcash": "NatCash",
+                   "bank": "Virement", "cash": "Cash", "manual": "Manuel"}.get(provider_type, "Autre")
+
+        status = {"paid": "Réussi", "pending": "En attente", "failed": "Échoué",
+                   "refunded": "Remboursé", "cancelled": "Annulé"}.get(p.status, p.status)
+
+        result.append({
+            "id": str(p.pk),
+            "member": member_name,
+            "course": course_title,
+            "amount": p.amount_htg,
+            "method": method,
+            "status": status,
+            "date": _relative_time(p.created_at),
+        })
+    return result
+
+
+def _serialize_courses_for_react() -> list[dict[str, Any]]:
+    qs = Course.objects.annotate(enrollment_count=Count("enrollments")).all()[:20]
+    pks = [c.pk for c in qs]
+    revenues = Payment.objects.filter(
+        enrollment__course_id__in=pks,
+        status=Payment.Status.PAID,
+    ).values("enrollment__course_id").annotate(total=Sum("amount_htg"))
+    rev_map = {r["enrollment__course_id"]: r["total"] for r in revenues}
+    result = []
+    for i, c in enumerate(qs):
+        result.append({
+            "id": str(c.pk),
+            "title": c.title,
+            "students": c.enrollment_count or 0,
+            "revenue": rev_map.get(c.pk, 0),
+            "status": c.is_active,
+            "thumb": _AVATAR_CLASSES[i % len(_AVATAR_CLASSES)],
+            "cat": c.category or "",
+            "duration": "",
+            "price": c.price_htg,
+        })
+    return result
+
+
+def _serialize_revenue_for_react() -> list[dict[str, Any]]:
+    now = timezone.now()
+    months = []
+    for i in range(6):
+        dt = now - timedelta(days=30 * (5 - i))
+        months.append(dt)
+
+    result = []
+    for dt in months:
+        total = Payment.objects.filter(
+            status=Payment.Status.PAID,
+            created_at__year=dt.year,
+            created_at__month=dt.month,
+        ).aggregate(total=Sum("amount_htg"))["total"] or 0
+        result.append({
+            "m": _month_abbr(dt),
+            "v": total,
+        })
+    return result
+
+
+def _serialize_categories_for_react() -> list[dict[str, Any]]:
+    qs = Course.objects.values("category").annotate(cnt=Count("id")).order_by("-cnt")
+    total = sum(item["cnt"] for item in qs) or 1
+    result = []
+    for i, item in enumerate(qs):
+        if not item["category"]:
+            continue
+        result.append({
+            "name": item["category"],
+            "value": round(item["cnt"] / total * 100),
+            "color": _COLORS[i % len(_COLORS)],
+        })
+    return result
+
+
+def _serialize_notifs_for_react() -> list[dict[str, Any]]:
+    qs = AdminNotification.objects.all()[:20]
+    result = []
+    for n in qs:
+        result.append({
+            "id": n.pk,
+            "msg": n.message,
+            "time": _relative_time(n.created_at),
+            "read": n.is_read,
+        })
+    return result
 
 
 def _get_page_params(request: HttpRequest) -> tuple[int, int, int]:

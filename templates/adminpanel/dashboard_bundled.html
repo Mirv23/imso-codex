@@ -18,7 +18,16 @@
     </div>
   </noscript>
 </head>
-<body>  <script>window.IMSO_DASHBOARD_SUMMARY = {{ summary_json|safe }};</script>
+<body>  <script>
+    window.__DJANGO_DATA = {
+      members: {{ members_json|safe }},
+      payments: {{ payments_json|safe }},
+      courses: {{ courses_json|safe }},
+      revenue: {{ revenue_json|safe }},
+      categories: {{ categories_json|safe }},
+      notifs: {{ notifs_json|safe }}
+    };
+  </script>
 
   <div id="__bundler_thumbnail">
   <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 200 200">
@@ -155,6 +164,16 @@ document.addEventListener('DOMContentLoaded', async function() {
     }
     // Babel standalone auto-transforms type=text/babel on DOMContentLoaded,
     // which fired before we swapped the document. Trigger manually if present.
+    // Override hardcoded window data with Django data (injected before bundle)
+    var __d = window.__DJANGO_DATA;
+    if (__d) {
+      if (__d.members) window.MEMBERS = __d.members;
+      if (__d.payments) window.PAYMENTS = __d.payments;
+      if (__d.courses) window.COURSES = __d.courses;
+      if (__d.revenue) window.REVENUE = __d.revenue;
+      if (__d.categories) window.CATEGORIES = __d.categories;
+      if (__d.notifs) window.NOTIFS = __d.notifs;
+    }
     if (window.Babel && typeof window.Babel.transformScriptTags === 'function') {
       window.Babel.transformScriptTags();
     }
