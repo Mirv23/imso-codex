@@ -13,8 +13,7 @@ from django.db.models import Count, Sum, Q
 from django.db.models.query import QuerySet
 from django.http import HttpRequest, HttpResponse, JsonResponse, StreamingHttpResponse
 from django.utils import timezone
-from django.utils.decorators import method_decorator
-from django.views.decorators.csrf import csrf_exempt, ensure_csrf_cookie
+from django.views.decorators.csrf import ensure_csrf_cookie
 from django.views.decorators.http import require_http_methods
 from django.views.generic import TemplateView
 
@@ -33,9 +32,8 @@ from .models import (
 )
 
 
-@method_decorator(login_required(login_url="/django-admin/login/"), name="dispatch")
 class DashboardView(LoginRequiredMixin, TemplateView):
-    template_name = "adminpanel/dashboard.html"
+    template_name = "adminpanel/simple_dashboard.html"
 
     def get_context_data(self, **kwargs: Any) -> dict[str, Any]:
         context = super().get_context_data(**kwargs)

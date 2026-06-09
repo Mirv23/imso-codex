@@ -5,12 +5,12 @@ import logging
 from typing import Any
 
 from django_ratelimit.decorators import ratelimit
-from django.http import HttpRequest, JsonResponse, HttpResponseBadRequest
+from django.http import HttpRequest, JsonResponse, HttpResponseBadRequest, HttpResponseRedirect
 from django.utils.decorators import method_decorator
-from django.shortcuts import get_object_or_404, render
+from django.shortcuts import get_object_or_404, render, redirect
 from django.utils import timezone
 from django.views import View
-from django.views.generic import TemplateView
+from django.views.generic import TemplateView, RedirectView
 
 from apps.adminpanel.models import (
     Course,
