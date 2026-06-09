@@ -1,5 +1,48 @@
+from __future__ import annotations
+
+import base64
+import os
+
+from typing import Any
+
 from django.db import models
 from django.utils import timezone
+
+
+def _obfuscation_key() -> bytes:
+    key = os.environ.get("DJANGO_SECRET_KEY", "")
+    return key.encode("utf-8") if key else b"imso-fallback-key-32chars!!"
+
+
+def _xor_encrypt(plaintext: str) -> str:
+    key = _obfuscation_key()
+    plain_bytes = plaintext.encode("utf-8")
+    result = bytes(plain_bytes[i] ^ key[i % len(key)] for i in range(len(plain_bytes)))
+    return base64.urlsafe_b64encode(result).decode("ascii")
+
+
+def _xor_decrypt(ciphertext: str) -> str:
+    key = _obfuscation_key()
+    raw = base64.urlsafe_b64decode(ciphertext.encode("ascii"))
+    result = bytes(raw[i] ^ key[i % len(key)] for i in range(len(raw)))
+    return result.decode("utf-8")
+
+
+class EncryptedCharField(models.CharField):
+    def from_db_value(self, value: str | None, expression: Any, connection: Any) -> str | None:
+        if value is None:
+            return value
+        return _xor_decrypt(value)
+
+    def to_python(self, value: Any) -> Any:
+        if isinstance(value, str) and value.startswith("enc:"):
+            return _xor_decrypt(value[4:])
+        return value
+
+    def get_prep_value(self, value: Any) -> str | None:
+        if value is None:
+            return None
+        return "enc:" + _xor_encrypt(value)
 
 
 class TimestampedModel(models.Model):
@@ -21,7 +64,7 @@ class GEI(TimestampedModel):
         verbose_name_plural = "GEI"
         ordering = ["city", "name"]
 
-    def __str__(self):
+    def __str__(self) -> str:
         return f"{self.name} - {self.city}"
 
 
@@ -44,7 +87,7 @@ class Member(TimestampedModel):
     class Meta:
         ordering = ["last_name", "first_name"]
 
-    def __str__(self):
+    def __str__(self) -> str:
         return f"{self.first_name} {self.last_name}"
 
 
@@ -62,7 +105,7 @@ class Course(TimestampedModel):
     class Meta:
         ordering = ["category", "title"]
 
-    def __str__(self):
+    def __str__(self) -> str:
         return self.title
 
 
@@ -87,7 +130,7 @@ class Enrollment(TimestampedModel):
         ]
         ordering = ["-created_at"]
 
-    def __str__(self):
+    def __str__(self) -> str:
         return f"{self.member} - {self.course}"
 
 
@@ -114,7 +157,7 @@ class VenueBooking(TimestampedModel):
     class Meta:
         ordering = ["event_date", "start_time"]
 
-    def __str__(self):
+    def __str__(self) -> str:
         return f"{self.event_type} - {self.event_date}"
 
 
@@ -140,13 +183,13 @@ class PaymentProvider(TimestampedModel):
         help_text="Lien de paiement externe optionnel. Laisse vide pour un paiement manuel.",
     )
     api_public_key = models.CharField(max_length=255, blank=True)
-    api_secret_key = models.CharField(max_length=255, blank=True)
+    api_secret_key = EncryptedCharField(max_length=512, blank=True)
     sort_order = models.PositiveIntegerField(default=0)
 
     class Meta:
         ordering = ["sort_order", "name"]
 
-    def __str__(self):
+    def __str__(self) -> str:
         return self.name
 
 
@@ -183,14 +226,15 @@ class Payment(TimestampedModel):
     notes = models.TextField(blank=True)
     venue_booking = models.ForeignKey(VenueBooking, on_delete=models.SET_NULL, null=True, blank=True, related_name="payments")
     enrollment = models.ForeignKey(Enrollment, on_delete=models.SET_NULL, null=True, blank=True, related_name="payments")
+    screenshot = models.FileField(upload_to="screenshots/", blank=True)
 
     class Meta:
         ordering = ["-created_at"]
 
-    def __str__(self):
+    def __str__(self) -> str:
         return f"{self.reference} - {self.get_status_display()}"
 
-    def save(self, *args, **kwargs):
+    def save(self, *args: Any, **kwargs: Any) -> None:
         if not self.reference:
             stamp = timezone.now().strftime("%Y%m%d%H%M%S")
             prefix = self.purpose.upper()[:3]
@@ -198,13 +242,6 @@ class Payment(TimestampedModel):
         if self.status == self.Status.PAID and not self.paid_at:
             self.paid_at = timezone.now()
         super().save(*args, **kwargs)
-        if self.status == self.Status.PAID:
-            if self.venue_booking and self.venue_booking.status == VenueBooking.Status.PAYMENT_PENDING:
-                self.venue_booking.status = VenueBooking.Status.ADMIN_REVIEW
-                self.venue_booking.save(update_fields=["status", "updated_at"])
-            if self.enrollment and self.enrollment.status == Enrollment.Status.PENDING:
-                self.enrollment.status = Enrollment.Status.CONFIRMED
-                self.enrollment.save(update_fields=["status", "updated_at"])
 
 
 class ContactRequest(TimestampedModel):
@@ -225,7 +262,7 @@ class ContactRequest(TimestampedModel):
     class Meta:
         ordering = ["-created_at"]
 
-    def __str__(self):
+    def __str__(self) -> str:
         return f"{self.full_name} - {self.get_subject_display()}"
 
 
@@ -238,7 +275,7 @@ class DashboardMetric(TimestampedModel):
     class Meta:
         ordering = ["sort_order", "label"]
 
-    def __str__(self):
+    def __str__(self) -> str:
         return self.label
 
 
@@ -263,5 +300,5 @@ class AdminNotification(models.Model):
     class Meta:
         ordering = ["-created_at"]
 
-    def __str__(self):
+    def __str__(self) -> str:
         return f"[{self.get_notification_type_display()}] {self.message}"

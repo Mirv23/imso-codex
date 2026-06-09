@@ -13,6 +13,7 @@ from .views import (
     get_active_providers,
     healthcheck,
 )
+from .webhooks import webhook_receiver
 
 
 app_name = "core"
@@ -29,4 +30,5 @@ urlpatterns = [
     path("api/paiement/confirmation/<str:reference>/", PaymentConfirmationView.as_view(), name="payment_confirmation"),
     path("paiement/<str:type>/<int:id>/", PaymentPageView.as_view(), name="payment_page"),
     path("health/", healthcheck, name="healthcheck"),
+    path("api/webhook/<str:provider>/", webhook_receiver, name="webhook"),
 ]

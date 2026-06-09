@@ -8,6 +8,7 @@
     "migrate": "python manage.py migrate",
     "createsuperuser": "python manage.py createsuperuser",
     "collectstatic": "python manage.py collectstatic --noinput",
-    "build": "python manage.py collectstatic --noinput"
+    "build": "python manage.py collectstatic --noinput",
+    "vercel-migrate": "python scripts/vercel-migrate.py"
   }
 }

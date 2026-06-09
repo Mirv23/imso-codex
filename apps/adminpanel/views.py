@@ -1,15 +1,24 @@
+from __future__ import annotations
+
+import csv
 import json
+import logging
 from datetime import timedelta
+from typing import Any, Callable, Generator
 
 from django.contrib.auth.decorators import login_required
+from django.core.cache import cache
 from django.contrib.auth.mixins import LoginRequiredMixin
 from django.db.models import Count, Sum, Q
-from django.http import JsonResponse
+from django.db.models.query import QuerySet
+from django.http import HttpRequest, HttpResponse, JsonResponse, StreamingHttpResponse
 from django.utils import timezone
 from django.utils.decorators import method_decorator
-from django.views.decorators.csrf import csrf_exempt
+from django.views.decorators.csrf import csrf_exempt, ensure_csrf_cookie
 from django.views.decorators.http import require_http_methods
 from django.views.generic import TemplateView
+
+logger = logging.getLogger(__name__)
 
 from .models import (
     AdminNotification,
@@ -28,13 +37,13 @@ from .models import (
 class DashboardView(LoginRequiredMixin, TemplateView):
     template_name = "adminpanel/dashboard.html"
 
-    def get_context_data(self, **kwargs):
+    def get_context_data(self, **kwargs: Any) -> dict[str, Any]:
         context = super().get_context_data(**kwargs)
         context["summary"] = get_dashboard_summary()
         return context
 
 
-def _get_page_params(request):
+def _get_page_params(request: HttpRequest) -> tuple[int, int, int]:
     try:
         page = int(request.GET.get("page", 1))
     except (ValueError, TypeError):
@@ -49,7 +58,7 @@ def _get_page_params(request):
     return page, per_page, offset
 
 
-def _paginated_response(queryset, request, serializer):
+def _paginated_response(queryset: QuerySet, request: HttpRequest, serializer: Callable[[Any], dict[str, Any]]) -> JsonResponse:
     page, per_page, offset = _get_page_params(request)
     total = queryset.count()
     items = list(map(serializer, queryset[offset: offset + per_page]))
@@ -62,24 +71,24 @@ def _paginated_response(queryset, request, serializer):
     })
 
 
-def _json_body(request):
+def _json_body(request: HttpRequest) -> dict[str, Any]:
     try:
         return json.loads(request.body)
     except (json.JSONDecodeError, AttributeError):
         return {}
 
 
-def _error(msg, status=400):
+def _error(msg: str, status: int = 400) -> JsonResponse:
     return JsonResponse({"error": msg}, status=status)
 
 
-def _ok():
+def _ok() -> JsonResponse:
     return JsonResponse({"ok": True})
 
 
 # ── Members ──────────────────────────────────────────────
 
-def _serialize_member(m):
+def _serialize_member(m: Member) -> dict[str, Any]:
     gei = m.gei
     return {
         "id": m.pk,
@@ -97,7 +106,7 @@ def _serialize_member(m):
 
 
 @login_required(login_url="/django-admin/login/")
-def member_list(request):
+def member_list(request: HttpRequest) -> JsonResponse:
     qs = Member.objects.select_related("gei").all()
     search = request.GET.get("search")
     if search:
@@ -113,11 +122,11 @@ def member_list(request):
     if status:
         qs = qs.filter(status=status)
     qs = qs.order_by("-created_at")
-    return JsonResponse([_serialize_member(m) for m in qs], safe=False)
+    return _paginated_response(qs, request, _serialize_member)
 
 
 @login_required(login_url="/django-admin/login/")
-def member_detail(request, pk):
+def member_detail(request: HttpRequest, pk: int) -> JsonResponse:
     try:
         m = Member.objects.select_related("gei").get(pk=pk)
     except Member.DoesNotExist:
@@ -134,8 +143,10 @@ def member_detail(request, pk):
         elif "gei" in data:
             m.gei_id = data["gei"]
         m.save()
+        logger.info("Member %d updated by user %s", pk, request.user.username)
         return JsonResponse(_serialize_member(m))
     elif request.method == "DELETE":
+        logger.info("Member %d deleted by user %s", pk, request.user.username)
         m.delete()
         return _ok()
     return _error("Method not allowed", 405)
@@ -143,9 +154,9 @@ def member_detail(request, pk):
 
 # ── Courses ──────────────────────────────────────────────
 
-def _serialize_course(c, enroll_count=None):
+def _serialize_course(c: Course, enroll_count: int | None = None) -> dict[str, Any]:
     if enroll_count is None:
-        enroll_count = c.enrollments.count()
+        enroll_count = getattr(c, 'enrollment_count', c.enrollments.count())
     return {
         "id": c.pk,
         "title": c.title,
@@ -163,7 +174,7 @@ def _serialize_course(c, enroll_count=None):
 
 
 @login_required(login_url="/django-admin/login/")
-def course_list(request):
+def course_list(request: HttpRequest) -> JsonResponse:
     qs = Course.objects.annotate(enrollment_count=Count("enrollments")).all()
     search = request.GET.get("search")
     if search:
@@ -179,29 +190,13 @@ def course_list(request):
     if active is not None:
         qs = qs.filter(is_active=active.lower() in ("1", "true"))
     qs = qs.order_by("-created_at")
-    return JsonResponse([
-        {
-            "id": c.pk,
-            "title": c.title,
-            "category": c.category,
-            "instructor": c.instructor,
-            "city": c.city,
-            "price_htg": c.price_htg,
-            "capacity": c.capacity,
-            "is_active": c.is_active,
-            "public_slug": c.public_slug,
-            "description": c.description,
-            "enrollment_count": c.enrollment_count,
-            "created_at": c.created_at.isoformat(),
-        }
-        for c in qs
-    ], safe=False)
+    return _paginated_response(qs, request, _serialize_course)
 
 
-@csrf_exempt
+@ensure_csrf_cookie
 @login_required(login_url="/django-admin/login/")
 @require_http_methods(["GET", "PUT", "DELETE"])
-def course_detail(request, pk):
+def course_detail(request: HttpRequest, pk: int) -> JsonResponse:
     try:
         c = Course.objects.get(pk=pk)
     except Course.DoesNotExist:
@@ -215,16 +210,17 @@ def course_detail(request, pk):
             if fld in data:
                 setattr(c, fld, data[fld])
         c.save()
+        logger.info("Course %d updated by user %s", pk, request.user.username)
         return JsonResponse(_serialize_course(c))
     elif request.method == "DELETE":
+        logger.info("Course %d deleted by user %s", pk, request.user.username)
         c.delete()
         return _ok()
 
 
-@csrf_exempt
 @login_required(login_url="/django-admin/login/")
 @require_http_methods(["POST"])
-def course_create(request):
+def course_create(request: HttpRequest) -> JsonResponse:
     data = _json_body(request)
     required = ("title", "category", "instructor", "city", "price_htg", "capacity")
     for f in required:
@@ -241,12 +237,13 @@ def course_create(request):
         public_slug=data.get("public_slug", ""),
         description=data.get("description", ""),
     )
+    logger.info("Course %d created by user %s (%s)", c.pk, request.user.username, c.title)
     return JsonResponse(_serialize_course(c), status=201)
 
 
 # ── Bookings ─────────────────────────────────────────────
 
-def _serialize_booking(b):
+def _serialize_booking(b: VenueBooking) -> dict[str, Any]:
     payments = b.payments.all()
     return {
         "id": b.pk,
@@ -271,7 +268,7 @@ def _serialize_booking(b):
 
 
 @login_required(login_url="/django-admin/login/")
-def booking_list(request):
+def booking_list(request: HttpRequest) -> JsonResponse:
     qs = VenueBooking.objects.prefetch_related("payments").all()
     status = request.GET.get("status")
     if status:
@@ -283,13 +280,13 @@ def booking_list(request):
     if date_to:
         qs = qs.filter(event_date__lte=date_to)
     qs = qs.order_by("-created_at")
-    return JsonResponse([_serialize_booking(b) for b in qs], safe=False)
+    return _paginated_response(qs, request, _serialize_booking)
 
 
-@csrf_exempt
+@ensure_csrf_cookie
 @login_required(login_url="/django-admin/login/")
 @require_http_methods(["GET", "PUT"])
-def booking_detail(request, pk):
+def booking_detail(request: HttpRequest, pk: int) -> JsonResponse:
     try:
         b = VenueBooking.objects.prefetch_related("payments").get(pk=pk)
     except VenueBooking.DoesNotExist:
@@ -306,12 +303,13 @@ def booking_detail(request, pk):
             if fld in data:
                 setattr(b, fld, data[fld])
         b.save()
+        logger.info("Booking %d updated by user %s (status: %s)", pk, request.user.username, b.status)
         return JsonResponse(_serialize_booking(b))
 
 
 # ── Payments ─────────────────────────────────────────────
 
-def _serialize_payment(p):
+def _serialize_payment(p: Payment) -> dict[str, Any]:
     return {
         "id": p.pk,
         "reference": p.reference,
@@ -334,7 +332,7 @@ def _serialize_payment(p):
 
 
 @login_required(login_url="/django-admin/login/")
-def payment_list(request):
+def payment_list(request: HttpRequest) -> JsonResponse:
     qs = Payment.objects.select_related("provider").all()
     status = request.GET.get("status")
     if status:
@@ -349,13 +347,13 @@ def payment_list(request):
     if date_to:
         qs = qs.filter(created_at__lte=date_to)
     qs = qs.order_by("-created_at")
-    return JsonResponse([_serialize_payment(p) for p in qs], safe=False)
+    return _paginated_response(qs, request, _serialize_payment)
 
 
-@csrf_exempt
+@ensure_csrf_cookie
 @login_required(login_url="/django-admin/login/")
 @require_http_methods(["GET", "PUT"])
-def payment_detail(request, pk):
+def payment_detail(request: HttpRequest, pk: int) -> JsonResponse:
     try:
         p = Payment.objects.select_related("provider").get(pk=pk)
     except Payment.DoesNotExist:
@@ -373,12 +371,13 @@ def payment_detail(request, pk):
         if "provider_id" in data:
             p.provider_id = data["provider_id"]
         p.save()
+        logger.info("Payment %d updated by user %s (status: %s)", pk, request.user.username, p.status)
         return JsonResponse(_serialize_payment(p))
 
 
 # ── Contacts ─────────────────────────────────────────────
 
-def _serialize_contact(c):
+def _serialize_contact(c: ContactRequest) -> dict[str, Any]:
     return {
         "id": c.pk,
         "full_name": c.full_name,
@@ -392,19 +391,19 @@ def _serialize_contact(c):
 
 
 @login_required(login_url="/django-admin/login/")
-def contact_list(request):
+def contact_list(request: HttpRequest) -> JsonResponse:
     qs = ContactRequest.objects.all()
     processed = request.GET.get("processed")
     if processed is not None:
         qs = qs.filter(is_processed=processed.lower() in ("1", "true"))
     qs = qs.order_by("-created_at")
-    return JsonResponse([_serialize_contact(c) for c in qs], safe=False)
+    return _paginated_response(qs, request, _serialize_contact)
 
 
-@csrf_exempt
+@ensure_csrf_cookie
 @login_required(login_url="/django-admin/login/")
 @require_http_methods(["GET", "PUT"])
-def contact_detail(request, pk):
+def contact_detail(request: HttpRequest, pk: int) -> JsonResponse:
     try:
         c = ContactRequest.objects.get(pk=pk)
     except ContactRequest.DoesNotExist:
@@ -419,14 +418,15 @@ def contact_detail(request, pk):
             if fld in data:
                 setattr(c, fld, data[fld])
         c.save()
+        logger.info("Contact %d updated by user %s (processed: %s)", pk, request.user.username, c.is_processed)
         return JsonResponse(_serialize_contact(c))
 
 
 # ── GEIs ─────────────────────────────────────────────────
 
-def _serialize_gei(g, member_count=None):
+def _serialize_gei(g: GEI, member_count: int | None = None) -> dict[str, Any]:
     if member_count is None:
-        member_count = g.members.count()
+        member_count = getattr(g, 'member_count', g.members.count())
     return {
         "id": g.pk,
         "name": g.name,
@@ -439,7 +439,7 @@ def _serialize_gei(g, member_count=None):
 
 
 @login_required(login_url="/django-admin/login/")
-def gei_list(request):
+def gei_list(request: HttpRequest) -> JsonResponse:
     qs = GEI.objects.annotate(member_count=Count("members")).all()
     search = request.GET.get("search")
     if search:
@@ -448,24 +448,13 @@ def gei_list(request):
     if active is not None:
         qs = qs.filter(is_active=active.lower() in ("1", "true"))
     qs = qs.order_by("city", "name")
-    return JsonResponse([
-        {
-            "id": g.pk,
-            "name": g.name,
-            "city": g.city,
-            "coordinator": g.coordinator,
-            "is_active": g.is_active,
-            "member_count": g.member_count,
-            "created_at": g.created_at.isoformat(),
-        }
-        for g in qs
-    ], safe=False)
+    return _paginated_response(qs, request, _serialize_gei)
 
 
-@csrf_exempt
+@ensure_csrf_cookie
 @login_required(login_url="/django-admin/login/")
 @require_http_methods(["GET", "PUT", "DELETE"])
-def gei_detail(request, pk):
+def gei_detail(request: HttpRequest, pk: int) -> JsonResponse:
     try:
         g = GEI.objects.get(pk=pk)
     except GEI.DoesNotExist:
@@ -478,16 +467,17 @@ def gei_detail(request, pk):
             if fld in data:
                 setattr(g, fld, data[fld])
         g.save()
+        logger.info("GEI %d updated by user %s", pk, request.user.username)
         return JsonResponse(_serialize_gei(g))
     elif request.method == "DELETE":
+        logger.info("GEI %d deleted by user %s", pk, request.user.username)
         g.delete()
         return _ok()
 
 
-@csrf_exempt
 @login_required(login_url="/django-admin/login/")
 @require_http_methods(["POST"])
-def gei_create(request):
+def gei_create(request: HttpRequest) -> JsonResponse:
     data = _json_body(request)
     for f in ("name", "city"):
         if f not in data:
@@ -498,12 +488,13 @@ def gei_create(request):
         coordinator=data.get("coordinator", ""),
         is_active=data.get("is_active", True),
     )
+    logger.info("GEI %d created by user %s (%s - %s)", g.pk, request.user.username, g.name, g.city)
     return JsonResponse(_serialize_gei(g), status=201)
 
 
 # ── Providers ────────────────────────────────────────────
 
-def _serialize_provider(p):
+def _serialize_provider(p: PaymentProvider) -> dict[str, Any]:
     return {
         "id": p.pk,
         "name": p.name,
@@ -511,22 +502,21 @@ def _serialize_provider(p):
         "is_active": p.is_active,
         "instructions": p.instructions,
         "checkout_url": p.checkout_url,
-        "api_public_key": p.api_public_key,
         "sort_order": p.sort_order,
         "created_at": p.created_at.isoformat(),
     }
 
 
 @login_required(login_url="/django-admin/login/")
-def provider_list(request):
+def provider_list(request: HttpRequest) -> JsonResponse:
     qs = PaymentProvider.objects.all().order_by("sort_order", "name")
-    return JsonResponse([_serialize_provider(p) for p in qs], safe=False)
+    return _paginated_response(qs, request, _serialize_provider)
 
 
-@csrf_exempt
+@ensure_csrf_cookie
 @login_required(login_url="/django-admin/login/")
 @require_http_methods(["GET", "PUT", "DELETE"])
-def provider_detail(request, pk):
+def provider_detail(request: HttpRequest, pk: int) -> JsonResponse:
     try:
         p = PaymentProvider.objects.get(pk=pk)
     except PaymentProvider.DoesNotExist:
@@ -540,16 +530,17 @@ def provider_detail(request, pk):
             if fld in data:
                 setattr(p, fld, data[fld])
         p.save()
+        logger.info("Provider %d updated by user %s", pk, request.user.username)
         return JsonResponse(_serialize_provider(p))
     elif request.method == "DELETE":
+        logger.info("Provider %d deleted by user %s", pk, request.user.username)
         p.delete()
         return _ok()
 
 
-@csrf_exempt
 @login_required(login_url="/django-admin/login/")
 @require_http_methods(["POST"])
-def provider_create(request):
+def provider_create(request: HttpRequest) -> JsonResponse:
     data = _json_body(request)
     if "name" not in data:
         return _error("Missing field: name")
@@ -562,12 +553,13 @@ def provider_create(request):
         api_public_key=data.get("api_public_key", ""),
         sort_order=data.get("sort_order", 0),
     )
+    logger.info("Provider %d created by user %s (%s)", p.pk, request.user.username, p.name)
     return JsonResponse(_serialize_provider(p), status=201)
 
 
 # ── Enrollments ──────────────────────────────────────────
 
-def _serialize_enrollment(e):
+def _serialize_enrollment(e: Enrollment) -> dict[str, Any]:
     return {
         "id": e.pk,
         "member": {
@@ -587,19 +579,19 @@ def _serialize_enrollment(e):
 
 
 @login_required(login_url="/django-admin/login/")
-def enrollment_list(request):
+def enrollment_list(request: HttpRequest) -> JsonResponse:
     qs = Enrollment.objects.select_related("member", "course").all()
     status = request.GET.get("status")
     if status:
         qs = qs.filter(status=status)
     qs = qs.order_by("-created_at")
-    return JsonResponse([_serialize_enrollment(e) for e in qs], safe=False)
+    return _paginated_response(qs, request, _serialize_enrollment)
 
 
-@csrf_exempt
+@ensure_csrf_cookie
 @login_required(login_url="/django-admin/login/")
 @require_http_methods(["GET", "PUT"])
-def enrollment_detail(request, pk):
+def enrollment_detail(request: HttpRequest, pk: int) -> JsonResponse:
     try:
         e = Enrollment.objects.select_related("member", "course").get(pk=pk)
     except Enrollment.DoesNotExist:
@@ -611,24 +603,30 @@ def enrollment_detail(request, pk):
         if "status" in data:
             e.status = data["status"]
         e.save()
+        logger.info("Enrollment %d updated by user %s (status: %s)", pk, request.user.username, e.status)
         return JsonResponse(_serialize_enrollment(e))
 
 
 # ── Summary ──────────────────────────────────────────────
 
 @login_required(login_url="/django-admin/login/")
-def dashboard_summary(request):
-    return JsonResponse(get_dashboard_summary())
+def dashboard_summary(request: HttpRequest) -> JsonResponse:
+    return JsonResponse(get_dashboard_summary(request))
 
 
-def get_dashboard_summary():
+def get_dashboard_summary(request: HttpRequest | None = None) -> dict[str, Any]:
+    if request and request.GET.get("refresh"):
+        cache.delete("dashboard_summary")
+    cached = cache.get("dashboard_summary")
+    if cached is not None:
+        return cached
     savings = Member.objects.aggregate(total=Sum("monthly_saving_htg"))["total"] or 0
     seven_days_ago = timezone.now() - timedelta(days=7)
     recent_bookings = VenueBooking.objects.filter(created_at__gte=seven_days_ago).count()
     recent_payments_qs = Payment.objects.filter(created_at__gte=seven_days_ago)
     recent_payments_count = recent_payments_qs.count()
     recent_payments_sum = recent_payments_qs.aggregate(total=Sum("amount_htg"))["total"] or 0
-    return {
+    result = {
         "active_members": Member.objects.filter(status=Member.Status.ACTIVE).count(),
         "active_gei": GEI.objects.filter(is_active=True).count(),
         "active_courses": Course.objects.filter(is_active=True).count(),
@@ -645,11 +643,13 @@ def get_dashboard_summary():
         "recent_payments_count": recent_payments_count,
         "recent_payments_sum": recent_payments_sum,
     }
+    cache.set("dashboard_summary", result, 300)
+    return result
 
 
 # ── Notifications ────────────────────────────────────────
 
-def _serialize_notification(n):
+def _serialize_notification(n: AdminNotification) -> dict[str, Any]:
     return {
         "id": n.pk,
         "message": n.message,
@@ -661,14 +661,14 @@ def _serialize_notification(n):
 
 
 @login_required(login_url="/django-admin/login/")
-def notification_list(request):
+def notification_list(request: HttpRequest) -> JsonResponse:
     qs = AdminNotification.objects.all()
     qs = qs.order_by("-is_read", "-created_at")[:20]
     return JsonResponse([_serialize_notification(n) for n in qs], safe=False)
 
 
 @login_required(login_url="/django-admin/login/")
-def notification_check(request):
+def notification_check(request: HttpRequest) -> JsonResponse:
     since = request.GET.get("since")
     qs = AdminNotification.objects.all()
     if since:
@@ -689,10 +689,9 @@ def notification_check(request):
     })
 
 
-@csrf_exempt
 @login_required(login_url="/django-admin/login/")
 @require_http_methods(["POST"])
-def notification_read(request, pk):
+def notification_read(request: HttpRequest, pk: int) -> JsonResponse:
     try:
         n = AdminNotification.objects.get(pk=pk)
     except AdminNotification.DoesNotExist:
@@ -702,9 +701,49 @@ def notification_read(request, pk):
     return _ok()
 
 
-@csrf_exempt
 @login_required(login_url="/django-admin/login/")
 @require_http_methods(["POST"])
-def notification_read_all(request):
+def notification_read_all(request: HttpRequest) -> JsonResponse:
     AdminNotification.objects.filter(is_read=False).update(is_read=True)
     return _ok()
+
+
+# ── Export CSV ───────────────────────────────────────────
+
+ALLOWED_EXPORT_MODELS = {
+    "members": Member,
+    "courses": Course,
+    "payments": Payment,
+    "bookings": VenueBooking,
+    "contacts": ContactRequest,
+    "geis": GEI,
+    "providers": PaymentProvider,
+    "enrollments": Enrollment,
+}
+
+
+def _csv_stream(queryset: QuerySet, fields: list[str]) -> Generator[str, None, None]:
+    import csv, io
+    buffer = io.StringIO()
+    writer = csv.writer(buffer)
+    writer.writerow(fields)
+    yield buffer.getvalue()
+    buffer.seek(0)
+    buffer.truncate(0)
+    for obj in queryset.iterator():
+        writer.writerow([getattr(obj, f, "") for f in fields])
+        yield buffer.getvalue()
+        buffer.seek(0)
+        buffer.truncate(0)
+
+
+@login_required(login_url="/django-admin/login/")
+def export_csv(request: HttpRequest, model_name: str) -> HttpResponse:
+    if model_name not in ALLOWED_EXPORT_MODELS:
+        return _error(f"Modèle non autorisé: {model_name}", 404)
+    model_class = ALLOWED_EXPORT_MODELS[model_name]
+    qs = model_class.objects.all()
+    fields = [f.name for f in model_class._meta.fields]
+    response = StreamingHttpResponse(_csv_stream(qs, fields), content_type="text/csv")
+    response["Content-Disposition"] = f'attachment; filename="{model_name}.csv"'
+    return response

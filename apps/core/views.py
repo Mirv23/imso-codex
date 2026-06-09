@@ -1,6 +1,12 @@
-import json
+from __future__ import annotations
 
-from django.http import JsonResponse, HttpResponseBadRequest
+import json
+import logging
+from typing import Any
+
+from django_ratelimit.decorators import ratelimit
+from django.http import HttpRequest, JsonResponse, HttpResponseBadRequest
+from django.utils.decorators import method_decorator
 from django.shortcuts import get_object_or_404, render
 from django.utils import timezone
 from django.views import View
@@ -16,11 +22,13 @@ from apps.adminpanel.models import (
 )
 from .forms import ContactRequestForm, CourseEnrollmentRequestForm, VenueBookingRequestForm
 
+logger = logging.getLogger(__name__)
+
 
 class HomeView(TemplateView):
     template_name = "core/index.html"
 
-    def get_context_data(self, **kwargs):
+    def get_context_data(self, **kwargs: Any) -> dict[str, Any]:
         context = super().get_context_data(**kwargs)
         context["active_courses"] = Course.objects.filter(is_active=True).only(
             "id", "title", "category", "city", "instructor", "price_htg", "capacity", "description", "public_slug"
@@ -31,12 +39,43 @@ class HomeView(TemplateView):
         return context
 
 
-def healthcheck(_request):
-    return JsonResponse({"status": "ok", "service": "imso"})
+def healthcheck(_request: HttpRequest) -> JsonResponse:
+    from django.db import connection
+    from django.db.migrations.executor import MigrationExecutor
+    from django.utils import timezone
+
+    result = {
+        "service": "imso",
+        "database": "unknown",
+        "migrations": "unknown",
+        "timestamp": timezone.now().isoformat(),
+        "version": "1.0.0",
+    }
+
+    try:
+        connection.ensure_connection()
+        result["database"] = "connected"
+    except Exception as exc:
+        logger.warning("Healthcheck: DB unreachable — %s", exc)
+        result["database"] = "disconnected"
+        result["status"] = "error"
+        result["timestamp"] = timezone.now().isoformat()
+        return JsonResponse(result)
+
+    try:
+        executor = MigrationExecutor(connection)
+        plan = executor.migration_plan(executor.loader.graph.leaf_nodes())
+        result["migrations"] = "up_to_date" if not plan else "pending"
+    except Exception:
+        result["migrations"] = "unknown"
+
+    result["status"] = "degraded" if result["migrations"] == "pending" else "ok"
+    return JsonResponse(result)
 
 
 class ContactRequestCreateView(View):
-    def post(self, request):
+    @method_decorator(ratelimit(key='ip', rate='10/m', method='POST', block=True))
+    def post(self, request: HttpRequest) -> JsonResponse:
         payload = request.POST
         if request.content_type == "application/json":
             try:
@@ -53,7 +92,8 @@ class ContactRequestCreateView(View):
 
 
 class VenueBookingCreateView(View):
-    def post(self, request):
+    @method_decorator(ratelimit(key='ip', rate='10/m', method='POST', block=True))
+    def post(self, request: HttpRequest) -> JsonResponse:
         payload = request.POST
         if request.content_type == "application/json":
             try:
@@ -74,7 +114,8 @@ class VenueBookingCreateView(View):
 
 
 class CourseEnrollmentCreateView(View):
-    def post(self, request):
+    @method_decorator(ratelimit(key='ip', rate='10/m', method='POST', block=True))
+    def post(self, request: HttpRequest) -> JsonResponse:
         payload = request.POST
         if request.content_type == "application/json":
             try:
@@ -114,7 +155,7 @@ from django.core.serializers.json import DjangoJSONEncoder
 class PaymentPageView(TemplateView):
     template_name = "core/paiement.html"
 
-    def get_context_data(self, **kwargs):
+    def get_context_data(self, **kwargs: Any) -> dict[str, Any]:
         context = super().get_context_data(**kwargs)
         providers = PaymentProvider.objects.filter(is_active=True).only(
             "id", "name", "provider_type", "instructions", "checkout_url", "sort_order"
@@ -164,7 +205,8 @@ class PaymentPageView(TemplateView):
 
 
 class PaymentProcessView(View):
-    def post(self, request, type, id):
+    @method_decorator(ratelimit(key='ip', rate='10/m', method='POST', block=True))
+    def post(self, request: HttpRequest, type: str, id: int) -> JsonResponse:
         # Handle both JSON and multipart form data
         if request.content_type and "multipart/form-data" in request.content_type:
             data = request.POST.dict()
@@ -268,7 +310,7 @@ class PaymentProcessView(View):
 
 
 class PaymentConfirmationView(View):
-    def get(self, request, reference):
+    def get(self, request: HttpRequest, reference: str) -> JsonResponse:
         payment = get_object_or_404(Payment, reference=reference)
         return JsonResponse({
             "ok": True,
@@ -280,14 +322,18 @@ class PaymentConfirmationView(View):
         })
 
 
-from django.views.decorators.csrf import csrf_exempt
 from django.views.decorators.http import require_http_methods
+import os
 
 
-@csrf_exempt
 @require_http_methods(["POST"])
-def confirm_manual_payment(request):
+def confirm_manual_payment(request: HttpRequest) -> JsonResponse:
     """Confirms a manual payment with transaction ID and optional screenshot."""
+    api_key = request.META.get("HTTP_X_API_KEY")
+    expected_key = os.environ.get("PAYMENT_CONFIRM_KEY")
+    if not api_key or api_key != expected_key:
+        return JsonResponse({"ok": False, "error": "Clé API invalide"}, status=403)
+
     try:
         data = json.loads(request.body.decode("utf-8"))
     except json.JSONDecodeError:
@@ -299,6 +345,14 @@ def confirm_manual_payment(request):
         return JsonResponse({"ok": False, "error": "Référence de paiement requise"}, status=400)
 
     payment = get_object_or_404(Payment, reference=reference)
+
+    if payment.external_reference:
+        logger.info("Payment %s already confirmed, skipping", reference)
+        return JsonResponse({
+            "ok": True,
+            "reference": payment.reference,
+            "message": "Paiement déjà confirmé.",
+        })
 
     transaction_id = data.get("transaction_id", "")
     screenshot_file = request.FILES.get("screenshot")
@@ -313,6 +367,8 @@ def confirm_manual_payment(request):
 
     payment.notes = notes
     payment.external_reference = transaction_id or payment.external_reference
+    if screenshot_file:
+        payment.screenshot.save(screenshot_file.name, screenshot_file)
     payment.save(update_fields=["notes", "external_reference"])
 
     return JsonResponse({
@@ -322,14 +378,14 @@ def confirm_manual_payment(request):
     })
 
 
-def get_active_providers(request):
+def get_active_providers(request: HttpRequest) -> JsonResponse:
     providers = PaymentProvider.objects.filter(is_active=True).values(
         "id", "name", "provider_type", "instructions", "checkout_url", "sort_order"
     )
     return JsonResponse(list(providers), safe=False)
 
 
-def get_active_courses(request):
+def get_active_courses(request: HttpRequest) -> JsonResponse:
     courses = Course.objects.filter(is_active=True).values(
         "id", "title", "category", "city", "instructor", "price_htg", "capacity", "description", "public_slug"
     )

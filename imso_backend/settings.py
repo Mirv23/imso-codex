@@ -1,12 +1,20 @@
 from pathlib import Path
 import os
 
+from django.core.exceptions import ImproperlyConfigured
 import dj_database_url
+from dotenv import load_dotenv
+import sentry_sdk
+from sentry_sdk.integrations.django import DjangoIntegration
 
 
 BASE_DIR = Path(__file__).resolve().parent.parent
 
-SECRET_KEY = os.environ.get("DJANGO_SECRET_KEY", "dev-only-change-me")
+load_dotenv(BASE_DIR / ".env")
+
+SECRET_KEY = os.environ.get("DJANGO_SECRET_KEY")
+if not SECRET_KEY:
+    raise ImproperlyConfigured("DJANGO_SECRET_KEY must be set")
 DEBUG = os.environ.get("DJANGO_DEBUG", "False").lower() == "true"
 
 ALLOWED_HOSTS = [
@@ -18,6 +26,16 @@ ALLOWED_HOSTS = [
     if host.strip()
 ]
 
+SENTRY_DSN = os.environ.get("SENTRY_DSN", "")
+if SENTRY_DSN:
+    sentry_sdk.init(
+        dsn=SENTRY_DSN,
+        integrations=[DjangoIntegration()],
+        traces_sample_rate=float(os.environ.get("SENTRY_TRACES_SAMPLE_RATE", "0.1")),
+        send_default_pii=False,
+        environment=os.environ.get("DJANGO_ENV", "production"),
+    )
+
 INSTALLED_APPS = [
     "django.contrib.admin",
     "django.contrib.auth",
@@ -26,14 +44,20 @@ INSTALLED_APPS = [
     "django.contrib.messages",
     "django.contrib.staticfiles",
     "corsheaders",
+    "rest_framework",
     "apps.core",
     "apps.adminpanel",
+    "drf_spectacular",
 ]
+
+if "REDIS_URL" in os.environ and os.environ["REDIS_URL"]:
+    INSTALLED_APPS.append("django_redis")
 
 MIDDLEWARE = [
     "django.middleware.security.SecurityMiddleware",
     "whitenoise.middleware.WhiteNoiseMiddleware",
     "corsheaders.middleware.CorsMiddleware",
+    "apps.core.middleware.CORSErrorMiddleware",
     "django.contrib.sessions.middleware.SessionMiddleware",
     "django.middleware.common.CommonMiddleware",
     "django.middleware.csrf.CsrfViewMiddleware",
@@ -86,12 +110,15 @@ STATIC_ROOT = BASE_DIR / "staticfiles"
 STATICFILES_DIRS = [BASE_DIR / "static"]
 STORAGES = {
     "staticfiles": {
-        "BACKEND": "whitenoise.storage.CompressedStaticFilesStorage",
+        "BACKEND": "whitenoise.storage.CompressedManifestStaticFilesStorage",
     }
 }
 
 DEFAULT_AUTO_FIELD = "django.db.models.BigAutoField"
 
+# Ces variables doivent etre configurees en production via les variables d'environnement
+# DJANGO_CSRF_TRUSTED_ORIGINS et DJANGO_CORS_ALLOWED_ORIGINS
+# Exemple: https://imsohaiti.com,https://www.imsohaiti.com
 CSRF_TRUSTED_ORIGINS = [
     origin.strip()
     for origin in os.environ.get("DJANGO_CSRF_TRUSTED_ORIGINS", "").split(",")
@@ -127,4 +154,55 @@ LOGGING = {
     },
 }
 
+# ── Email ────────────────────────────────────────────────
+EMAIL_BACKEND = os.environ.get("DJANGO_EMAIL_BACKEND", "django.core.mail.backends.console.EmailBackend")
+EMAIL_HOST = os.environ.get("DJANGO_EMAIL_HOST", "")
+EMAIL_PORT = int(os.environ.get("DJANGO_EMAIL_PORT", "587"))
+EMAIL_USE_TLS = os.environ.get("DJANGO_EMAIL_USE_TLS", "True").lower() == "true"
+EMAIL_HOST_USER = os.environ.get("DJANGO_EMAIL_USER", "")
+EMAIL_HOST_PASSWORD = os.environ.get("DJANGO_EMAIL_PASSWORD", "")
+DEFAULT_FROM_EMAIL = os.environ.get("DJANGO_DEFAULT_FROM_EMAIL", "noreply@imsohaiti.com")
+ADMIN_EMAIL = os.environ.get("ADMIN_EMAIL", "admin@imsohaiti.com")
+
+# ── Cache ────────────────────────────────────────────────
+CACHE_MIDDLEWARE_SECONDS = 600
+if "REDIS_URL" in os.environ and os.environ["REDIS_URL"]:
+    CACHES = {
+        "default": {
+            "BACKEND": "django_redis.cache.RedisCache",
+            "LOCATION": os.environ["REDIS_URL"],
+            "OPTIONS": {
+                "CLIENT_CLASS": "django_redis.client.DefaultClient",
+            },
+            "KEY_PREFIX": "imso",
+        }
+    }
+    RATELIMIT_USE_CACHE = "default"
+else:
+    CACHES = {
+        "default": {
+            "BACKEND": "django.core.cache.backends.locmem.LocMemCache",
+            "LOCATION": "imso-cache",
+        }
+    }
+
+# ── File Storage ─────────────────────────────────────────
+DEFAULT_FILE_STORAGE = os.environ.get(
+    "DJANGO_FILE_STORAGE",
+    "django.core.files.storage.FileSystemStorage",
+)
+MEDIA_URL = "/media/"
+MEDIA_ROOT = BASE_DIR / "media"
+# If DJANGO_S3_BUCKET is defined, use S3Boto3Storage:
+# DEFAULT_FILE_STORAGE = "storages.backends.s3boto3.S3Boto3Storage"
+# Requires: pip install django-storages[boto3]
+# Then set AWS_ACCESS_KEY_ID, AWS_SECRET_ACCESS_KEY, AWS_STORAGE_BUCKET_NAME, etc.
+
 LOGIN_URL = "/django-admin/login/"
+
+SPECTACULAR_SETTINGS = {
+    "TITLE": "IMSO Haiti API",
+    "DESCRIPTION": "API REST pour la plateforme IMSO (Impact Mutuelle de Solidarité)",
+    "VERSION": "1.0.0",
+    "SERVE_INCLUDE_SCHEMA": False,
+}

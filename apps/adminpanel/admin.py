@@ -1,4 +1,10 @@
+from __future__ import annotations
+
+from typing import Any
+
 from django.contrib import admin
+from django.db.models.query import QuerySet
+from django.http import HttpRequest
 from django.utils.html import format_html
 
 from .models import (
@@ -28,17 +34,17 @@ class GEIAdmin(admin.ModelAdmin):
     list_editable = ("is_active",)
     actions = ["activate", "deactivate"]
 
-    def member_count(self, obj):
+    def member_count(self, obj: GEI) -> int:
         return obj.members.count()
 
     member_count.short_description = "Membres"
 
-    def activate(self, request, queryset):
+    def activate(self, request: HttpRequest, queryset: QuerySet) -> None:
         queryset.update(is_active=True)
 
     activate.short_description = "Activer les GEI sélectionnés"
 
-    def deactivate(self, request, queryset):
+    def deactivate(self, request: HttpRequest, queryset: QuerySet) -> None:
         queryset.update(is_active=False)
 
     deactivate.short_description = "Désactiver les GEI sélectionnés"
@@ -62,12 +68,12 @@ class MemberAdmin(admin.ModelAdmin):
     date_hierarchy = "joined_at"
     actions = ["mark_active", "mark_alumni"]
 
-    def email_display(self, obj):
+    def email_display(self, obj: Member) -> str:
         return obj.email or "—"
 
     email_display.short_description = "Email"
 
-    def status_colored(self, obj):
+    def status_colored(self, obj: Member) -> str:
         colors = {
             "prospect": "amber",
             "active": "green",
@@ -81,12 +87,12 @@ class MemberAdmin(admin.ModelAdmin):
 
     status_colored.short_description = "Statut"
 
-    def mark_active(self, request, queryset):
+    def mark_active(self, request: HttpRequest, queryset: QuerySet) -> None:
         queryset.update(status=Member.Status.ACTIVE)
 
     mark_active.short_description = "Marquer comme Actif"
 
-    def mark_alumni(self, request, queryset):
+    def mark_alumni(self, request: HttpRequest, queryset: QuerySet) -> None:
         queryset.update(status=Member.Status.ALUMNI)
 
     mark_alumni.short_description = "Marquer comme Ancien membre"
@@ -110,24 +116,24 @@ class CourseAdmin(admin.ModelAdmin):
     prepopulated_fields = {"public_slug": ("title",)}
     actions = ["activate", "deactivate"]
 
-    def enrolled_count(self, obj):
+    def enrolled_count(self, obj: Course) -> int:
         return obj.enrollments.count()
 
     enrolled_count.short_description = "Inscrits"
 
-    def is_active_colored(self, obj):
+    def is_active_colored(self, obj: Course) -> str:
         if obj.is_active:
             return format_html('<span class="pill pill-green">Actif</span>')
         return format_html('<span class="pill pill-gray">Inactif</span>')
 
     is_active_colored.short_description = "Statut"
 
-    def activate(self, request, queryset):
+    def activate(self, request: HttpRequest, queryset: QuerySet) -> None:
         queryset.update(is_active=True)
 
     activate.short_description = "Activer les cours sélectionnés"
 
-    def deactivate(self, request, queryset):
+    def deactivate(self, request: HttpRequest, queryset: QuerySet) -> None:
         queryset.update(is_active=False)
 
     deactivate.short_description = "Désactiver les cours sélectionnés"
@@ -141,7 +147,7 @@ class EnrollmentAdmin(admin.ModelAdmin):
     date_hierarchy = "created_at"
     actions = ["confirm", "cancel"]
 
-    def status_colored(self, obj):
+    def status_colored(self, obj: Enrollment) -> str:
         colors = {
             "pending": "amber",
             "confirmed": "green",
@@ -154,12 +160,12 @@ class EnrollmentAdmin(admin.ModelAdmin):
 
     status_colored.short_description = "Statut"
 
-    def confirm(self, request, queryset):
+    def confirm(self, request: HttpRequest, queryset: QuerySet) -> None:
         queryset.update(status=Enrollment.Status.CONFIRMED)
 
     confirm.short_description = "Confirmer les inscriptions sélectionnées"
 
-    def cancel(self, request, queryset):
+    def cancel(self, request: HttpRequest, queryset: QuerySet) -> None:
         queryset.update(status=Enrollment.Status.CANCELLED)
 
     cancel.short_description = "Annuler les inscriptions sélectionnées"
@@ -191,7 +197,7 @@ class VenueBookingAdmin(admin.ModelAdmin):
     actions = ["mark_payment_pending", "confirm_booking", "cancel_booking"]
     inlines = [PaymentInline]
 
-    def status_colored(self, obj):
+    def status_colored(self, obj: VenueBooking) -> str:
         colors = {
             "requested": "amber",
             "payment_pending": "blue",
@@ -206,7 +212,7 @@ class VenueBookingAdmin(admin.ModelAdmin):
 
     status_colored.short_description = "Statut"
 
-    def payment_status(self, obj):
+    def payment_status(self, obj: VenueBooking) -> str:
         payments = obj.payments.all()
         if not payments:
             return format_html('<span class="pill pill-gray">Aucun</span>')
@@ -220,17 +226,17 @@ class VenueBookingAdmin(admin.ModelAdmin):
 
     payment_status.short_description = "Paiement"
 
-    def mark_payment_pending(self, request, queryset):
+    def mark_payment_pending(self, request: HttpRequest, queryset: QuerySet) -> None:
         queryset.update(status=VenueBooking.Status.PAYMENT_PENDING)
 
     mark_payment_pending.short_description = "Marquer 'Paiement attendu'"
 
-    def confirm_booking(self, request, queryset):
+    def confirm_booking(self, request: HttpRequest, queryset: QuerySet) -> None:
         queryset.update(status=VenueBooking.Status.CONFIRMED)
 
     confirm_booking.short_description = "Confirmer les réservations"
 
-    def cancel_booking(self, request, queryset):
+    def cancel_booking(self, request: HttpRequest, queryset: QuerySet) -> None:
         queryset.update(status=VenueBooking.Status.CANCELLED)
 
     cancel_booking.short_description = "Annuler les réservations"
@@ -276,7 +282,7 @@ class PaymentProviderAdmin(admin.ModelAdmin):
         ),
     )
 
-    def provider_type_colored(self, obj):
+    def provider_type_colored(self, obj: PaymentProvider) -> str:
         colors = {
             "manual": "gray",
             "moncash": "green",
@@ -293,14 +299,14 @@ class PaymentProviderAdmin(admin.ModelAdmin):
 
     provider_type_colored.short_description = "Type"
 
-    def is_active_colored(self, obj):
+    def is_active_colored(self, obj: PaymentProvider) -> str:
         if obj.is_active:
             return format_html('<span class="pill pill-green">Actif</span>')
         return format_html('<span class="pill pill-gray">Inactif</span>')
 
     is_active_colored.short_description = "Statut"
 
-    def payment_count(self, obj):
+    def payment_count(self, obj: PaymentProvider) -> int:
         return obj.payments.count()
 
     payment_count.short_description = "Paiements"
@@ -385,7 +391,7 @@ class PaymentAdmin(admin.ModelAdmin):
         ),
     )
 
-    def purpose_colored(self, obj):
+    def purpose_colored(self, obj: Payment) -> str:
         colors = {
             "venue": "blue",
             "course": "green",
@@ -399,7 +405,7 @@ class PaymentAdmin(admin.ModelAdmin):
 
     purpose_colored.short_description = "Motif"
 
-    def status_colored(self, obj):
+    def status_colored(self, obj: Payment) -> str:
         colors = {
             "pending": "amber",
             "paid": "green",
@@ -414,7 +420,7 @@ class PaymentAdmin(admin.ModelAdmin):
 
     status_colored.short_description = "Statut"
 
-    def mark_paid(self, request, queryset):
+    def mark_paid(self, request: HttpRequest, queryset: QuerySet) -> None:
         from django.utils import timezone
 
         for payment in queryset:
@@ -424,12 +430,12 @@ class PaymentAdmin(admin.ModelAdmin):
 
     mark_paid.short_description = "Marquer comme payé"
 
-    def mark_failed(self, request, queryset):
+    def mark_failed(self, request: HttpRequest, queryset: QuerySet) -> None:
         queryset.update(status=Payment.Status.FAILED)
 
     mark_failed.short_description = "Marquer comme échoué"
 
-    def mark_refunded(self, request, queryset):
+    def mark_refunded(self, request: HttpRequest, queryset: QuerySet) -> None:
         queryset.update(status=Payment.Status.REFUNDED)
 
     mark_refunded.short_description = "Marquer comme remboursé"
@@ -449,7 +455,7 @@ class ContactRequestAdmin(admin.ModelAdmin):
     date_hierarchy = "created_at"
     actions = ["mark_processed", "mark_unprocessed"]
 
-    def subject_colored(self, obj):
+    def subject_colored(self, obj: ContactRequest) -> str:
         colors = {
             "membership": "green",
             "course": "blue",
@@ -464,19 +470,19 @@ class ContactRequestAdmin(admin.ModelAdmin):
 
     subject_colored.short_description = "Sujet"
 
-    def is_processed_colored(self, obj):
+    def is_processed_colored(self, obj: ContactRequest) -> str:
         if obj.is_processed:
             return format_html('<span class="pill pill-green">Traité</span>')
         return format_html('<span class="pill pill-amber">En attente</span>')
 
     is_processed_colored.short_description = "Statut"
 
-    def mark_processed(self, request, queryset):
+    def mark_processed(self, request: HttpRequest, queryset: QuerySet) -> None:
         queryset.update(is_processed=True)
 
     mark_processed.short_description = "Marquer comme traité"
 
-    def mark_unprocessed(self, request, queryset):
+    def mark_unprocessed(self, request: HttpRequest, queryset: QuerySet) -> None:
         queryset.update(is_processed=False)
 
     mark_unprocessed.short_description = "Marquer comme non traité"

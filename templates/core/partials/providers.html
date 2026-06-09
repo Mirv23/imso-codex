@@ -1,0 +1,100 @@
+<!-- Espace -->
+<section class="section espace" id="espace">
+  <div class="container">
+    <div class="espace__head-row reveal">
+      <div>
+        <span class="label"><span class="label__bullet"></span>Location d'espace</span>
+        <h2 class="section__title" style="margin-bottom:14px;">Un espace pensé pour vos événements.</h2>
+        <p class="section__intro">
+          IMSO met à disposition une salle modulable au cœur de Port-au-Prince :
+          conférences, séminaires, formations, anniversaires, mariages… Réservez
+          directement en consultant les disponibilités ci-dessous.
+        </p>
+        <div class="espace__pills">
+          <span class="espace__pill">Conférence</span>
+          <span class="espace__pill">Séminaire</span>
+          <span class="espace__pill">Formation</span>
+          <span class="espace__pill">Anniversaire</span>
+          <span class="espace__pill">Mariage</span>
+          <span class="espace__pill">Réunion privée</span>
+        </div>
+      </div>
+      <div class="espace__capacity">
+        <div class="espace__capacity-item">
+          <div class="espace__capacity-num">60<small>pers.</small></div>
+          <div class="espace__capacity-label">Sans tables</div>
+          <div class="espace__capacity-sub">Format conférence, cérémonie, cocktail debout.</div>
+        </div>
+        <div class="espace__capacity-item">
+          <div class="espace__capacity-num">40<small>pers.</small></div>
+          <div class="espace__capacity-label">Avec tables</div>
+          <div class="espace__capacity-sub">Format banquet, atelier, repas assis.</div>
+        </div>
+      </div>
+    </div>
+
+    <div class="espace__gallery reveal">
+      <div class="gphoto img-wrap">
+        <div class="img-fallback">Salle principale</div>
+        <img src="https://images.unsplash.com/photo-1505373877841-8d25f7d46678?w=900&amp;auto=format&amp;q=80" alt="Salle de conférence aménagée" loading="lazy" onload="this.parentElement.classList.add('img-loaded')">
+        <span class="gphoto__caption">Salle principale</span>
+      </div>
+      <div class="gphoto img-wrap">
+        <div class="img-fallback">Conférence</div>
+        <img src="https://images.unsplash.com/photo-1540575467063-178a50c2df87?w=600&amp;auto=format&amp;q=80" alt="Configuration conférence" loading="lazy" onload="this.parentElement.classList.add('img-loaded')">
+        <span class="gphoto__caption">Conférence</span>
+      </div>
+      <div class="gphoto img-wrap">
+        <div class="img-fallback">Banquet</div>
+        <img src="{% static 'website/assets/5adc936b-1c3b-473d-835e-523c57240fa4.jpg' %}" alt="Configuration banquet" loading="lazy" onload="this.parentElement.classList.add('img-loaded')">
+        <span class="gphoto__caption">Banquet</span>
+      </div>
+      <div class="gphoto img-wrap">
+        <div class="img-fallback">Cérémonie</div>
+        <img src="https://images.unsplash.com/photo-1511795409834-ef04bbd61622?w=600&amp;auto=format&amp;q=80" alt="Décoration de cérémonie" loading="lazy" onload="this.parentElement.classList.add('img-loaded')">
+        <span class="gphoto__caption">Cérémonie</span>
+      </div>
+    </div>
+
+    <div class="booking reveal" id="booking">
+      <div class="booking__cal">
+        <div class="booking__head">
+          <div>
+            <span class="label" style="margin-bottom:8px;"><span class="label__bullet"></span>Calendrier</span>
+            <div class="booking__month" id="calMonth">mai 2026</div>
+          </div>
+          <div class="booking__nav">
+            <button id="calPrev" aria-label="Mois précédent">
+              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round"><path d="M15 18l-6-6 6-6"></path></svg>
+            </button>
+            <button id="calNext" aria-label="Mois suivant">
+              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round"><path d="M9 6l6 6-6 6"></path></svg>
+            </button>
+          </div>
+        </div>
+        <div class="cal__weekdays">
+          <span>Lun</span><span>Mar</span><span>Mer</span><span>Jeu</span><span>Ven</span><span>Sam</span><span>Dim</span>
+        </div>
+        <div class="cal__grid" id="calGrid"></div>
+        <div class="cal__legend">
+          <span><i style="background:var(--accent)"></i>Disponible</span>
+          <span><i style="background:var(--highlight)"></i>Partiel</span>
+          <span><i style="background:#d4d7d1"></i>Complet</span>
+        </div>
+      </div>
+      <div class="booking__slots">
+        <div class="slots__head">
+          <span class="label" style="margin-bottom:8px;"><span class="label__bullet"></span>Créneaux</span>
+          <h3 class="slots__date" id="slotsDate">Sélectionnez une date</h3>
+          <p class="slots__sub" id="slotsSub">Cliquez un jour disponible pour voir les plages horaires.</p>
+        </div>
+        <div class="slots__list" id="slotsList">
+          <div class="slots__empty">
+            <strong>Aucune date sélectionnée</strong>
+            Choisissez un jour dans le calendrier pour afficher les créneaux disponibles&nbsp;: matinée, après-midi ou soirée.
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+</section>

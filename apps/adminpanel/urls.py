@@ -1,4 +1,4 @@
-from django.urls import path
+from django.urls import include, path
 
 from .views import (
     DashboardView,
@@ -12,6 +12,7 @@ from .views import (
     dashboard_summary,
     enrollment_detail,
     enrollment_list,
+    export_csv,
     gei_create,
     gei_detail,
     gei_list,
@@ -33,27 +34,58 @@ app_name = "adminpanel"
 urlpatterns = [
     path("", DashboardView.as_view(), name="dashboard"),
     path("api/summary/", dashboard_summary, name="summary"),
+    path("api/v1/summary/", dashboard_summary, name="summary-v1"),
     path("api/members/", member_list, name="member-list"),
+    path("api/v1/members/", member_list, name="member-list-v1"),
     path("api/members/<int:pk>/", member_detail, name="member-detail"),
+    path("api/v1/members/<int:pk>/", member_detail, name="member-detail-v1"),
     path("api/courses/", course_list, name="course-list"),
+    path("api/v1/courses/", course_list, name="course-list-v1"),
     path("api/courses/create/", course_create, name="course-create"),
+    path("api/v1/courses/create/", course_create, name="course-create-v1"),
     path("api/courses/<int:pk>/", course_detail, name="course-detail"),
+    path("api/v1/courses/<int:pk>/", course_detail, name="course-detail-v1"),
     path("api/bookings/", booking_list, name="booking-list"),
+    path("api/v1/bookings/", booking_list, name="booking-list-v1"),
     path("api/bookings/<int:pk>/", booking_detail, name="booking-detail"),
+    path("api/v1/bookings/<int:pk>/", booking_detail, name="booking-detail-v1"),
     path("api/payments/", payment_list, name="payment-list"),
+    path("api/v1/payments/", payment_list, name="payment-list-v1"),
     path("api/payments/<int:pk>/", payment_detail, name="payment-detail"),
+    path("api/v1/payments/<int:pk>/", payment_detail, name="payment-detail-v1"),
     path("api/contacts/", contact_list, name="contact-list"),
+    path("api/v1/contacts/", contact_list, name="contact-list-v1"),
     path("api/contacts/<int:pk>/", contact_detail, name="contact-detail"),
+    path("api/v1/contacts/<int:pk>/", contact_detail, name="contact-detail-v1"),
     path("api/geis/", gei_list, name="gei-list"),
+    path("api/v1/geis/", gei_list, name="gei-list-v1"),
     path("api/geis/create/", gei_create, name="gei-create"),
+    path("api/v1/geis/create/", gei_create, name="gei-create-v1"),
     path("api/geis/<int:pk>/", gei_detail, name="gei-detail"),
+    path("api/v1/geis/<int:pk>/", gei_detail, name="gei-detail-v1"),
     path("api/providers/", provider_list, name="provider-list"),
+    path("api/v1/providers/", provider_list, name="provider-list-v1"),
     path("api/providers/create/", provider_create, name="provider-create"),
+    path("api/v1/providers/create/", provider_create, name="provider-create-v1"),
     path("api/providers/<int:pk>/", provider_detail, name="provider-detail"),
+    path("api/v1/providers/<int:pk>/", provider_detail, name="provider-detail-v1"),
     path("api/enrollments/", enrollment_list, name="enrollment-list"),
+    path("api/v1/enrollments/", enrollment_list, name="enrollment-list-v1"),
     path("api/enrollments/<int:pk>/", enrollment_detail, name="enrollment-detail"),
+    path("api/v1/enrollments/<int:pk>/", enrollment_detail, name="enrollment-detail-v1"),
     path("api/notifications/", notification_list, name="notification-list"),
+    path("api/v1/notifications/", notification_list, name="notification-list-v1"),
     path("api/notifications/check/", notification_check, name="notification-check"),
+    path("api/v1/notifications/check/", notification_check, name="notification-check-v1"),
     path("api/notifications/<int:pk>/read/", notification_read, name="notification-read"),
+    path("api/v1/notifications/<int:pk>/read/", notification_read, name="notification-read-v1"),
     path("api/notifications/read-all/", notification_read_all, name="notification-read-all"),
+    path("api/v1/notifications/read-all/", notification_read_all, name="notification-read-all-v1"),
+    path("api/export/<str:model_name>/", export_csv, name="export-csv"),
+]
+
+from .routers import router
+
+urlpatterns += [
+    path("api/v2/", include(router.urls)),
 ]

@@ -1,0 +1,179 @@
+<!-- Témoignages -->
+<section class="section testimonials" id="temoignages">
+  <div class="container">
+    <div class="section__head reveal">
+      <span class="label"><span class="label__bullet"></span>Témoignages</span>
+      <h2 class="section__title">Les voix de nos membres.</h2>
+    </div>
+    <div class="testi__carousel reveal" data-delay="1">
+      <div class="testi__track" id="testiTrack">
+        <div class="testi__slide">
+          <article class="testi__card">
+            <div class="testi__quote-mark">"</div>
+            <p class="testi__text">
+              Grâce à IMSO, j'ai pu agrandir mon atelier de couture et embaucher
+              deux apprenties. Le mentorat m'a appris à tenir mes comptes
+              correctement pour la première fois.
+            </p>
+            <div class="testi__person">
+              <span class="testi__avatar">MJ<img src="https://images.unsplash.com/photo-1573497019940-1c28c88b4f3e?w=200&amp;auto=format&amp;q=80" alt="" loading="lazy" onerror="this.remove()"></span>
+              <div>
+                <div class="testi__name">Mirlande Jean-Baptiste</div>
+                <div class="testi__loc">GEI Pétion-Ville · 2 ans</div>
+              </div>
+            </div>
+          </article>
+        </div>
+        <div class="testi__slide">
+          <article class="testi__card">
+            <div class="testi__quote-mark">"</div>
+            <p class="testi__text">
+              Le GEI m'a fait confiance pour lancer ma petite épicerie de quartier.
+              Les remboursements sont alignés sur mes revenus, et la formation
+              en marketing local a changé ma façon de vendre.
+            </p>
+            <div class="testi__person">
+              <span class="testi__avatar">JV<img src="{% static 'website/assets/e466749a-95fa-4e65-8bff-67927985f548.jpg' %}" alt="" loading="lazy" onerror="this.remove()"></span>
+              <div>
+                <div class="testi__name">Jacques Villard</div>
+                <div class="testi__loc">GEI Cap-Haïtien · 1 an</div>
+              </div>
+            </div>
+          </article>
+        </div>
+        <div class="testi__slide">
+          <article class="testi__card">
+            <div class="testi__quote-mark">"</div>
+            <p class="testi__text">
+              Ce que j'aime à IMSO, c'est la transparence. Chaque cotisation est
+              tracée et les décisions se prennent ensemble. Je me sens vraiment
+              actrice de mon avenir financier.
+            </p>
+            <div class="testi__person">
+              <span class="testi__avatar">SD<img src="{% static 'website/assets/c43d2991-a4a1-4a5c-9629-ef652c61d8e2.jpg' %}" alt="" loading="lazy" onerror="this.remove()"></span>
+              <div>
+                <div class="testi__name">Sherline Désir</div>
+                <div class="testi__loc">GEI Jacmel · 3 ans</div>
+              </div>
+            </div>
+          </article>
+        </div>
+        <div class="testi__slide">
+          <article class="testi__card">
+            <div class="testi__quote-mark">"</div>
+            <p class="testi__text">
+              J'ai débuté comme épargnant. Aujourd'hui je forme moi-même les
+              nouveaux membres en comptabilité simple. IMSO transforme les
+              parcours en compétences partagées.
+            </p>
+            <div class="testi__person">
+              <span class="testi__avatar">EB<img src="https://images.unsplash.com/photo-1500648767791-00dcc994a43e?w=200&amp;auto=format&amp;q=80" alt="" loading="lazy" onerror="this.remove()"></span>
+              <div>
+                <div class="testi__name">Edner Beauvais</div>
+                <div class="testi__loc">GEI Gonaïves · 4 ans</div>
+              </div>
+            </div>
+          </article>
+        </div>
+        <div class="testi__slide">
+          <article class="testi__card">
+            <div class="testi__quote-mark">"</div>
+            <p class="testi__text">
+              Un microcrédit obtenu en quelques semaines m'a permis d'acheter
+              un four professionnel. Ma pâtisserie tient grâce à la solidarité
+              du groupe, pas grâce à un collatéral impossible à fournir.
+            </p>
+            <div class="testi__person">
+              <span class="testi__avatar">CL<img src="https://images.unsplash.com/photo-1494790108377-be9c29b29330?w=200&amp;auto=format&amp;q=80" alt="" loading="lazy" onerror="this.remove()"></span>
+              <div>
+                <div class="testi__name">Carline Louis</div>
+                <div class="testi__loc">GEI Les Cayes · 1 an</div>
+              </div>
+            </div>
+          </article>
+        </div>
+      </div>
+    </div>
+    <div class="testi__nav reveal">
+      <div class="testi__dots" id="testiDots"></div>
+      <div class="testi__arrows">
+        <button class="testi__arrow" id="testiPrev" aria-label="Précédent">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round"><path d="M15 18l-6-6 6-6"></path></svg>
+        </button>
+        <button class="testi__arrow" id="testiNext" aria-label="Suivant">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round"><path d="M9 6l6 6-6 6"></path></svg>
+        </button>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- CTA Strip -->
+<div class="cta-strip reveal">
+  <div class="cta-strip__inner">
+    <h2>Prêt·e à entreprendre avec votre communauté ?</h2>
+    <p>
+      Rejoignez l'un des cinq GEI actifs et accédez immédiatement à l'épargne
+      collective, aux formations et au mentorat de pair-à-pair.
+    </p>
+    <div class="hero__ctas" style="justify-content:center;">
+      <a href="#" class="btn btn--primary">Démarrer mon adhésion</a>
+      <a href="#contact" class="btn btn--outline-amber">Nous contacter</a>
+    </div>
+  </div>
+</div>
+
+<!-- Booking modal -->
+<div class="modal-scrim" id="bookingModal" aria-hidden="true">
+  <div class="modal" role="dialog" aria-modal="true" aria-labelledby="modalTitle">
+    <div class="modal__head">
+      <h3 class="modal__title" id="modalTitle">Réserver ce créneau</h3>
+      <button class="modal__close" id="modalClose" aria-label="Fermer">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><path d="M18 6L6 18M6 6l12 12"></path></svg>
+      </button>
+    </div>
+    <p class="modal__sub" id="modalSub">Complétez vos informations et nous confirmons sous 24h.</p>
+    <form class="modal__form" id="modalForm" novalidate="">
+      {% csrf_token %}
+      <div class="field">
+        <label for="fName">Nom complet</label>
+        <input id="fName" name="full_name" type="text" required="" placeholder="Marie-Claire Pierre">
+      </div>
+      <div class="field">
+        <label for="fPhone">Téléphone</label>
+        <input id="fPhone" name="phone" type="tel" required="" placeholder="+509 38 22 18 04">
+      </div>
+      <div class="field">
+        <label for="fEmail">Email (optionnel)</label>
+        <input id="fEmail" name="email" type="email" placeholder="exemple@email.com">
+      </div>
+      <div class="field">
+        <label for="fType">Type d'événement</label>
+        <select id="fType" name="event_type">
+          <option>Conférence</option>
+          <option>Séminaire</option>
+          <option>Formation</option>
+          <option>Anniversaire</option>
+          <option>Mariage</option>
+          <option>Réunion privée</option>
+          <option>Autre</option>
+        </select>
+      </div>
+      <div class="field">
+        <label for="fSetup">Configuration</label>
+        <select id="fSetup" name="setup">
+          <option>Sans tables — jusqu'à 60 personnes</option>
+          <option>Avec tables — jusqu'à 40 personnes</option>
+        </select>
+      </div>
+      <button type="submit" class="btn btn--primary btn--block" style="margin-top:8px;">Envoyer la demande</button>
+    </form>
+    <div class="modal__success" id="modalSuccess" style="display:none;">
+      <div class="modal__success-icon">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.6" stroke-linecap="round" stroke-linejoin="round"><polyline points="20 6 9 17 4 12"></polyline></svg>
+      </div>
+      <h3 class="modal__title" style="margin-bottom:6px;">Demande envoyée !</h3>
+      <p class="modal__sub" id="modalSuccessSub" style="margin-bottom:0;">Nous vous contactons sous 24h pour confirmer votre réservation.</p>
+    </div>
+  </div>
+</div>

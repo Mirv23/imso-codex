@@ -1,22 +1,27 @@
 {
+  "_comment": "Les fichiers statiques sont servis via Whitenoise (middleware Django) et les routes /static sont redirigées vers @vercel/static pour le cache CDN Vercel.",
+  "buildCommand": "bash scripts/vercel-build.sh",
   "builds": [
     {
       "src": "imso_backend/wsgi.py",
       "use": "@vercel/python"
     },
     {
-      "src": "static/**",
+      "src": "staticfiles/**",
       "use": "@vercel/static"
     }
   ],
   "routes": [
     {
       "src": "/static/(.*)",
-      "dest": "/static/$1"
+      "dest": "/staticfiles/$1"
     },
     {
       "src": "/(.*)",
       "dest": "imso_backend/wsgi.py"
     }
-  ]
+  ],
+  "scripts": {
+    "postdeploy": "python scripts/vercel-migrate.py"
+  }
 }
