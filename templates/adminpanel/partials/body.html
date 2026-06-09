@@ -1,4 +1,4 @@
-<div id="root"></div>
+{% load static %}<div id="root"></div>
 {% csrf_token %}
 {{ summary|json_script:"dashboard-summary-data" }}
 <script src="{% static 'adminpanel/js/dashboard.js' %}"></script>

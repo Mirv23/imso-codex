@@ -22,6 +22,11 @@ def _run_startup_migrations():
         except Exception as e:
             print(f"[startup] Migration failed: {e}", flush=True)
 
+        try:
+            call_command("ensure_admin")
+        except Exception as e:
+            print(f"[startup] ensure_admin failed: {e}", flush=True)
+
 
 _setup()
 
