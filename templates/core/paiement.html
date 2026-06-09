@@ -564,5 +564,11 @@ function showSuccess(data) {
 
 render();
 </script>
+
+<!-- Vercel Web Analytics -->
+<script type="module">
+  import { inject } from '{% static "js/analytics.js" %}';
+  inject();
+</script>
 </body>
 </html>

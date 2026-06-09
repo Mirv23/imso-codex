@@ -19,4 +19,10 @@
 <script type="text/babel" src="{% static 'adminpanel/assets/e27d3b4c-8fe1-4f20-9a6b-7c45e13d9f12.js' %}"></script>
 <script type="text/babel" src="{% static 'adminpanel/assets/3b8a9d1f-6e42-4c70-b94a-8f7d15c23a96.js' %}"></script>
 
+<!-- Vercel Web Analytics -->
+<script type="module">
+  import { inject } from '{% static "js/analytics.js" %}';
+  inject();
+</script>
+
 </body></html>
