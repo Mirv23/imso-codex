@@ -35,7 +35,7 @@ from .models import (
 
 @method_decorator(login_required(login_url="/django-admin/login/"), name="dispatch")
 class DashboardView(LoginRequiredMixin, TemplateView):
-    template_name = "adminpanel/dashboard.html"
+    template_name = "adminpanel/simple_dashboard.html"
 
     def get_context_data(self, **kwargs: Any) -> dict[str, Any]:
         context = super().get_context_data(**kwargs)

@@ -1,0 +1,304 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>IMSO Haiti — Tableau de bord</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=JetBrains+Mono:wght@400;500&display=swap" rel="stylesheet">
+<style>
+:root {
+  --primary: #2D6A4F; --primary-600: #245742; --primary-light: #E8F5EE;
+  --accent: #F4A261; --success: #10B981; --warning: #F59E0B; --danger: #EF4444;
+  --text: #111827; --muted: #6B7280; --card: #FFFFFF; --border: #E5E7EB;
+  --bg: #F7F8FA; --sidebar: #FFFFFF; --sb-w: 240px; --hd-h: 64px;
+  --radius: 12px; --radius-lg: 16px;
+  --shadow-sm: 0 1px 2px rgba(17,24,39,0.04);
+  --shadow-md: 0 4px 14px -2px rgba(17,24,39,0.06);
+}
+* { box-sizing: border-box; margin: 0; padding: 0; }
+html, body {
+  font-family: 'Inter', -apple-system, sans-serif;
+  color: var(--text); background: var(--bg); font-size: 14px; line-height: 1.45;
+}
+a { color: var(--primary); text-decoration: none; }
+a:hover { text-decoration: underline; }
+
+.app { display: flex; min-height: 100vh; }
+.sidebar {
+  width: var(--sb-w); background: var(--sidebar);
+  border-right: 1px solid var(--border); position: fixed;
+  inset: 0 auto 0 0; display: flex; flex-direction: column; z-index: 30;
+}
+.sb-top { padding: 20px 16px 14px; }
+.sb-brand { display: flex; align-items: center; gap: 10px; }
+.sb-logo {
+  width: 34px; height: 34px; border-radius: 9px;
+  background: linear-gradient(135deg, var(--primary), #3a8862);
+  display: grid; place-items: center; color: #fff;
+  font-weight: 700; font-size: 14px;
+}
+.sb-name { font-weight: 700; font-size: 15px; }
+.sb-tag {
+  background: var(--primary-light); color: var(--primary);
+  font-size: 10.5px; font-weight: 600; padding: 2px 7px; border-radius: 999px;
+  margin-left: 6px;
+}
+.sb-nav { padding: 0 8px; flex: 1; overflow-y: auto; }
+.sb-section {
+  font-size: 10.5px; font-weight: 600; color: #9CA3AF;
+  text-transform: uppercase; letter-spacing: 0.08em;
+  padding: 10px 20px 6px;
+}
+.sb-item {
+  display: flex; align-items: center; gap: 11px; padding: 9px 12px;
+  margin: 1px 0; border-radius: 9px; color: var(--text);
+  font-size: 13.5px; font-weight: 500; cursor: pointer;
+  transition: background-color .18s;
+}
+.sb-item:hover { background: #F4F6F8; }
+.sb-item.active { background: var(--primary-light); color: var(--primary); font-weight: 600; }
+.sb-item .ico { color: #6B7280; display: grid; place-items: center; }
+.sb-item.active .ico { color: var(--primary); }
+.sb-bottom { padding: 8px; border-top: 1px solid #EEF0F3; }
+
+.main { margin-left: var(--sb-w); flex: 1; display: flex; flex-direction: column; }
+.header {
+  height: var(--hd-h); background: rgba(255,255,255,0.85);
+  backdrop-filter: saturate(140%) blur(10px);
+  border-bottom: 1px solid var(--border); position: sticky; top: 0; z-index: 20;
+  display: flex; align-items: center; justify-content: space-between;
+  padding: 0 32px;
+}
+.hd-title { font-size: 18px; font-weight: 600; }
+.hd-sub { font-size: 12.5px; color: var(--muted); }
+.content { padding: 28px 32px 64px; max-width: 1480px; width: 100%; }
+
+.metric-grid { display: grid; grid-template-columns: repeat(4, 1fr); gap: 18px; }
+.metric {
+  background: var(--card); border: 1px solid var(--border);
+  border-radius: var(--radius-lg); padding: 20px;
+  box-shadow: var(--shadow-sm);
+}
+.metric-label { font-size: 12.5px; color: var(--muted); margin-bottom: 4px; font-weight: 500; }
+.metric-value {
+  font-size: 28px; font-weight: 700; letter-spacing: -0.02em;
+  font-feature-settings: 'tnum'; line-height: 1.1;
+}
+.card {
+  background: var(--card); border: 1px solid var(--border);
+  border-radius: var(--radius-lg); box-shadow: var(--shadow-sm);
+  margin-top: 18px;
+}
+.card-head { padding: 18px 22px 6px; }
+.card-title { font-size: 14.5px; font-weight: 600; }
+.card-sub { font-size: 12px; color: var(--muted); margin-top: 2px; }
+
+.table { width: 100%; border-collapse: collapse; }
+.table th, .table td { text-align: left; padding: 12px 22px; font-size: 13px; border-top: 1px solid #EEF0F3; }
+.table th {
+  font-size: 11px; font-weight: 600; color: var(--muted);
+  text-transform: uppercase; letter-spacing: 0.04em;
+  border-bottom: 1px solid var(--border); background: #FAFBFC;
+}
+.table tbody tr:hover { background: #FAFBFC; }
+
+.btn {
+  display: inline-flex; align-items: center; gap: 7px; padding: 8px 14px;
+  border-radius: 9px; border: 1px solid var(--border); background: #fff;
+  color: var(--text); font-size: 13px; font-weight: 500; cursor: pointer;
+  transition: background .15s;
+}
+.btn:hover { background: var(--bg); }
+.btn.primary {
+  background: var(--primary); color: #fff; border-color: var(--primary);
+}
+.btn.sm { padding: 5px 10px; font-size: 12px; }
+.pill {
+  display: inline-flex; padding: 2px 8px; border-radius: 999px;
+  font-size: 11.5px; font-weight: 600; background: var(--bg); color: var(--text);
+}
+.pill.green { background: rgba(16,185,129,0.10); color: #047857; }
+.pill.red { background: rgba(239,68,68,0.10); color: #B91C1C; }
+.pill.amber { background: rgba(245,158,11,0.12); color: #B45309; }
+.pill.blue { background: rgba(59,130,246,0.10); color: #1D4ED8; }
+
+.grid-2 { display: grid; grid-template-columns: 1fr 1fr; gap: 18px; margin-top: 18px; }
+.mt-16 { margin-top: 16px; }
+.text-center { text-align: center; }
+.py-8 { padding-top: 8px; padding-bottom: 8px; }
+</style>
+</head>
+<body>
+<div class="app">
+  <aside class="sidebar">
+    <div class="sb-top">
+      <div class="sb-brand">
+        <div class="sb-logo">I</div>
+        <span class="sb-name">IMSO</span><span class="sb-tag">Admin</span>
+      </div>
+    </div>
+    <nav class="sb-nav">
+      <div class="sb-section">Administration</div>
+      <a class="sb-item active" href="/dashboard/">
+        <span class="ico">
+          <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.75"><path d="M4 4h6v8H4z"/><path d="M14 4h6v4h-6z"/><path d="M14 12h6v8h-6z"/><path d="M4 16h6v4H4z"/></svg>
+        </span>
+        Tableau de bord
+      </a>
+      <a class="sb-item" href="/django-admin/adminpanel/member/">
+        <span class="ico">
+          <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.75"><path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2"/><circle cx="9" cy="7" r="4"/><path d="M23 21v-2a4 4 0 0 0-3-3.87"/><path d="M16 3.13a4 4 0 0 1 0 7.75"/></svg>
+        </span>
+        Membres
+      </a>
+      <a class="sb-item" href="/django-admin/adminpanel/course/">
+        <span class="ico">
+          <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.75"><path d="M22 10v6M2 10l10-5 10 5-10 5z"/><path d="M6 12v5c3 3 9 3 12 0v-5"/></svg>
+        </span>
+        Cours
+      </a>
+      <a class="sb-item" href="/django-admin/adminpanel/venuebooking/">
+        <span class="ico">
+          <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.75"><rect x="3" y="4" width="18" height="18" rx="2" ry="2"/><line x1="16" y1="2" x2="16" y2="6"/><line x1="8" y1="2" x2="8" y2="6"/><line x1="3" y1="10" x2="21" y2="10"/></svg>
+        </span>
+        Réservations
+      </a>
+      <a class="sb-item" href="/django-admin/adminpanel/payment/">
+        <span class="ico">
+          <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.75"><rect x="1" y="5" width="22" height="14" rx="2"/><line x1="6" y1="10" x2="10" y2="10"/></svg>
+        </span>
+        Paiements
+      </a>
+      <a class="sb-item" href="/django-admin/adminpanel/gei/">
+        <span class="ico">
+          <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.75"><path d="M3 9l9-7 9 7v11a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2z"/><polyline points="9 22 9 12 15 12 15 22"/></svg>
+        </span>
+        GEIs
+      </a>
+      <a class="sb-item" href="/django-admin/adminpanel/contactrequest/">
+        <span class="ico">
+          <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.75"><path d="M4 4h16c1.1 0 2 .9 2 2v12c0 1.1-.9 2-2 2H4c-1.1 0-2-.9-2-2V6c0-1.1.9-2 2-2z"/><polyline points="22,6 12,13 2,6"/></svg>
+        </span>
+        Contacts
+      </a>
+      <div class="sb-section" style="margin-top: 12px;">API</div>
+      <a class="sb-item" href="/api/docs/">
+        <span class="ico">
+          <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.75"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><polyline points="14 2 14 8 20 8"/><line x1="16" y1="13" x2="8" y2="13"/><line x1="16" y1="17" x2="8" y2="17"/></svg>
+        </span>
+        Documentation API
+      </a>
+    </nav>
+    <div class="sb-bottom">
+      <a class="sb-item" href="/django-admin/logout/">
+        <span class="ico">
+          <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.75"><path d="M9 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h4"/><polyline points="16 17 21 12 16 7"/><line x1="21" y1="12" x2="9" y2="12"/></svg>
+        </span>
+        Déconnexion
+      </a>
+    </div>
+  </aside>
+  <div class="main">
+    <header class="header">
+      <div>
+        <div class="hd-title">Tableau de bord</div>
+        <div class="hd-sub">{{ summary.active_members }} membre(s) actif(s) &middot; {{ summary.active_courses }} cours actif(s)</div>
+      </div>
+      <div style="display:flex;gap:10px">
+        <a class="btn primary sm" href="/django-admin/">Administration Django</a>
+        <a class="btn sm" href="?refresh=1">Actualiser</a>
+      </div>
+    </header>
+    <div class="content">
+      <div class="metric-grid">
+        <div class="metric">
+          <div class="metric-label">Membres actifs</div>
+          <div class="metric-value" style="color:var(--primary)">{{ summary.active_members }}</div>
+          <div style="margin-top:8px;font-size:12px;color:var(--muted)">Total: {{ summary.total_members }}</div>
+        </div>
+        <div class="metric">
+          <div class="metric-label">GEIs actifs</div>
+          <div class="metric-value" style="color:var(--success)">{{ summary.active_gei }}</div>
+        </div>
+        <div class="metric">
+          <div class="metric-label">Cours actifs</div>
+          <div class="metric-value" style="color:var(--accent)">{{ summary.active_courses }}</div>
+          <div style="margin-top:8px;font-size:12px;color:var(--muted)">Total: {{ summary.total_courses }}</div>
+        </div>
+        <div class="metric">
+          <div class="metric-label">Épargne mensuelle</div>
+          <div class="metric-value" style="color:var(--primary)">{{ summary.savings_htg|floatformat:0 }}</div>
+          <div style="margin-top:8px;font-size:12px;color:var(--muted)">HTG</div>
+        </div>
+        <div class="metric">
+          <div class="metric-label">Revenus totaux</div>
+          <div class="metric-value" style="color:var(--success)">{{ summary.total_revenue_htg|floatformat:0 }}</div>
+          <div style="margin-top:8px;font-size:12px;color:var(--muted)">HTG (payés)</div>
+        </div>
+        <div class="metric">
+          <div class="metric-label">Contacts en attente</div>
+          <div class="metric-value" style="color:var(--danger)">{{ summary.pending_contacts }}</div>
+        </div>
+        <div class="metric">
+          <div class="metric-label">Réservations en attente</div>
+          <div class="metric-value" style="color:var(--warning)">{{ summary.pending_bookings }}</div>
+        </div>
+        <div class="metric">
+          <div class="metric-label">Inscriptions en attente</div>
+          <div class="metric-value" style="color:var(--warning)">{{ summary.pending_enrollments }}</div>
+        </div>
+      </div>
+
+      <div class="grid-2">
+        <div class="card">
+          <div class="card-head">
+            <div class="card-title">Activité récente (7 jours)</div>
+            <div class="card-sub">Réservations et paiements</div>
+          </div>
+          <table class="table">
+            <thead><tr><th>Indicateur</th><th>Nombre</th><th>Montant</th></tr></thead>
+            <tbody>
+              <tr><td>Nouvelles réservations</td><td><strong>{{ summary.recent_bookings }}</strong></td><td>—</td></tr>
+              <tr><td>Nouveaux paiements</td><td><strong>{{ summary.recent_payments_count }}</strong></td><td><strong>{{ summary.recent_payments_sum|floatformat:0 }}</strong> HTG</td></tr>
+            </tbody>
+          </table>
+        </div>
+        <div class="card">
+          <div class="card-head">
+            <div class="card-title">Administration rapide</div>
+            <div class="card-sub">Accédez aux sections</div>
+          </div>
+          <div style="padding:12px 22px 22px;display:grid;grid-template-columns:1fr 1fr;gap:8px">
+            <a class="btn sm" href="/django-admin/adminpanel/member/add/">+ Membre</a>
+            <a class="btn sm" href="/django-admin/adminpanel/course/add/">+ Cours</a>
+            <a class="btn sm" href="/django-admin/adminpanel/venuebooking/add/">+ Réservation</a>
+            <a class="btn sm" href="/django-admin/adminpanel/payment/add/">+ Paiement</a>
+            <a class="btn sm" href="/django-admin/adminpanel/gei/add/">+ GEI</a>
+            <a class="btn sm" href="/django-admin/adminpanel/paymentprovider/add/">+ Provider</a>
+          </div>
+        </div>
+      </div>
+
+      <div class="card">
+        <div class="card-head">
+          <div class="card-title">État du système</div>
+          <div class="card-sub">Santé de la plateforme</div>
+        </div>
+        <div style="padding:12px 22px 22px">
+          <table class="table">
+            <thead><tr><th>Service</th><th>Statut</th><th>Version</th></tr></thead>
+            <tbody>
+              <tr><td>Base de données</td><td><span class="pill green">Connectée</span></td><td>PostgreSQL</td></tr>
+              <tr><td>Cache</td><td><span class="pill green">Actif</span></td><td>—</td></tr>
+              <tr><td>Version Django</td><td><span class="pill blue">5.2.15</span></td><td>Production</td></tr>
+            </tbody>
+          </table>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+</body>
+</html>
