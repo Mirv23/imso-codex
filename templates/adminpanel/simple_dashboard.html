@@ -126,8 +126,6 @@ a:hover { text-decoration: underline; }
 
 .grid-2 { display: grid; grid-template-columns: 1fr 1fr; gap: 18px; margin-top: 18px; }
 .mt-16 { margin-top: 16px; }
-.text-center { text-align: center; }
-.py-8 { padding-top: 8px; padding-bottom: 8px; }
 </style>
 </head>
 <body>
@@ -147,43 +145,7 @@ a:hover { text-decoration: underline; }
         </span>
         Tableau de bord
       </a>
-      <a class="sb-item" href="/django-admin/adminpanel/member/">
-        <span class="ico">
-          <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.75"><path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2"/><circle cx="9" cy="7" r="4"/><path d="M23 21v-2a4 4 0 0 0-3-3.87"/><path d="M16 3.13a4 4 0 0 1 0 7.75"/></svg>
-        </span>
-        Membres
-      </a>
-      <a class="sb-item" href="/django-admin/adminpanel/course/">
-        <span class="ico">
-          <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.75"><path d="M22 10v6M2 10l10-5 10 5-10 5z"/><path d="M6 12v5c3 3 9 3 12 0v-5"/></svg>
-        </span>
-        Cours
-      </a>
-      <a class="sb-item" href="/django-admin/adminpanel/venuebooking/">
-        <span class="ico">
-          <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.75"><rect x="3" y="4" width="18" height="18" rx="2" ry="2"/><line x1="16" y1="2" x2="16" y2="6"/><line x1="8" y1="2" x2="8" y2="6"/><line x1="3" y1="10" x2="21" y2="10"/></svg>
-        </span>
-        Réservations
-      </a>
-      <a class="sb-item" href="/django-admin/adminpanel/payment/">
-        <span class="ico">
-          <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.75"><rect x="1" y="5" width="22" height="14" rx="2"/><line x1="6" y1="10" x2="10" y2="10"/></svg>
-        </span>
-        Paiements
-      </a>
-      <a class="sb-item" href="/django-admin/adminpanel/gei/">
-        <span class="ico">
-          <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.75"><path d="M3 9l9-7 9 7v11a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2z"/><polyline points="9 22 9 12 15 12 15 22"/></svg>
-        </span>
-        GEIs
-      </a>
-      <a class="sb-item" href="/django-admin/adminpanel/contactrequest/">
-        <span class="ico">
-          <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.75"><path d="M4 4h16c1.1 0 2 .9 2 2v12c0 1.1-.9 2-2 2H4c-1.1 0-2-.9-2-2V6c0-1.1.9-2 2-2z"/><polyline points="22,6 12,13 2,6"/></svg>
-        </span>
-        Contacts
-      </a>
-      <div class="sb-section" style="margin-top: 12px;">API</div>
+      <div class="sb-section">API</div>
       <a class="sb-item" href="/api/docs/">
         <span class="ico">
           <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.75"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><polyline points="14 2 14 8 20 8"/><line x1="16" y1="13" x2="8" y2="13"/><line x1="16" y1="17" x2="8" y2="17"/></svg>
@@ -192,7 +154,7 @@ a:hover { text-decoration: underline; }
       </a>
     </nav>
     <div class="sb-bottom">
-      <a class="sb-item" href="/django-admin/logout/">
+      <a class="sb-item" href="/logout/">
         <span class="ico">
           <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.75"><path d="M9 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h4"/><polyline points="16 17 21 12 16 7"/><line x1="21" y1="12" x2="9" y2="12"/></svg>
         </span>
@@ -207,7 +169,6 @@ a:hover { text-decoration: underline; }
         <div class="hd-sub">{{ summary.active_members }} membre(s) actif(s) &middot; {{ summary.active_courses }} cours actif(s)</div>
       </div>
       <div style="display:flex;gap:10px">
-        <a class="btn primary sm" href="/django-admin/">Administration Django</a>
         <a class="btn sm" href="?refresh=1">Actualiser</a>
       </div>
     </header>
@@ -267,34 +228,19 @@ a:hover { text-decoration: underline; }
         </div>
         <div class="card">
           <div class="card-head">
-            <div class="card-title">Administration rapide</div>
-            <div class="card-sub">Accédez aux sections</div>
+            <div class="card-title">État du système</div>
+            <div class="card-sub">Santé de la plateforme</div>
           </div>
-          <div style="padding:12px 22px 22px;display:grid;grid-template-columns:1fr 1fr;gap:8px">
-            <a class="btn sm" href="/django-admin/adminpanel/member/add/">+ Membre</a>
-            <a class="btn sm" href="/django-admin/adminpanel/course/add/">+ Cours</a>
-            <a class="btn sm" href="/django-admin/adminpanel/venuebooking/add/">+ Réservation</a>
-            <a class="btn sm" href="/django-admin/adminpanel/payment/add/">+ Paiement</a>
-            <a class="btn sm" href="/django-admin/adminpanel/gei/add/">+ GEI</a>
-            <a class="btn sm" href="/django-admin/adminpanel/paymentprovider/add/">+ Provider</a>
+          <div style="padding:12px 22px 22px">
+            <table class="table">
+              <thead><tr><th>Service</th><th>Statut</th></tr></thead>
+              <tbody>
+                <tr><td>Base de données</td><td><span class="pill green">Connectée</span></td></tr>
+                <tr><td>Cache</td><td><span class="pill green">Actif</span></td></tr>
+                <tr><td>Version Django</td><td><span class="pill blue">5.2.15</span></td></tr>
+              </tbody>
+            </table>
           </div>
-        </div>
-      </div>
-
-      <div class="card">
-        <div class="card-head">
-          <div class="card-title">État du système</div>
-          <div class="card-sub">Santé de la plateforme</div>
-        </div>
-        <div style="padding:12px 22px 22px">
-          <table class="table">
-            <thead><tr><th>Service</th><th>Statut</th><th>Version</th></tr></thead>
-            <tbody>
-              <tr><td>Base de données</td><td><span class="pill green">Connectée</span></td><td>PostgreSQL</td></tr>
-              <tr><td>Cache</td><td><span class="pill green">Actif</span></td><td>—</td></tr>
-              <tr><td>Version Django</td><td><span class="pill blue">5.2.15</span></td><td>Production</td></tr>
-            </tbody>
-          </table>
         </div>
       </div>
     </div>

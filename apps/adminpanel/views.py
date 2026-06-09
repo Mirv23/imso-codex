@@ -103,7 +103,7 @@ def _serialize_member(m: Member) -> dict[str, Any]:
     }
 
 
-@login_required(login_url="/django-admin/login/")
+@login_required(login_url="/login/")
 def member_list(request: HttpRequest) -> JsonResponse:
     qs = Member.objects.select_related("gei").all()
     search = request.GET.get("search")
@@ -123,7 +123,7 @@ def member_list(request: HttpRequest) -> JsonResponse:
     return _paginated_response(qs, request, _serialize_member)
 
 
-@login_required(login_url="/django-admin/login/")
+@login_required(login_url="/login/")
 def member_detail(request: HttpRequest, pk: int) -> JsonResponse:
     try:
         m = Member.objects.select_related("gei").get(pk=pk)
@@ -171,7 +171,7 @@ def _serialize_course(c: Course, enroll_count: int | None = None) -> dict[str, A
     }
 
 
-@login_required(login_url="/django-admin/login/")
+@login_required(login_url="/login/")
 def course_list(request: HttpRequest) -> JsonResponse:
     qs = Course.objects.annotate(enrollment_count=Count("enrollments")).all()
     search = request.GET.get("search")
@@ -192,7 +192,7 @@ def course_list(request: HttpRequest) -> JsonResponse:
 
 
 @ensure_csrf_cookie
-@login_required(login_url="/django-admin/login/")
+@login_required(login_url="/login/")
 @require_http_methods(["GET", "PUT", "DELETE"])
 def course_detail(request: HttpRequest, pk: int) -> JsonResponse:
     try:
@@ -216,7 +216,7 @@ def course_detail(request: HttpRequest, pk: int) -> JsonResponse:
         return _ok()
 
 
-@login_required(login_url="/django-admin/login/")
+@login_required(login_url="/login/")
 @require_http_methods(["POST"])
 def course_create(request: HttpRequest) -> JsonResponse:
     data = _json_body(request)
@@ -265,7 +265,7 @@ def _serialize_booking(b: VenueBooking) -> dict[str, Any]:
     }
 
 
-@login_required(login_url="/django-admin/login/")
+@login_required(login_url="/login/")
 def booking_list(request: HttpRequest) -> JsonResponse:
     qs = VenueBooking.objects.prefetch_related("payments").all()
     status = request.GET.get("status")
@@ -282,7 +282,7 @@ def booking_list(request: HttpRequest) -> JsonResponse:
 
 
 @ensure_csrf_cookie
-@login_required(login_url="/django-admin/login/")
+@login_required(login_url="/login/")
 @require_http_methods(["GET", "PUT"])
 def booking_detail(request: HttpRequest, pk: int) -> JsonResponse:
     try:
@@ -329,7 +329,7 @@ def _serialize_payment(p: Payment) -> dict[str, Any]:
     }
 
 
-@login_required(login_url="/django-admin/login/")
+@login_required(login_url="/login/")
 def payment_list(request: HttpRequest) -> JsonResponse:
     qs = Payment.objects.select_related("provider").all()
     status = request.GET.get("status")
@@ -349,7 +349,7 @@ def payment_list(request: HttpRequest) -> JsonResponse:
 
 
 @ensure_csrf_cookie
-@login_required(login_url="/django-admin/login/")
+@login_required(login_url="/login/")
 @require_http_methods(["GET", "PUT"])
 def payment_detail(request: HttpRequest, pk: int) -> JsonResponse:
     try:
@@ -388,7 +388,7 @@ def _serialize_contact(c: ContactRequest) -> dict[str, Any]:
     }
 
 
-@login_required(login_url="/django-admin/login/")
+@login_required(login_url="/login/")
 def contact_list(request: HttpRequest) -> JsonResponse:
     qs = ContactRequest.objects.all()
     processed = request.GET.get("processed")
@@ -399,7 +399,7 @@ def contact_list(request: HttpRequest) -> JsonResponse:
 
 
 @ensure_csrf_cookie
-@login_required(login_url="/django-admin/login/")
+@login_required(login_url="/login/")
 @require_http_methods(["GET", "PUT"])
 def contact_detail(request: HttpRequest, pk: int) -> JsonResponse:
     try:
@@ -436,7 +436,7 @@ def _serialize_gei(g: GEI, member_count: int | None = None) -> dict[str, Any]:
     }
 
 
-@login_required(login_url="/django-admin/login/")
+@login_required(login_url="/login/")
 def gei_list(request: HttpRequest) -> JsonResponse:
     qs = GEI.objects.annotate(member_count=Count("members")).all()
     search = request.GET.get("search")
@@ -450,7 +450,7 @@ def gei_list(request: HttpRequest) -> JsonResponse:
 
 
 @ensure_csrf_cookie
-@login_required(login_url="/django-admin/login/")
+@login_required(login_url="/login/")
 @require_http_methods(["GET", "PUT", "DELETE"])
 def gei_detail(request: HttpRequest, pk: int) -> JsonResponse:
     try:
@@ -473,7 +473,7 @@ def gei_detail(request: HttpRequest, pk: int) -> JsonResponse:
         return _ok()
 
 
-@login_required(login_url="/django-admin/login/")
+@login_required(login_url="/login/")
 @require_http_methods(["POST"])
 def gei_create(request: HttpRequest) -> JsonResponse:
     data = _json_body(request)
@@ -505,14 +505,14 @@ def _serialize_provider(p: PaymentProvider) -> dict[str, Any]:
     }
 
 
-@login_required(login_url="/django-admin/login/")
+@login_required(login_url="/login/")
 def provider_list(request: HttpRequest) -> JsonResponse:
     qs = PaymentProvider.objects.all().order_by("sort_order", "name")
     return _paginated_response(qs, request, _serialize_provider)
 
 
 @ensure_csrf_cookie
-@login_required(login_url="/django-admin/login/")
+@login_required(login_url="/login/")
 @require_http_methods(["GET", "PUT", "DELETE"])
 def provider_detail(request: HttpRequest, pk: int) -> JsonResponse:
     try:
@@ -536,7 +536,7 @@ def provider_detail(request: HttpRequest, pk: int) -> JsonResponse:
         return _ok()
 
 
-@login_required(login_url="/django-admin/login/")
+@login_required(login_url="/login/")
 @require_http_methods(["POST"])
 def provider_create(request: HttpRequest) -> JsonResponse:
     data = _json_body(request)
@@ -576,7 +576,7 @@ def _serialize_enrollment(e: Enrollment) -> dict[str, Any]:
     }
 
 
-@login_required(login_url="/django-admin/login/")
+@login_required(login_url="/login/")
 def enrollment_list(request: HttpRequest) -> JsonResponse:
     qs = Enrollment.objects.select_related("member", "course").all()
     status = request.GET.get("status")
@@ -587,7 +587,7 @@ def enrollment_list(request: HttpRequest) -> JsonResponse:
 
 
 @ensure_csrf_cookie
-@login_required(login_url="/django-admin/login/")
+@login_required(login_url="/login/")
 @require_http_methods(["GET", "PUT"])
 def enrollment_detail(request: HttpRequest, pk: int) -> JsonResponse:
     try:
@@ -607,7 +607,7 @@ def enrollment_detail(request: HttpRequest, pk: int) -> JsonResponse:
 
 # ── Summary ──────────────────────────────────────────────
 
-@login_required(login_url="/django-admin/login/")
+@login_required(login_url="/login/")
 def dashboard_summary(request: HttpRequest) -> JsonResponse:
     return JsonResponse(get_dashboard_summary(request))
 
@@ -658,14 +658,14 @@ def _serialize_notification(n: AdminNotification) -> dict[str, Any]:
     }
 
 
-@login_required(login_url="/django-admin/login/")
+@login_required(login_url="/login/")
 def notification_list(request: HttpRequest) -> JsonResponse:
     qs = AdminNotification.objects.all()
     qs = qs.order_by("-is_read", "-created_at")[:20]
     return JsonResponse([_serialize_notification(n) for n in qs], safe=False)
 
 
-@login_required(login_url="/django-admin/login/")
+@login_required(login_url="/login/")
 def notification_check(request: HttpRequest) -> JsonResponse:
     since = request.GET.get("since")
     qs = AdminNotification.objects.all()
@@ -687,7 +687,7 @@ def notification_check(request: HttpRequest) -> JsonResponse:
     })
 
 
-@login_required(login_url="/django-admin/login/")
+@login_required(login_url="/login/")
 @require_http_methods(["POST"])
 def notification_read(request: HttpRequest, pk: int) -> JsonResponse:
     try:
@@ -699,7 +699,7 @@ def notification_read(request: HttpRequest, pk: int) -> JsonResponse:
     return _ok()
 
 
-@login_required(login_url="/django-admin/login/")
+@login_required(login_url="/login/")
 @require_http_methods(["POST"])
 def notification_read_all(request: HttpRequest) -> JsonResponse:
     AdminNotification.objects.filter(is_read=False).update(is_read=True)
@@ -735,7 +735,7 @@ def _csv_stream(queryset: QuerySet, fields: list[str]) -> Generator[str, None, N
         buffer.truncate(0)
 
 
-@login_required(login_url="/django-admin/login/")
+@login_required(login_url="/login/")
 def export_csv(request: HttpRequest, model_name: str) -> HttpResponse:
     if model_name not in ALLOWED_EXPORT_MODELS:
         return _error(f"Modèle non autorisé: {model_name}", 404)

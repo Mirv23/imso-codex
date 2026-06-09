@@ -37,7 +37,6 @@ if SENTRY_DSN:
     )
 
 INSTALLED_APPS = [
-    "django.contrib.admin",
     "django.contrib.auth",
     "django.contrib.contenttypes",
     "django.contrib.sessions",
@@ -199,7 +198,8 @@ MEDIA_ROOT = BASE_DIR / "media"
 # Requires: pip install django-storages[boto3]
 # Then set AWS_ACCESS_KEY_ID, AWS_SECRET_ACCESS_KEY, AWS_STORAGE_BUCKET_NAME, etc.
 
-LOGIN_URL = "/django-admin/login/"
+LOGIN_URL = "/login/"
+LOGIN_REDIRECT_URL = "/dashboard/"
 LOGOUT_REDIRECT_URL = "/"
 
 SPECTACULAR_SETTINGS = {
