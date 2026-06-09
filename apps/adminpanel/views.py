@@ -33,11 +33,12 @@ from .models import (
 
 
 class DashboardView(LoginRequiredMixin, TemplateView):
-    template_name = "adminpanel/simple_dashboard.html"
+    template_name = "adminpanel/dashboard_bundled.html"
 
     def get_context_data(self, **kwargs: Any) -> dict[str, Any]:
         context = super().get_context_data(**kwargs)
         context["summary"] = get_dashboard_summary()
+        context["summary_json"] = json.dumps(context["summary"])
         return context
 
 
