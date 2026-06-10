@@ -279,6 +279,28 @@ class DashboardMetric(TimestampedModel):
         return self.label
 
 
+class Testimonial(TimestampedModel):
+    author_name = models.CharField(max_length=140)
+    author_initials = models.CharField(max_length=6, blank=True, help_text="Ex: MJ, JV")
+    location = models.CharField(max_length=140, blank=True, help_text="Ex: GEI Pétion-Ville · 2 ans")
+    text = models.TextField()
+    photo = models.FileField(upload_to="testimonials/", blank=True)
+    sort_order = models.PositiveIntegerField(default=0)
+    is_active = models.BooleanField(default=True)
+
+    class Meta:
+        ordering = ["sort_order", "-created_at"]
+
+    def save(self, *args, **kwargs):
+        if not self.author_initials and self.author_name:
+            parts = self.author_name.strip().split()
+            self.author_initials = "".join(p[0].upper() for p in parts if p)[:4]
+        super().save(*args, **kwargs)
+
+    def __str__(self) -> str:
+        return f"{self.author_name} - {self.location}"
+
+
 class AdminNotification(models.Model):
     class NotificationType(models.TextChoices):
         NEW_BOOKING = "new_booking", "Nouvelle réservation"

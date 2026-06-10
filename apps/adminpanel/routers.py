@@ -10,6 +10,7 @@ from .views_api import (
     MemberViewSet,
     PaymentViewSet,
     PaymentProviderViewSet,
+    TestimonialViewSet,
     VenueBookingViewSet,
 )
 
@@ -23,4 +24,5 @@ router.register(r"providers", PaymentProviderViewSet, basename="v2-provider")
 router.register(r"payments", PaymentViewSet, basename="v2-payment")
 router.register(r"contacts", ContactRequestViewSet, basename="v2-contact")
 router.register(r"notifications", AdminNotificationViewSet, basename="v2-notification")
+router.register(r"testimonials", TestimonialViewSet, basename="v2-testimonial")
 router.register(r"dashboard", DashboardSummaryViewSet, basename="v2-dashboard")

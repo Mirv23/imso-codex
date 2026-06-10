@@ -9,6 +9,7 @@ from .models import (
     Member,
     Payment,
     PaymentProvider,
+    Testimonial,
     VenueBooking,
 )
 
@@ -97,6 +98,13 @@ class PaymentSerializer(serializers.ModelSerializer):
 class ContactRequestSerializer(serializers.ModelSerializer):
     class Meta:
         model = ContactRequest
+        fields = "__all__"
+        read_only_fields = ["id", "created_at", "updated_at"]
+
+
+class TestimonialSerializer(serializers.ModelSerializer):
+    class Meta:
+        model = Testimonial
         fields = "__all__"
         read_only_fields = ["id", "created_at", "updated_at"]
 

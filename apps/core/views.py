@@ -30,12 +30,23 @@ class HomeView(TemplateView):
 
     def get_context_data(self, **kwargs: Any) -> dict[str, Any]:
         context = super().get_context_data(**kwargs)
-        context["active_courses"] = Course.objects.filter(is_active=True).only(
+
+        courses = Course.objects.filter(is_active=True).only(
             "id", "title", "category", "city", "instructor", "price_htg", "capacity", "description", "public_slug"
         )
+        context["active_courses"] = courses
+
         context["active_providers"] = PaymentProvider.objects.filter(is_active=True).only(
             "id", "name", "provider_type", "instructions", "checkout_url", "sort_order"
         )
+
+        context["total_members"] = Member.objects.filter(status=Member.Status.ACTIVE).count()
+        context["total_courses"] = courses.count()
+        context["total_geis"] = GEI.objects.filter(is_active=True).count()
+
+        from apps.adminpanel.models import Testimonial
+        context["testimonials"] = Testimonial.objects.filter(is_active=True)
+
         return context
 
 

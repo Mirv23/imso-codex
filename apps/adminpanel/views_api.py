@@ -16,6 +16,7 @@ from .models import (
     Member,
     Payment,
     PaymentProvider,
+    Testimonial,
     VenueBooking,
 )
 from .serializers import (
@@ -27,6 +28,7 @@ from .serializers import (
     MemberSerializer,
     PaymentSerializer,
     PaymentProviderSerializer,
+    TestimonialSerializer,
     VenueBookingSerializer,
 )
 
@@ -129,6 +131,16 @@ class AdminNotificationViewSet(viewsets.ReadOnlyModelViewSet):
     def mark_all_read(self, request):
         AdminNotification.objects.filter(is_read=False).update(is_read=True)
         return Response({"ok": True}, status=status.HTTP_200_OK)
+
+
+class TestimonialViewSet(viewsets.ModelViewSet):
+    queryset = Testimonial.objects.all()
+    serializer_class = TestimonialSerializer
+    permission_classes = [IsAuthenticated]
+    filter_backends = [filters.SearchFilter, filters.OrderingFilter]
+    search_fields = ["author_name", "location", "text"]
+    ordering_fields = ["sort_order", "created_at", "author_name"]
+    ordering = ["sort_order", "-created_at"]
 
 
 class DashboardSummaryViewSet(viewsets.ViewSet):

@@ -28,6 +28,7 @@ from .models import (
     Member,
     Payment,
     PaymentProvider,
+    Testimonial,
     VenueBooking,
 )
 
@@ -894,6 +895,79 @@ def notification_read_all(request: HttpRequest) -> JsonResponse:
     return _ok()
 
 
+# ── Testimonials (v1) ─────────────────────────────────────
+
+
+@login_required(login_url="/login/")
+@require_http_methods(["GET"])
+def testimonial_list(request: HttpRequest) -> JsonResponse:
+    qs = Testimonial.objects.all()
+    data = [
+        {
+            "id": t.pk,
+            "author_name": t.author_name,
+            "author_initials": t.author_initials,
+            "location": t.location,
+            "text": t.text,
+            "sort_order": t.sort_order,
+            "is_active": t.is_active,
+            "created_at": t.created_at.isoformat(),
+            "updated_at": t.updated_at.isoformat(),
+        }
+        for t in qs
+    ]
+    return JsonResponse(data, safe=False)
+
+
+@login_required(login_url="/login/")
+@require_http_methods(["GET", "PUT", "DELETE"])
+def testimonial_detail(request: HttpRequest, pk: int) -> JsonResponse:
+    try:
+        t = Testimonial.objects.get(pk=pk)
+    except Testimonial.DoesNotExist:
+        return _error("Témoignage introuvable", 404)
+
+    if request.method == "GET":
+        return JsonResponse({
+            "id": t.pk,
+            "author_name": t.author_name,
+            "author_initials": t.author_initials,
+            "location": t.location,
+            "text": t.text,
+            "photo": t.photo.url if t.photo else "",
+            "sort_order": t.sort_order,
+            "is_active": t.is_active,
+            "created_at": t.created_at.isoformat(),
+            "updated_at": t.updated_at.isoformat(),
+        })
+
+    if request.method == "DELETE":
+        t.delete()
+        return _ok()
+
+    data = json.loads(request.body.decode("utf-8"))
+    for field in ("author_name", "location", "text", "sort_order", "is_active"):
+        if field in data:
+            setattr(t, field, data[field])
+    t.save()
+    return _ok()
+
+
+@login_required(login_url="/login/")
+@require_http_methods(["POST"])
+def testimonial_create(request: HttpRequest) -> JsonResponse:
+    data = json.loads(request.body.decode("utf-8"))
+    t = Testimonial.objects.create(
+        author_name=data.get("author_name", ""),
+        author_initials=data.get("author_initials", ""),
+        location=data.get("location", ""),
+        text=data.get("text", ""),
+        sort_order=data.get("sort_order", 0),
+        is_active=data.get("is_active", True),
+    )
+    return JsonResponse({"ok": True, "id": t.pk}, status=201)
+
+
 # ── Export CSV ───────────────────────────────────────────
 
 ALLOWED_EXPORT_MODELS = {
@@ -905,6 +979,7 @@ ALLOWED_EXPORT_MODELS = {
     "geis": GEI,
     "providers": PaymentProvider,
     "enrollments": Enrollment,
+    "testimonials": Testimonial,
 }
 
 

@@ -187,8 +187,11 @@ class TestPublicAPI:
         client = Client()
         response = client.get(reverse("core:healthcheck"), HTTP_ORIGIN="https://example.com")
         assert response.status_code == 200
-        assert response["Access-Control-Allow-Origin"] == "https://example.com"
-        assert response["Access-Control-Allow-Credentials"] == "true"
+        assert "Access-Control-Allow-Origin" not in response
+
+        response = client.get(reverse("core:healthcheck"), HTTP_ORIGIN="https://imsohaiti.com")
+        assert response.status_code == 200
+        assert "Access-Control-Allow-Origin" not in response
 
 
 @pytest.mark.django_db

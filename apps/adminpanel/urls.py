@@ -27,6 +27,9 @@ from .views import (
     provider_create,
     provider_detail,
     provider_list,
+    testimonial_create,
+    testimonial_detail,
+    testimonial_list,
 )
 
 app_name = "adminpanel"
@@ -81,6 +84,12 @@ urlpatterns = [
     path("api/v1/notifications/<int:pk>/read/", notification_read, name="notification-read-v1"),
     path("api/notifications/read-all/", notification_read_all, name="notification-read-all"),
     path("api/v1/notifications/read-all/", notification_read_all, name="notification-read-all-v1"),
+    path("api/testimonials/", testimonial_list, name="testimonial-list"),
+    path("api/v1/testimonials/", testimonial_list, name="testimonial-list-v1"),
+    path("api/testimonials/create/", testimonial_create, name="testimonial-create"),
+    path("api/v1/testimonials/create/", testimonial_create, name="testimonial-create-v1"),
+    path("api/testimonials/<int:pk>/", testimonial_detail, name="testimonial-detail"),
+    path("api/v1/testimonials/<int:pk>/", testimonial_detail, name="testimonial-detail-v1"),
     path("api/export/<str:model_name>/", export_csv, name="export-csv"),
 ]
 

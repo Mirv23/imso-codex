@@ -1,4 +1,4 @@
-{% load static %}<!-- Aperçu cours -->
+{% load static %}
 <section class="section" id="cours">
   <div class="container">
     <div class="courses__head-row reveal">
@@ -13,84 +13,36 @@
     </div>
     <div class="courses__wrap">
       <div class="courses__grid">
-        <article class="course-card reveal" data-delay="1">
-          <div class="course-card__band course-card__band--g">
-            <span class="course-card__tag">Gestion</span>
+        {% for course in active_courses %}
+        <article class="course-card reveal" data-delay="{{ forloop.counter|default:1 }}">
+          <div class="course-card__band course-card__band--{% cycle 'g' 'a' 't' 'g' 'a' 't' %}">
+            <span class="course-card__tag">{{ course.category }}</span>
           </div>
           <div class="course-card__body">
-            <h3 class="course-card__title">Tenir une comptabilité simple pour son commerce</h3>
+            <h3 class="course-card__title">{{ course.title }}</h3>
             <div class="course-card__instructor">
-              <span class="avatar avatar--b">RJ<img src="{% static 'website/assets/7721235e-af66-490a-8d60-43eb11018e5c.jpg' %}" alt="" loading="lazy" onerror="this.remove()"></span>
-              <span>Rosemène Joseph · Port-au-Prince</span>
+              <span class="avatar avatar--b">{% firstof course.instructor|make_list|first|upper course.instructor|first|upper %}</span>
+              <span>{{ course.instructor }} · {{ course.city }}</span>
             </div>
             <div class="course-card__rating">
-              <span class="stars" aria-label="4.9 sur 5">
+              <span class="stars" aria-label="5 sur 5">
                 <svg viewBox="0 0 24 24" fill="currentColor"><path d="M12 2l3 7h7l-5.5 4.5L18 21l-6-4-6 4 1.5-7.5L2 9h7z"></path></svg>
                 <svg viewBox="0 0 24 24" fill="currentColor"><path d="M12 2l3 7h7l-5.5 4.5L18 21l-6-4-6 4 1.5-7.5L2 9h7z"></path></svg>
                 <svg viewBox="0 0 24 24" fill="currentColor"><path d="M12 2l3 7h7l-5.5 4.5L18 21l-6-4-6 4 1.5-7.5L2 9h7z"></path></svg>
                 <svg viewBox="0 0 24 24" fill="currentColor"><path d="M12 2l3 7h7l-5.5 4.5L18 21l-6-4-6 4 1.5-7.5L2 9h7z"></path></svg>
                 <svg viewBox="0 0 24 24" fill="currentColor"><path d="M12 2l3 7h7l-5.5 4.5L18 21l-6-4-6 4 1.5-7.5L2 9h7z"></path></svg>
               </span>
-              <span>4.9 · 36 inscrits</span>
+              <span>Nouveau</span>
             </div>
             <div class="course-card__meta">
-              <div class="course-card__price">2 500 <small>HTG</small></div>
+              <div class="course-card__price">{{ course.price_htg }}  <small>HTG</small></div>
               <button class="btn btn--ghost btn--small">S'inscrire</button>
             </div>
           </div>
         </article>
-        <article class="course-card reveal" data-delay="2">
-          <div class="course-card__band course-card__band--a">
-            <span class="course-card__tag">Entrepreneuriat</span>
-          </div>
-          <div class="course-card__body">
-            <h3 class="course-card__title">Lancer un atelier de transformation agroalimentaire</h3>
-            <div class="course-card__instructor">
-              <span class="avatar avatar--a">MD<img src="{% static 'website/assets/1012189e-d186-4fe9-8f0e-a0c31c9a1d08.jpg' %}" alt="" loading="lazy" onerror="this.remove()"></span>
-              <span>Marc-Donald Pierre · Cap-Haïtien</span>
-            </div>
-            <div class="course-card__rating">
-              <span class="stars" aria-label="4.7 sur 5">
-                <svg viewBox="0 0 24 24" fill="currentColor"><path d="M12 2l3 7h7l-5.5 4.5L18 21l-6-4-6 4 1.5-7.5L2 9h7z"></path></svg>
-                <svg viewBox="0 0 24 24" fill="currentColor"><path d="M12 2l3 7h7l-5.5 4.5L18 21l-6-4-6 4 1.5-7.5L2 9h7z"></path></svg>
-                <svg viewBox="0 0 24 24" fill="currentColor"><path d="M12 2l3 7h7l-5.5 4.5L18 21l-6-4-6 4 1.5-7.5L2 9h7z"></path></svg>
-                <svg viewBox="0 0 24 24" fill="currentColor"><path d="M12 2l3 7h7l-5.5 4.5L18 21l-6-4-6 4 1.5-7.5L2 9h7z"></path></svg>
-                <svg viewBox="0 0 24 24" fill="currentColor" opacity=".35"><path d="M12 2l3 7h7l-5.5 4.5L18 21l-6-4-6 4 1.5-7.5L2 9h7z"></path></svg>
-              </span>
-              <span>4.7 · 28 inscrits</span>
-            </div>
-            <div class="course-card__meta">
-              <div class="course-card__price">3 800 <small>HTG</small></div>
-              <button class="btn btn--ghost btn--small">S'inscrire</button>
-            </div>
-          </div>
-        </article>
-        <article class="course-card reveal" data-delay="3">
-          <div class="course-card__band course-card__band--t">
-            <span class="course-card__tag">Marketing</span>
-          </div>
-          <div class="course-card__body">
-            <h3 class="course-card__title">Vendre ses produits sur les marchés et en ligne</h3>
-            <div class="course-card__instructor">
-              <span class="avatar avatar--c">FP<img src="{% static 'website/assets/a46c278a-e1c5-492a-b2bd-a8fba81fdb49.jpg' %}" alt="" loading="lazy" onerror="this.remove()"></span>
-              <span>Fabienne Pamphile · Jacmel</span>
-            </div>
-            <div class="course-card__rating">
-              <span class="stars" aria-label="4.8 sur 5">
-                <svg viewBox="0 0 24 24" fill="currentColor"><path d="M12 2l3 7h7l-5.5 4.5L18 21l-6-4-6 4 1.5-7.5L2 9h7z"></path></svg>
-                <svg viewBox="0 0 24 24" fill="currentColor"><path d="M12 2l3 7h7l-5.5 4.5L18 21l-6-4-6 4 1.5-7.5L2 9h7z"></path></svg>
-                <svg viewBox="0 0 24 24" fill="currentColor"><path d="M12 2l3 7h7l-5.5 4.5L18 21l-6-4-6 4 1.5-7.5L2 9h7z"></path></svg>
-                <svg viewBox="0 0 24 24" fill="currentColor"><path d="M12 2l3 7h7l-5.5 4.5L18 21l-6-4-6 4 1.5-7.5L2 9h7z"></path></svg>
-                <svg viewBox="0 0 24 24" fill="currentColor"><path d="M12 2l3 7h7l-5.5 4.5L18 21l-6-4-6 4 1.5-7.5L2 9h7z"></path></svg>
-              </span>
-              <span>4.8 · 41 inscrits</span>
-            </div>
-            <div class="course-card__meta">
-              <div class="course-card__price">2 200 <small>HTG</small></div>
-              <button class="btn btn--ghost btn--small">S'inscrire</button>
-            </div>
-          </div>
-        </article>
+        {% empty %}
+        <p style="grid-column: 1 / -1; text-align: center; color: var(--muted); padding: 40px 0;">Aucun cours disponible pour le moment. Revenez bientôt !</p>
+        {% endfor %}
       </div>
     </div>
   </div>

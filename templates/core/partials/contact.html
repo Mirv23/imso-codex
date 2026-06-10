@@ -7,91 +7,28 @@
     </div>
     <div class="testi__carousel reveal" data-delay="1">
       <div class="testi__track" id="testiTrack">
+        {% for testimonial in testimonials %}
         <div class="testi__slide">
           <article class="testi__card">
             <div class="testi__quote-mark">"</div>
-            <p class="testi__text">
-              Grâce à IMSO, j'ai pu agrandir mon atelier de couture et embaucher
-              deux apprenties. Le mentorat m'a appris à tenir mes comptes
-              correctement pour la première fois.
-            </p>
+            <p class="testi__text">{{ testimonial.text }}</p>
             <div class="testi__person">
-              <span class="testi__avatar">MJ<img src="https://images.unsplash.com/photo-1573497019940-1c28c88b4f3e?w=200&amp;auto=format&amp;q=80" alt="" loading="lazy" onerror="this.remove()"></span>
+              <span class="testi__avatar">{{ testimonial.author_initials }}</span>
               <div>
-                <div class="testi__name">Mirlande Jean-Baptiste</div>
-                <div class="testi__loc">GEI Pétion-Ville · 2 ans</div>
+                <div class="testi__name">{{ testimonial.author_name }}</div>
+                <div class="testi__loc">{{ testimonial.location }}</div>
               </div>
             </div>
           </article>
         </div>
+        {% empty %}
         <div class="testi__slide">
           <article class="testi__card">
             <div class="testi__quote-mark">"</div>
-            <p class="testi__text">
-              Le GEI m'a fait confiance pour lancer ma petite épicerie de quartier.
-              Les remboursements sont alignés sur mes revenus, et la formation
-              en marketing local a changé ma façon de vendre.
-            </p>
-            <div class="testi__person">
-              <span class="testi__avatar">JV<img src="{% static 'website/assets/e466749a-95fa-4e65-8bff-67927985f548.jpg' %}" alt="" loading="lazy" onerror="this.remove()"></span>
-              <div>
-                <div class="testi__name">Jacques Villard</div>
-                <div class="testi__loc">GEI Cap-Haïtien · 1 an</div>
-              </div>
-            </div>
+            <p class="testi__text">Aucun témoignage pour le moment. Soyez le premier à partager votre expérience !</p>
           </article>
         </div>
-        <div class="testi__slide">
-          <article class="testi__card">
-            <div class="testi__quote-mark">"</div>
-            <p class="testi__text">
-              Ce que j'aime à IMSO, c'est la transparence. Chaque cotisation est
-              tracée et les décisions se prennent ensemble. Je me sens vraiment
-              actrice de mon avenir financier.
-            </p>
-            <div class="testi__person">
-              <span class="testi__avatar">SD<img src="{% static 'website/assets/c43d2991-a4a1-4a5c-9629-ef652c61d8e2.jpg' %}" alt="" loading="lazy" onerror="this.remove()"></span>
-              <div>
-                <div class="testi__name">Sherline Désir</div>
-                <div class="testi__loc">GEI Jacmel · 3 ans</div>
-              </div>
-            </div>
-          </article>
-        </div>
-        <div class="testi__slide">
-          <article class="testi__card">
-            <div class="testi__quote-mark">"</div>
-            <p class="testi__text">
-              J'ai débuté comme épargnant. Aujourd'hui je forme moi-même les
-              nouveaux membres en comptabilité simple. IMSO transforme les
-              parcours en compétences partagées.
-            </p>
-            <div class="testi__person">
-              <span class="testi__avatar">EB<img src="https://images.unsplash.com/photo-1500648767791-00dcc994a43e?w=200&amp;auto=format&amp;q=80" alt="" loading="lazy" onerror="this.remove()"></span>
-              <div>
-                <div class="testi__name">Edner Beauvais</div>
-                <div class="testi__loc">GEI Gonaïves · 4 ans</div>
-              </div>
-            </div>
-          </article>
-        </div>
-        <div class="testi__slide">
-          <article class="testi__card">
-            <div class="testi__quote-mark">"</div>
-            <p class="testi__text">
-              Un microcrédit obtenu en quelques semaines m'a permis d'acheter
-              un four professionnel. Ma pâtisserie tient grâce à la solidarité
-              du groupe, pas grâce à un collatéral impossible à fournir.
-            </p>
-            <div class="testi__person">
-              <span class="testi__avatar">CL<img src="https://images.unsplash.com/photo-1494790108377-be9c29b29330?w=200&amp;auto=format&amp;q=80" alt="" loading="lazy" onerror="this.remove()"></span>
-              <div>
-                <div class="testi__name">Carline Louis</div>
-                <div class="testi__loc">GEI Les Cayes · 1 an</div>
-              </div>
-            </div>
-          </article>
-        </div>
+        {% endfor %}
       </div>
     </div>
     <div class="testi__nav reveal">
