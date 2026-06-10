@@ -3,248 +3,818 @@
 <head>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">
-<title>IMSO Haiti — Tableau de bord</title>
+<title>IMSO Haiti — Administration</title>
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=JetBrains+Mono:wght@400;500&display=swap" rel="stylesheet">
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
 <style>
 :root {
   --primary: #2D6A4F; --primary-600: #245742; --primary-light: #E8F5EE;
   --accent: #F4A261; --success: #10B981; --warning: #F59E0B; --danger: #EF4444;
   --text: #111827; --muted: #6B7280; --card: #FFFFFF; --border: #E5E7EB;
-  --bg: #F7F8FA; --sidebar: #FFFFFF; --sb-w: 240px; --hd-h: 64px;
-  --radius: 12px; --radius-lg: 16px;
+  --bg: #F7F8FA; --sidebar: #1A2332; --sidebar-hover: #243044; --sb-w: 240px;
+  --hd-h: 64px; --radius: 9px; --radius-lg: 16px;
   --shadow-sm: 0 1px 2px rgba(17,24,39,0.04);
   --shadow-md: 0 4px 14px -2px rgba(17,24,39,0.06);
+  --shadow-lg: 0 12px 40px -8px rgba(17,24,39,0.12);
 }
 * { box-sizing: border-box; margin: 0; padding: 0; }
 html, body {
   font-family: 'Inter', -apple-system, sans-serif;
-  color: var(--text); background: var(--bg); font-size: 14px; line-height: 1.45;
+  color: var(--text); background: var(--bg); font-size: 14px; line-height: 1.5;
 }
 a { color: var(--primary); text-decoration: none; }
 a:hover { text-decoration: underline; }
-
+input, select, textarea {
+  font: inherit; font-size: 13.5px; padding: 8px 12px; border: 1px solid var(--border);
+  border-radius: var(--radius); outline: none; background: #fff; width: 100%;
+  transition: border-color .15s, box-shadow .15s;
+}
+input:focus, select:focus, textarea:focus { border-color: var(--primary); box-shadow: 0 0 0 3px rgba(45,106,79,0.1); }
+textarea { resize: vertical; min-height: 80px; }
 .app { display: flex; min-height: 100vh; }
+
+/* Sidebar */
 .sidebar {
-  width: var(--sb-w); background: var(--sidebar);
-  border-right: 1px solid var(--border); position: fixed;
+  width: var(--sb-w); background: var(--sidebar); position: fixed;
   inset: 0 auto 0 0; display: flex; flex-direction: column; z-index: 30;
 }
-.sb-top { padding: 20px 16px 14px; }
-.sb-brand { display: flex; align-items: center; gap: 10px; }
-.sb-logo {
-  width: 34px; height: 34px; border-radius: 9px;
-  background: linear-gradient(135deg, var(--primary), #3a8862);
-  display: grid; place-items: center; color: #fff;
-  font-weight: 700; font-size: 14px;
-}
-.sb-name { font-weight: 700; font-size: 15px; }
-.sb-tag {
-  background: var(--primary-light); color: var(--primary);
-  font-size: 10.5px; font-weight: 600; padding: 2px 7px; border-radius: 999px;
-  margin-left: 6px;
-}
-.sb-nav { padding: 0 8px; flex: 1; overflow-y: auto; }
-.sb-section {
-  font-size: 10.5px; font-weight: 600; color: #9CA3AF;
-  text-transform: uppercase; letter-spacing: 0.08em;
-  padding: 10px 20px 6px;
-}
+.sb-brand { padding: 20px 16px 12px; display: flex; align-items: center; gap: 10px; border-bottom: 1px solid rgba(255,255,255,0.06); }
+.sb-logo { width: 34px; height: 34px; border-radius: 9px; background: linear-gradient(135deg, var(--primary), #3a8862); display: grid; place-items: center; color: #fff; font-weight: 700; font-size: 14px; }
+.sb-name { font-weight: 700; font-size: 15px; color: #fff; }
+.sb-tag { background: rgba(255,255,255,0.08); color: #94A3B8; font-size: 10px; font-weight: 600; padding: 2px 7px; border-radius: 999px; margin-left: auto; }
+.sb-nav { padding: 8px; flex: 1; overflow-y: auto; }
+.sb-section { font-size: 10px; font-weight: 600; color: #64748B; text-transform: uppercase; letter-spacing: 0.08em; padding: 16px 12px 6px; }
 .sb-item {
-  display: flex; align-items: center; gap: 11px; padding: 9px 12px;
-  margin: 1px 0; border-radius: 9px; color: var(--text);
-  font-size: 13.5px; font-weight: 500; cursor: pointer;
-  transition: background-color .18s;
+  display: flex; align-items: center; gap: 11px; padding: 9px 12px; margin: 1px 0;
+  border-radius: var(--radius); color: #CBD5E1; font-size: 13px; font-weight: 500;
+  cursor: pointer; transition: all .15s; border: none; background: none; width: 100%; text-align: left;
 }
-.sb-item:hover { background: #F4F6F8; }
-.sb-item.active { background: var(--primary-light); color: var(--primary); font-weight: 600; }
-.sb-item .ico { color: #6B7280; display: grid; place-items: center; }
-.sb-item.active .ico { color: var(--primary); }
-.sb-bottom { padding: 8px; border-top: 1px solid #EEF0F3; }
+.sb-item:hover { background: var(--sidebar-hover); color: #fff; text-decoration: none; }
+.sb-item.active { background: rgba(45,106,79,0.2); color: #6EE7B7; font-weight: 600; }
+.sb-item .ico { width: 20px; display: grid; place-items: center; color: #64748B; flex-shrink: 0; }
+.sb-item.active .ico { color: #6EE7B7; }
+.sb-bottom { padding: 8px; border-top: 1px solid rgba(255,255,255,0.06); }
 
+/* Main */
 .main { margin-left: var(--sb-w); flex: 1; display: flex; flex-direction: column; }
 .header {
-  height: var(--hd-h); background: rgba(255,255,255,0.85);
-  backdrop-filter: saturate(140%) blur(10px);
+  height: var(--hd-h); background: rgba(255,255,255,0.85); backdrop-filter: saturate(140%) blur(10px);
   border-bottom: 1px solid var(--border); position: sticky; top: 0; z-index: 20;
-  display: flex; align-items: center; justify-content: space-between;
-  padding: 0 32px;
+  display: flex; align-items: center; justify-content: space-between; padding: 0 32px;
 }
+.hd-left { display: flex; align-items: center; gap: 16px; }
 .hd-title { font-size: 18px; font-weight: 600; }
 .hd-sub { font-size: 12.5px; color: var(--muted); }
+.hd-actions { display: flex; gap: 10px; }
 .content { padding: 28px 32px 64px; max-width: 1480px; width: 100%; }
 
-.metric-grid { display: grid; grid-template-columns: repeat(4, 1fr); gap: 18px; }
+/* Components */
+.btn {
+  display: inline-flex; align-items: center; gap: 7px; padding: 7px 14px;
+  border-radius: var(--radius); border: 1px solid var(--border); background: #fff;
+  color: var(--text); font-size: 13px; font-weight: 500; cursor: pointer;
+  transition: all .15s; line-height: 1.4; white-space: nowrap;
+}
+.btn:hover { background: var(--bg); border-color: #D1D5DB; }
+.btn-primary { background: var(--primary); color: #fff; border-color: var(--primary); }
+.btn-primary:hover { background: var(--primary-600); border-color: var(--primary-600); }
+.btn-danger { background: var(--danger); color: #fff; border-color: var(--danger); }
+.btn-danger:hover { background: #DC2626; }
+.btn-sm { padding: 4px 10px; font-size: 12px; }
+
+/* Dashboard metrics */
+.metric-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(200px, 1fr)); gap: 14px; }
 .metric {
   background: var(--card); border: 1px solid var(--border);
-  border-radius: var(--radius-lg); padding: 20px;
-  box-shadow: var(--shadow-sm);
+  border-radius: var(--radius-lg); padding: 18px 20px;
+  box-shadow: var(--shadow-sm); transition: box-shadow .15s;
 }
-.metric-label { font-size: 12.5px; color: var(--muted); margin-bottom: 4px; font-weight: 500; }
-.metric-value {
-  font-size: 28px; font-weight: 700; letter-spacing: -0.02em;
-  font-feature-settings: 'tnum'; line-height: 1.1;
-}
+.metric:hover { box-shadow: var(--shadow-md); }
+.metric-label { font-size: 12px; color: var(--muted); margin-bottom: 2px; font-weight: 500; text-transform: uppercase; letter-spacing: 0.04em; }
+.metric-value { font-size: 26px; font-weight: 700; letter-spacing: -0.02em; font-feature-settings: 'tnum'; line-height: 1.2; margin-top: 2px; }
+.metric-helper { font-size: 12px; color: var(--muted); margin-top: 4px; }
+
+/* Card */
 .card {
   background: var(--card); border: 1px solid var(--border);
   border-radius: var(--radius-lg); box-shadow: var(--shadow-sm);
-  margin-top: 18px;
 }
-.card-head { padding: 18px 22px 6px; }
+.card-head { padding: 18px 22px 12px; display: flex; align-items: center; justify-content: space-between; flex-wrap: wrap; gap: 10px; }
 .card-title { font-size: 14.5px; font-weight: 600; }
-.card-sub { font-size: 12px; color: var(--muted); margin-top: 2px; }
+.card-sub { font-size: 12px; color: var(--muted); }
 
-.table { width: 100%; border-collapse: collapse; }
-.table th, .table td { text-align: left; padding: 12px 22px; font-size: 13px; border-top: 1px solid #EEF0F3; }
-.table th {
-  font-size: 11px; font-weight: 600; color: var(--muted);
-  text-transform: uppercase; letter-spacing: 0.04em;
-  border-bottom: 1px solid var(--border); background: #FAFBFC;
-}
+/* Table */
+.table-wrap { overflow-x: auto; }
+.table { width: 100%; border-collapse: collapse; min-width: 600px; }
+.table th, .table td { text-align: left; padding: 11px 22px; font-size: 13px; border-top: 1px solid #EEF0F3; }
+.table th { font-size: 11px; font-weight: 600; color: var(--muted); text-transform: uppercase; letter-spacing: 0.04em; border-bottom: 1px solid var(--border); background: #FAFBFC; }
 .table tbody tr:hover { background: #FAFBFC; }
+.table td.actions { white-space: nowrap; text-align: right; }
+.table .empty { text-align: center; padding: 48px 22px; color: var(--muted); }
 
-.btn {
-  display: inline-flex; align-items: center; gap: 7px; padding: 8px 14px;
-  border-radius: 9px; border: 1px solid var(--border); background: #fff;
-  color: var(--text); font-size: 13px; font-weight: 500; cursor: pointer;
-  transition: background .15s;
-}
-.btn:hover { background: var(--bg); }
-.btn.primary {
-  background: var(--primary); color: #fff; border-color: var(--primary);
-}
-.btn.sm { padding: 5px 10px; font-size: 12px; }
+/* Badges */
 .pill {
-  display: inline-flex; padding: 2px 8px; border-radius: 999px;
-  font-size: 11.5px; font-weight: 600; background: var(--bg); color: var(--text);
+  display: inline-flex; padding: 2px 8px; border-radius: 999px; font-size: 11.5px; font-weight: 600;
+  background: var(--bg); color: var(--text); align-items: center; gap: 4px;
 }
+.pill-sm { font-size: 10.5px; padding: 1px 6px; }
 .pill.green { background: rgba(16,185,129,0.10); color: #047857; }
 .pill.red { background: rgba(239,68,68,0.10); color: #B91C1C; }
 .pill.amber { background: rgba(245,158,11,0.12); color: #B45309; }
 .pill.blue { background: rgba(59,130,246,0.10); color: #1D4ED8; }
+.pill.gray { background: #F3F4F6; color: #6B7280; }
 
+/* Toolbar */
+.toolbar { display: flex; align-items: center; gap: 12px; flex-wrap: wrap; padding: 16px 22px; border-bottom: 1px solid #EEF0F3; }
+.toolbar .search-wrap { flex: 1; min-width: 200px; max-width: 320px; position: relative; }
+.toolbar .search-wrap input { padding-left: 32px; }
+.toolbar .search-icon { position: absolute; left: 10px; top: 50%; transform: translateY(-50%); color: #9CA3AF; pointer-events: none; }
+.toolbar .spacer { flex: 1; }
+.pagination { display: flex; align-items: center; gap: 6px; font-size: 13px; color: var(--muted); }
+.pagination .btn { min-width: 32px; justify-content: center; }
+
+/* Modal */
+.modal-overlay {
+  position: fixed; inset: 0; background: rgba(0,0,0,0.4); backdrop-filter: blur(4px);
+  z-index: 100; display: none; align-items: center; justify-content: center; padding: 20px;
+}
+.modal-overlay.open { display: flex; }
+.modal {
+  background: #fff; border-radius: var(--radius-lg); width: 100%; max-width: 520px;
+  max-height: 90vh; overflow-y: auto; box-shadow: var(--shadow-lg);
+}
+.modal-head { padding: 20px 24px 12px; display: flex; justify-content: space-between; align-items: center; border-bottom: 1px solid #EEF0F3; }
+.modal-title { font-size: 16px; font-weight: 600; }
+.modal-close { background: none; border: none; font-size: 20px; cursor: pointer; color: #9CA3AF; padding: 4px; line-height: 1; }
+.modal-close:hover { color: var(--text); }
+.modal-body { padding: 20px 24px; }
+.modal-foot { padding: 12px 24px 20px; display: flex; justify-content: flex-end; gap: 10px; }
+
+/* Form */
+.form-group { margin-bottom: 14px; }
+.form-label { display: block; font-size: 12.5px; font-weight: 600; color: var(--text); margin-bottom: 4px; }
+.form-hint { font-size: 11px; color: var(--muted); margin-top: 3px; }
+.form-row { display: grid; grid-template-columns: 1fr 1fr; gap: 12px; }
+
+/* Toast */
+.toast-container { position: fixed; top: 20px; right: 20px; z-index: 200; display: flex; flex-direction: column; gap: 8px; }
+.toast {
+  padding: 12px 18px; border-radius: var(--radius); font-size: 13px; font-weight: 500;
+  box-shadow: var(--shadow-lg); animation: slideIn .25s ease; max-width: 380px;
+}
+.toast.success { background: #065F46; color: #fff; }
+.toast.error { background: #991B1B; color: #fff; }
+.toast.info { background: #1E3A5F; color: #fff; }
+@keyframes slideIn { from { transform: translateX(100%); opacity: 0; } to { transform: translateX(0); opacity: 1; } }
+
+/* Confirm dialog */
+.confirm-body { text-align: center; padding: 24px; }
+.confirm-icon { font-size: 40px; margin-bottom: 12px; color: var(--danger); }
+.confirm-text { font-size: 15px; color: var(--muted); margin-bottom: 20px; }
+
+/* Tab sections */
+.section { display: none; }
+.section.active { display: block; }
+
+/* Activity grid */
 .grid-2 { display: grid; grid-template-columns: 1fr 1fr; gap: 18px; margin-top: 18px; }
-.mt-16 { margin-top: 16px; }
+@media (max-width: 900px) { .grid-2 { grid-template-columns: 1fr; } }
+@media (max-width: 640px) { .sidebar { width: 0; overflow: hidden; } .main { margin-left: 0; } .content { padding: 16px; } .header { padding: 0 16px; } }
 </style>
 </head>
 <body>
 <div class="app">
   <aside class="sidebar">
-    <div class="sb-top">
-      <div class="sb-brand">
-        <div class="sb-logo">I</div>
-        <span class="sb-name">IMSO</span><span class="sb-tag">Admin</span>
-      </div>
+    <div class="sb-brand">
+      <div class="sb-logo">I</div>
+      <span class="sb-name">IMSO</span><span class="sb-tag">Admin</span>
     </div>
-    <nav class="sb-nav">
-      <div class="sb-section">Administration</div>
-      <a class="sb-item active" href="/dashboard/">
-        <span class="ico">
-          <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.75"><path d="M4 4h6v8H4z"/><path d="M14 4h6v4h-6z"/><path d="M14 12h6v8h-6z"/><path d="M4 16h6v4H4z"/></svg>
-        </span>
+    <nav class="sb-nav" id="sideNav">
+      <div class="sb-section">Aperçu</div>
+      <button class="sb-item active" data-section="dashboard" onclick="navigateTo('dashboard')">
+        <span class="ico"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="3" y="3" width="7" height="7"/><rect x="14" y="3" width="7" height="7"/><rect x="14" y="14" width="7" height="7"/><rect x="3" y="14" width="7" height="7"/></svg></span>
         Tableau de bord
-      </a>
-      <div class="sb-section">API</div>
-      <a class="sb-item" href="/api/docs/">
-        <span class="ico">
-          <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.75"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><polyline points="14 2 14 8 20 8"/><line x1="16" y1="13" x2="8" y2="13"/><line x1="16" y1="17" x2="8" y2="17"/></svg>
-        </span>
-        Documentation API
-      </a>
+      </button>
+      <div class="sb-section">Gestion</div>
+      <button class="sb-item" data-section="members" onclick="navigateTo('members')">
+        <span class="ico"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2"/><circle cx="9" cy="7" r="4"/><path d="M23 21v-2a4 4 0 0 0-3-3.87"/><path d="M16 3.13a4 4 0 0 1 0 7.75"/></svg></span>
+        Membres
+      </button>
+      <button class="sb-item" data-section="geis" onclick="navigateTo('geis')">
+        <span class="ico"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M3 9l9-7 9 7v11a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2z"/><polyline points="9 22 9 12 15 12 15 22"/></svg></span>
+        GEIs
+      </button>
+      <button class="sb-item" data-section="courses" onclick="navigateTo('courses')">
+        <span class="ico"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M4 19.5A2.5 2.5 0 0 1 6.5 17H20"/><path d="M6.5 2H20v20H6.5A2.5 2.5 0 0 1 4 19.5v-15A2.5 2.5 0 0 1 6.5 2z"/></svg></span>
+        Cours
+      </button>
+      <button class="sb-item" data-section="payments" onclick="navigateTo('payments')">
+        <span class="ico"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="1" y="4" width="22" height="16" rx="2"/><line x1="1" y1="10" x2="23" y2="10"/></svg></span>
+        Paiements
+      </button>
+      <button class="sb-item" data-section="bookings" onclick="navigateTo('bookings')">
+        <span class="ico"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="3" y="4" width="18" height="18" rx="2" ry="2"/><line x1="16" y1="2" x2="16" y2="6"/><line x1="8" y1="2" x2="8" y2="6"/><line x1="3" y1="10" x2="21" y2="10"/></svg></span>
+        Réservations
+      </button>
+      <button class="sb-item" data-section="enrollments" onclick="navigateTo('enrollments')">
+        <span class="ico"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M22 10v6M2 10l10-5 10 5-10 5z"/><path d="M6 12v5c0 1.66 3.58 3 8 3s8-1.34 8-3v-5"/></svg></span>
+        Inscriptions
+      </button>
+      <button class="sb-item" data-section="contacts" onclick="navigateTo('contacts')">
+        <span class="ico"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M4 4h16c1.1 0 2 .9 2 2v12c0 1.1-.9 2-2 2H4c-1.1 0-2-.9-2-2V6c0-1.1.9-2 2-2z"/><polyline points="22,6 12,13 2,6"/></svg></span>
+        Contacts
+      </button>
+      <div class="sb-section">Configuration</div>
+      <button class="sb-item" data-section="testimonials" onclick="navigateTo('testimonials')">
+        <span class="ico"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z"/></svg></span>
+        Témoignages
+      </button>
+      <button class="sb-item" data-section="providers" onclick="navigateTo('providers')">
+        <span class="ico"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M12 1a3 3 0 0 0-3 3v8a3 3 0 0 0 6 0V4a3 3 0 0 0-3-3z"/><path d="M19 10v2a7 7 0 0 1-14 0v-2"/><line x1="12" y1="19" x2="12" y2="23"/><line x1="8" y1="23" x2="16" y2="23"/></svg></span>
+        Fournisseurs
+      </button>
+      <div class="sb-section">Système</div>
+      <button class="sb-item" data-section="export" onclick="navigateTo('export')">
+        <span class="ico"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="7 10 12 15 17 10"/><line x1="12" y1="15" x2="12" y2="3"/></svg></span>
+        Export CSV
+      </button>
     </nav>
     <div class="sb-bottom">
       <a class="sb-item" href="/logout/">
-        <span class="ico">
-          <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.75"><path d="M9 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h4"/><polyline points="16 17 21 12 16 7"/><line x1="21" y1="12" x2="9" y2="12"/></svg>
-        </span>
+        <span class="ico"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M9 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h4"/><polyline points="16 17 21 12 16 7"/><line x1="21" y1="12" x2="9" y2="12"/></svg></span>
         Déconnexion
       </a>
     </div>
   </aside>
+
   <div class="main">
     <header class="header">
-      <div>
-        <div class="hd-title">Tableau de bord</div>
-        <div class="hd-sub">{{ summary.active_members }} membre(s) actif(s) &middot; {{ summary.active_courses }} cours actif(s)</div>
+      <div class="hd-left">
+        <div class="hd-title" id="pageTitle">Tableau de bord</div>
+        <div class="hd-sub" id="pageSubtitle">{{ summary.active_members }} membre(s) actif(s) · {{ summary.active_courses }} cours actif(s)</div>
       </div>
-      <div style="display:flex;gap:10px">
-        <a class="btn sm" href="?refresh=1">Actualiser</a>
-      </div>
+      <div class="hd-actions" id="headerActions"></div>
     </header>
+
     <div class="content">
-      <div class="metric-grid">
-        <div class="metric">
-          <div class="metric-label">Membres actifs</div>
-          <div class="metric-value" style="color:var(--primary)">{{ summary.active_members }}</div>
-          <div style="margin-top:8px;font-size:12px;color:var(--muted)">Total: {{ summary.total_members }}</div>
-        </div>
-        <div class="metric">
-          <div class="metric-label">GEIs actifs</div>
-          <div class="metric-value" style="color:var(--success)">{{ summary.active_gei }}</div>
-        </div>
-        <div class="metric">
-          <div class="metric-label">Cours actifs</div>
-          <div class="metric-value" style="color:var(--accent)">{{ summary.active_courses }}</div>
-          <div style="margin-top:8px;font-size:12px;color:var(--muted)">Total: {{ summary.total_courses }}</div>
-        </div>
-        <div class="metric">
-          <div class="metric-label">Épargne mensuelle</div>
-          <div class="metric-value" style="color:var(--primary)">{{ summary.savings_htg|floatformat:0 }}</div>
-          <div style="margin-top:8px;font-size:12px;color:var(--muted)">HTG</div>
-        </div>
-        <div class="metric">
-          <div class="metric-label">Revenus totaux</div>
-          <div class="metric-value" style="color:var(--success)">{{ summary.total_revenue_htg|floatformat:0 }}</div>
-          <div style="margin-top:8px;font-size:12px;color:var(--muted)">HTG (payés)</div>
-        </div>
-        <div class="metric">
-          <div class="metric-label">Contacts en attente</div>
-          <div class="metric-value" style="color:var(--danger)">{{ summary.pending_contacts }}</div>
-        </div>
-        <div class="metric">
-          <div class="metric-label">Réservations en attente</div>
-          <div class="metric-value" style="color:var(--warning)">{{ summary.pending_bookings }}</div>
-        </div>
-        <div class="metric">
-          <div class="metric-label">Inscriptions en attente</div>
-          <div class="metric-value" style="color:var(--warning)">{{ summary.pending_enrollments }}</div>
+      <!-- Dashboard -->
+      <div class="section active" id="section-dashboard">
+        <div class="metric-grid" id="metricGrid"></div>
+        <div class="grid-2">
+          <div class="card">
+            <div class="card-head"><div class="card-title">Activité récente (7 jours)</div></div>
+            <div style="padding:0 22px 18px">
+              <table class="table">
+                <thead><tr><th>Indicateur</th><th>Nombre</th><th>Montant</th></tr></thead>
+                <tbody>
+                  <tr><td>Nouvelles réservations</td><td><strong>{{ summary.recent_bookings }}</strong></td><td>—</td></tr>
+                  <tr><td>Nouveaux paiements</td><td><strong>{{ summary.recent_payments_count }}</strong></td><td><strong>{{ summary.recent_payments_sum|floatformat:0 }}</strong> HTG</td></tr>
+                </tbody>
+              </table>
+            </div>
+          </div>
+          <div class="card">
+            <div class="card-head"><div class="card-title">État du système</div></div>
+            <div style="padding:12px 22px 22px">
+              <table class="table">
+                <thead><tr><th>Service</th><th>Statut</th></tr></thead>
+                <tbody>
+                  <tr><td>Base de données</td><td><span class="pill green">Connectée</span></td></tr>
+                  <tr><td>Cache</td><td><span class="pill green">Actif</span></td></tr>
+                  <tr><td>Version Django</td><td><span class="pill blue">{{ django_version }}</span></td></tr>
+                </tbody>
+              </table>
+            </div>
+          </div>
         </div>
       </div>
 
-      <div class="grid-2">
-        <div class="card">
-          <div class="card-head">
-            <div class="card-title">Activité récente (7 jours)</div>
-            <div class="card-sub">Réservations et paiements</div>
-          </div>
-          <table class="table">
-            <thead><tr><th>Indicateur</th><th>Nombre</th><th>Montant</th></tr></thead>
-            <tbody>
-              <tr><td>Nouvelles réservations</td><td><strong>{{ summary.recent_bookings }}</strong></td><td>—</td></tr>
-              <tr><td>Nouveaux paiements</td><td><strong>{{ summary.recent_payments_count }}</strong></td><td><strong>{{ summary.recent_payments_sum|floatformat:0 }}</strong> HTG</td></tr>
-            </tbody>
-          </table>
-        </div>
-        <div class="card">
-          <div class="card-head">
-            <div class="card-title">État du système</div>
-            <div class="card-sub">Santé de la plateforme</div>
-          </div>
-          <div style="padding:12px 22px 22px">
-            <table class="table">
-              <thead><tr><th>Service</th><th>Statut</th></tr></thead>
-              <tbody>
-                <tr><td>Base de données</td><td><span class="pill green">Connectée</span></td></tr>
-                <tr><td>Cache</td><td><span class="pill green">Actif</span></td></tr>
-                <tr><td>Version Django</td><td><span class="pill blue">5.2.15</span></td></tr>
-              </tbody>
-            </table>
-          </div>
-        </div>
-      </div>
+      <!-- Dynamic sections -->
+      <div class="section" id="section-members"><div class="card" id="card-members"></div></div>
+      <div class="section" id="section-geis"><div class="card" id="card-geis"></div></div>
+      <div class="section" id="section-courses"><div class="card" id="card-courses"></div></div>
+      <div class="section" id="section-payments"><div class="card" id="card-payments"></div></div>
+      <div class="section" id="section-bookings"><div class="card" id="card-bookings"></div></div>
+      <div class="section" id="section-enrollments"><div class="card" id="card-enrollments"></div></div>
+      <div class="section" id="section-contacts"><div class="card" id="card-contacts"></div></div>
+      <div class="section" id="section-testimonials"><div class="card" id="card-testimonials"></div></div>
+      <div class="section" id="section-providers"><div class="card" id="card-providers"></div></div>
+      <div class="section" id="section-export"><div class="card"><div class="card-head"><div class="card-title">Export CSV</div></div><div style="padding:18px 22px 22px"><p style="color:var(--muted);margin-bottom:16px">Téléchargez les données de chaque modèle au format CSV.</p><div id="exportButtons" style="display:flex;flex-wrap:wrap;gap:10px"></div></div></div></div>
     </div>
   </div>
 </div>
+
+<!-- Modal -->
+<div class="modal-overlay" id="modalOverlay">
+  <div class="modal" id="modalContent">
+    <div class="modal-head">
+      <div class="modal-title" id="modalTitle">Titre</div>
+      <button class="modal-close" onclick="closeModal()">✕</button>
+    </div>
+    <div class="modal-body" id="modalBody"></div>
+    <div class="modal-foot" id="modalFoot">
+      <button class="btn" onclick="closeModal()">Annuler</button>
+      <button class="btn btn-primary" id="modalSaveBtn" onclick="saveModal()">Enregistrer</button>
+    </div>
+  </div>
+</div>
+
+<!-- Toast -->
+<div class="toast-container" id="toastContainer"></div>
+
+<script>
+const CSRF = (() => {
+  const m = document.cookie.match(/csrftoken=([\w-]+)/);
+  return m ? m[1] : '';
+})();
+
+function api(url, opts = {}) {
+  opts.headers = opts.headers || {};
+  if (opts.body) { opts.headers['Content-Type'] = 'application/json'; opts.headers['X-CSRFToken'] = CSRF; }
+  opts.credentials = 'same-origin';
+  return fetch(url, opts).then(r => { if (!r.ok) return r.json().then(e => { throw new Error(e.error || 'Erreur serveur') }); return r.json() });
+}
+
+function toast(msg, type = 'info') {
+  const el = document.createElement('div');
+  el.className = 'toast ' + type;
+  el.textContent = msg;
+  document.getElementById('toastContainer').appendChild(el);
+  setTimeout(() => el.remove(), 3500);
+}
+
+function getCSRF() { return CSRF; }
+
+// Navigate
+const currentSection = { name: 'dashboard', page: 1, search: '' };
+
+function navigateTo(section, resetPage = true) {
+  document.querySelectorAll('.section').forEach(s => s.classList.remove('active'));
+  document.querySelectorAll('.sb-item').forEach(s => s.classList.remove('active'));
+  const secEl = document.getElementById('section-' + section);
+  const navEl = document.querySelector(`[data-section="${section}"]`);
+  if (secEl) secEl.classList.add('active');
+  if (navEl) navEl.classList.add('active');
+  currentSection.name = section;
+  if (resetPage) { currentSection.page = 1; currentSection.search = ''; }
+  const titles = { dashboard:'Tableau de bord', members:'Membres', geis:'GEIs', courses:'Cours', payments:'Paiements', bookings:'Réservations', enrollments:'Inscriptions', contacts:'Contacts', testimonials:'Témoignages', providers:'Fournisseurs', export:'Export CSV' };
+  document.getElementById('pageTitle').textContent = titles[section] || section;
+  document.getElementById('headerActions').innerHTML = '';
+  if (section === 'dashboard') loadMetrics();
+  else if (section === 'export') renderExport();
+  else loadTable(section);
+}
+
+// Dashboard metrics
+function loadMetrics() {
+  api('/dashboard/api/summary/').then(s => {
+    document.getElementById('pageSubtitle').textContent = (s.active_members || 0) + ' membre(s) actif(s) · ' + (s.active_courses || 0) + ' cours actif(s)';
+    const grid = document.getElementById('metricGrid');
+    const items = [
+      { label:'Membres actifs', value:s.active_members || 0, helper:'Total: ' + (s.total_members || 0), color:'var(--primary)' },
+      { label:'GEIs actifs', value:s.active_gei || 0, helper:'', color:'var(--success)' },
+      { label:'Cours actifs', value:s.active_courses || 0, helper:'Total: ' + (s.total_courses || 0), color:'var(--accent)' },
+      { label:'Épargne mensuelle', value:fmt(s.savings_htg || 0), helper:'HTG', color:'var(--primary)' },
+      { label:'Revenus totaux', value:fmt(s.total_revenue_htg || 0), helper:'HTG (payés)', color:'var(--success)' },
+      { label:'Contacts en attente', value:s.pending_contacts || 0, helper:'', color:'var(--danger)' },
+      { label:'Réservations en attente', value:s.pending_bookings || 0, helper:'', color:'var(--warning)' },
+      { label:'Inscriptions en attente', value:s.pending_enrollments || 0, helper:'', color:'var(--warning)' },
+    ];
+    grid.innerHTML = items.map(i => `<div class="metric"><div class="metric-label">${i.label}</div><div class="metric-value" style="color:${i.color}">${i.value}</div>${i.helper ? '<div class="metric-helper">' + i.helper + '</div>' : ''}</div>`).join('');
+  }).catch(e => toast(e.message, 'error'));
+}
+
+function fmt(n) { return Number(n).toLocaleString('fr-FR'); }
+
+// ============= SECTION CONFIG =============
+const SECTIONS = {
+  members: {
+    title: 'Membres',
+    endpoint: '/dashboard/api/members/',
+    createEndpoint: '/dashboard/api/members/create/',
+    canCreate: true, canEdit: true, canDelete: true,
+    columns: [
+      { key:'name', label:'Nom', render: r => `<strong>${esc(r.first_name)} ${esc(r.last_name)}</strong><br><span style="font-size:11px;color:var(--muted)">${esc(r.email)}</span>` },
+      { key:'phone', label:'Téléphone', render: r => esc(r.phone) },
+      { key:'gei', label:'GEI', render: r => r.gei__name ? esc(r.gei__name) + '<br><span style="font-size:11px;color:var(--muted)">' + esc(r.gei__city) + '</span>' : '<span style="color:var(--muted)">—</span>' },
+      { key:'status', label:'Statut', render: r => statusBadge(r.status) },
+      { key:'monthly_saving_htg', label:'Épargne/mois', render: r => fmt(r.monthly_saving_htg) + ' HTG' },
+    ],
+    formTitle: r => r ? 'Modifier le membre' : 'Nouveau membre',
+    formFields: r => [
+      { name:'first_name', label:'Prénom', type:'text', value: r?.first_name || '', required: true },
+      { name:'last_name', label:'Nom', type:'text', value: r?.last_name || '', required: true },
+      { name:'email', label:'Email', type:'email', value: r?.email || '' },
+      { name:'phone', label:'Téléphone', type:'text', value: r?.phone || '', required: true },
+      { name:'gei_id', label:'GEI', type:'gei-select', value: r?.gei__name ? { id: r.id, name: r.gei__name, city: r.gei__city } : null },
+      { name:'status', label:'Statut', type:'select', options:[{v:'prospect',l:'Prospect'},{v:'active',l:'Actif'},{v:'paused',l:'En pause'},{v:'alumni',l:'Ancien'}], value: r?.status || 'prospect' },
+      { name:'joined_at', label:'Date d\'adhésion', type:'date', value: r?.joined_at ? r.joined_at.slice(0,10) : '' },
+      { name:'monthly_saving_htg', label:'Épargne mensuelle (HTG)', type:'number', value: r?.monthly_saving_htg || 0 },
+    ],
+    serializeForm: d => d,
+    detailUrl: r => '/dashboard/api/members/' + r.id + '/',
+  },
+  geis: {
+    title: 'GEIs',
+    endpoint: '/dashboard/api/geis/',
+    createEndpoint: '/dashboard/api/geis/create/',
+    canCreate: true, canEdit: true, canDelete: true,
+    columns: [
+      { key:'name', label:'Nom', render: r => `<strong>${esc(r.name)}</strong>` },
+      { key:'city', label:'Ville' },
+      { key:'coordinator', label:'Coordinateur' },
+      { key:'member_count', label:'Membres', render: r => fmt(r.member_count) },
+      { key:'is_active', label:'Statut', render: r => r.is_active ? '<span class="pill green">Actif</span>' : '<span class="pill red">Inactif</span>' },
+    ],
+    formTitle: r => r ? 'Modifier le GEI' : 'Nouveau GEI',
+    formFields: r => [
+      { name:'name', label:'Nom', type:'text', value: r?.name || '', required: true },
+      { name:'city', label:'Ville', type:'text', value: r?.city || '', required: true },
+      { name:'coordinator', label:'Coordinateur', type:'text', value: r?.coordinator || '' },
+      { name:'is_active', label:'Actif', type:'checkbox', value: r?.is_active ?? true },
+    ],
+    detailUrl: r => '/dashboard/api/geis/' + r.id + '/',
+  },
+  courses: {
+    title: 'Cours',
+    endpoint: '/dashboard/api/courses/',
+    createEndpoint: '/dashboard/api/courses/create/',
+    canCreate: true, canEdit: true, canDelete: true,
+    columns: [
+      { key:'title', label:'Titre', render: r => `<strong>${esc(r.title)}</strong><br><span style="font-size:11px;color:var(--muted)">${esc(r.category)}</span>` },
+      { key:'instructor', label:'Formateur' },
+      { key:'city', label:'Ville' },
+      { key:'price_htg', label:'Prix', render: r => fmt(r.price_htg) + ' HTG' },
+      { key:'enrollment_count', label:'Inscrits', render: r => (r.enrollment_count || 0) + '/' + (r.capacity || '—') },
+      { key:'is_active', label:'Statut', render: r => r.is_active ? '<span class="pill green">Actif</span>' : '<span class="pill red">Inactif</span>' },
+    ],
+    formTitle: r => r ? 'Modifier le cours' : 'Nouveau cours',
+    formFields: r => [
+      { name:'title', label:'Titre', type:'text', value: r?.title || '', required: true },
+      { name:'category', label:'Catégorie', type:'text', value: r?.category || '', required: true },
+      { name:'instructor', label:'Formateur', type:'text', value: r?.instructor || '', required: true },
+      { name:'city', label:'Ville', type:'text', value: r?.city || '' },
+      { name:'price_htg', label:'Prix (HTG)', type:'number', value: r?.price_htg || 0 },
+      { name:'capacity', label:'Capacité', type:'number', value: r?.capacity || 0 },
+      { name:'description', label:'Description', type:'textarea', value: r?.description || '' },
+      { name:'is_active', label:'Actif', type:'checkbox', value: r?.is_active ?? true },
+    ],
+    detailUrl: r => '/dashboard/api/courses/' + r.id + '/',
+  },
+  payments: {
+    title: 'Paiements',
+    endpoint: '/dashboard/api/payments/',
+    canCreate: false, canEdit: true, canDelete: false,
+    columns: [
+      { key:'reference', label:'Réf.', render: r => `<code style="font-size:11px">${esc(r.reference)}</code>` },
+      { key:'payer_name', label:'Payeur' },
+      { key:'purpose', label:'Motif', render: r => ({venue:'Réservation',course:'Cours',membership:'Adhésion',other:'Autre'}[r.purpose] || r.purpose) },
+      { key:'amount_htg', label:'Montant', render: r => fmt(r.amount_htg) + ' HTG' },
+      { key:'provider_name', label:'Mode', render: r => r.provider_name ? esc(r.provider_name) : '<span style="color:var(--muted)">—</span>' },
+      { key:'status', label:'Statut', render: r => statusBadge(r.status) },
+      { key:'paid_at', label:'Payé le', render: r => r.paid_at ? new Date(r.paid_at).toLocaleDateString('fr-FR') : '<span style="color:var(--muted)">—</span>' },
+    ],
+    formTitle: () => 'Modifier le paiement',
+    formFields: r => [
+      { name:'payer_name', label:'Payeur', type:'text', value: r?.payer_name || '' },
+      { name:'status', label:'Statut', type:'select', options:[{v:'pending',l:'En attente'},{v:'paid',l:'Payé'},{v:'failed',l:'Échoué'},{v:'cancelled',l:'Annulé'},{v:'refunded',l:'Remboursé'}], value: r?.status || 'pending' },
+      { name:'notes', label:'Notes', type:'textarea', value: r?.notes || '' },
+    ],
+    detailUrl: r => '/dashboard/api/payments/' + r.id + '/',
+  },
+  bookings: {
+    title: 'Réservations',
+    endpoint: '/dashboard/api/bookings/',
+    canCreate: false, canEdit: true, canDelete: false,
+    columns: [
+      { key:'requester_name', label:'Client', render: r => `<strong>${esc(r.requester_name)}</strong><br><span style="font-size:11px;color:var(--muted)">${esc(r.requester_phone)}</span>` },
+      { key:'event_type', label:'Événement' },
+      { key:'event_date', label:'Date', render: r => new Date(r.event_date).toLocaleDateString('fr-FR') },
+      { key:'guest_count', label:'Invités', render: r => fmt(r.guest_count) },
+      { key:'status', label:'Statut', render: r => statusBadge(r.status) },
+    ],
+    formTitle: () => 'Modifier la réservation',
+    formFields: r => [
+      { name:'requester_name', label:'Nom', type:'text', value: r?.requester_name || '' },
+      { name:'status', label:'Statut', type:'select', options:[{v:'requested',l:'Demandée'},{v:'payment_pending',l:'Paiement attendu'},{v:'admin_review',l:'En validation'},{v:'confirmed',l:'Confirmée'},{v:'cancelled',l:'Annulée'}], value: r?.status || 'requested' },
+      { name:'notes', label:'Notes', type:'textarea', value: r?.notes || '' },
+    ],
+    detailUrl: r => '/dashboard/api/bookings/' + r.id + '/',
+  },
+  enrollments: {
+    title: 'Inscriptions',
+    endpoint: '/dashboard/api/enrollments/',
+    canCreate: false, canEdit: true, canDelete: false,
+    columns: [
+      { key:'member', label:'Membre', render: r => r.member ? esc(r.member.first_name + ' ' + r.member.last_name) : '<span style="color:var(--muted)">—</span>' },
+      { key:'course', label:'Cours', render: r => r.course ? esc(r.course.title) : '<span style="color:var(--muted)">—</span>' },
+      { key:'status', label:'Statut', render: r => statusBadge(r.status) },
+      { key:'created_at', label:'Date', render: r => new Date(r.created_at).toLocaleDateString('fr-FR') },
+    ],
+    formTitle: () => 'Modifier l\'inscription',
+    formFields: r => [
+      { name:'status', label:'Statut', type:'select', options:[{v:'pending',l:'En attente'},{v:'confirmed',l:'Confirmée'},{v:'cancelled',l:'Annulée'}], value: r?.status || 'pending' },
+    ],
+    detailUrl: r => '/dashboard/api/enrollments/' + r.id + '/',
+  },
+  contacts: {
+    title: 'Contacts',
+    endpoint: '/dashboard/api/contacts/',
+    canCreate: false, canEdit: true, canDelete: false,
+    columns: [
+      { key:'full_name', label:'Nom', render: r => `<strong>${esc(r.full_name)}</strong><br><span style="font-size:11px;color:var(--muted)">${esc(r.phone)}</span>` },
+      { key:'subject', label:'Sujet', render: r => ({membership:'Adhésion',course:'Cours',venue:'Location',mentor:'Mentorat',other:'Autre'}[r.subject] || r.subject) },
+      { key:'message', label:'Message', render: r => r.message ? esc(r.message).slice(0,80) + (r.message.length > 80 ? '…' : '') : '' },
+      { key:'is_processed', label:'Traité', render: r => r.is_processed ? '<span class="pill green">Oui</span>' : '<span class="pill amber">Non</span>' },
+      { key:'created_at', label:'Reçu le', render: r => new Date(r.created_at).toLocaleDateString('fr-FR') },
+    ],
+    formTitle: () => 'Modifier le contact',
+    formFields: r => [
+      { name:'is_processed', label:'Traité', type:'checkbox', value: r?.is_processed || false },
+      { name:'notes', label:'Notes (interne)', type:'textarea', value: r?.notes || '' },
+    ],
+    detailUrl: r => '/dashboard/api/contacts/' + r.id + '/',
+  },
+  testimonials: {
+    title: 'Témoignages',
+    endpoint: '/dashboard/api/testimonials/',
+    createEndpoint: '/dashboard/api/testimonials/create/',
+    canCreate: true, canEdit: true, canDelete: true,
+    columns: [
+      { key:'author_name', label:'Auteur', render: r => `<strong>${esc(r.author_name)}</strong><br><span style="font-size:11px;color:var(--muted)">${esc(r.location || '')}</span>` },
+      { key:'text', label:'Texte', render: r => esc(r.text).slice(0,100) + (r.text.length > 100 ? '…' : '') },
+      { key:'sort_order', label:'Ordre', render: r => r.sort_order },
+      { key:'is_active', label:'Actif', render: r => r.is_active ? '<span class="pill green">Oui</span>' : '<span class="pill red">Non</span>' },
+    ],
+    formTitle: r => r ? 'Modifier le témoignage' : 'Nouveau témoignage',
+    formFields: r => [
+      { name:'author_name', label:'Nom de l\'auteur', type:'text', value: r?.author_name || '', required: true },
+      { name:'location', label:'Localisation', type:'text', value: r?.location || '' },
+      { name:'text', label:'Témoignage', type:'textarea', value: r?.text || '', required: true },
+      { name:'sort_order', label:'Ordre d\'affichage', type:'number', value: r?.sort_order || 0 },
+      { name:'is_active', label:'Actif', type:'checkbox', value: r?.is_active ?? true },
+    ],
+    serializeForm: d => ({ ...d, author_initials: '' }),
+    detailUrl: r => '/dashboard/api/testimonials/' + r.id + '/',
+  },
+  providers: {
+    title: 'Fournisseurs',
+    endpoint: '/dashboard/api/providers/',
+    createEndpoint: '/dashboard/api/providers/create/',
+    canCreate: true, canEdit: true, canDelete: true,
+    columns: [
+      { key:'name', label:'Nom', render: r => `<strong>${esc(r.name)}</strong>` },
+      { key:'provider_type', label:'Type', render: r => ({moncash:'MonCash',natcash:'NatCash',bank:'Virement',cash:'Espèces',stripe:'Stripe',manual:'Manuel',other:'Autre'}[r.provider_type] || r.provider_type) },
+      { key:'is_active', label:'Actif', render: r => r.is_active ? '<span class="pill green">Oui</span>' : '<span class="pill red">Non</span>' },
+      { key:'sort_order', label:'Ordre', render: r => r.sort_order },
+    ],
+    formTitle: r => r ? 'Modifier le fournisseur' : 'Nouveau fournisseur',
+    formFields: r => [
+      { name:'name', label:'Nom', type:'text', value: r?.name || '', required: true },
+      { name:'provider_type', label:'Type', type:'select', options:[{v:'manual',l:'Manuel'},{v:'moncash',l:'MonCash'},{v:'natcash',l:'NatCash'},{v:'bank',l:'Virement'},{v:'cash',l:'Espèces'},{v:'stripe',l:'Stripe'},{v:'other',l:'Autre'}], value: r?.provider_type || 'manual' },
+      { name:'instructions', label:'Instructions', type:'textarea', value: r?.instructions || '' },
+      { name:'is_active', label:'Actif', type:'checkbox', value: r?.is_active ?? true },
+      { name:'sort_order', label:'Ordre d\'affichage', type:'number', value: r?.sort_order || 0 },
+    ],
+    detailUrl: r => '/dashboard/api/providers/' + r.id + '/',
+  },
+};
+
+function esc(s) {
+  if (!s) return '';
+  const d = document.createElement('div');
+  d.textContent = s;
+  return d.innerHTML;
+}
+
+function statusBadge(status) {
+  const map = {
+    active:'green', paused:'amber', alumni:'gray', prospect:'blue',
+    paid:'green', pending:'amber', failed:'red', cancelled:'gray', refunded:'blue',
+    requested:'blue', payment_pending:'amber', admin_review:'amber', confirmed:'green',
+    confirmed_enrollment:'green',
+  };
+  const labels = {
+    active:'Actif', paused:'En pause', alumni:'Ancien', prospect:'Prospect',
+    paid:'Payé', pending:'En attente', failed:'Échoué', cancelled:'Annulé', refunded:'Remboursé',
+    requested:'Demandée', payment_pending:'Paiement attendu', admin_review:'En validation', confirmed:'Confirmée',
+    confirmed:'Confirmée',
+  };
+  const color = map[status] || 'gray';
+  const label = labels[status] || status;
+  return `<span class="pill pill-sm ${color}">${label}</span>`;
+}
+
+// ============= TABLE RENDERING =============
+let modalRecord = null;
+let modalSection = null;
+
+function loadTable(sectionKey, page, search) {
+  const cfg = SECTIONS[sectionKey];
+  if (!cfg) return;
+  const p = page || currentSection.page;
+  const s = search !== undefined ? search : currentSection.search;
+  currentSection.page = p;
+  if (search !== undefined) currentSection.search = search;
+  const params = new URLSearchParams({ page: p, per_page: 20 });
+  if (s) params.set('search', s);
+
+  // Header actions
+  const actions = document.getElementById('headerActions');
+  actions.innerHTML = '';
+  if (cfg.canCreate) {
+    const btn = document.createElement('button');
+    btn.className = 'btn btn-primary';
+    btn.innerHTML = '<svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/></svg> Nouveau';
+    btn.onclick = () => openModal(sectionKey, null);
+    actions.appendChild(btn);
+  }
+
+  api(cfg.endpoint + '?' + params.toString()).then(data => {
+    renderTable(sectionKey, data);
+  }).catch(e => {
+    document.getElementById('card-' + sectionKey).innerHTML = '<div class="card-head"><div class="card-title">Erreur</div></div><div style="padding:24px;color:var(--danger)">' + esc(e.message) + '</div>';
+  });
+}
+
+function renderTable(sectionKey, data) {
+  const cfg = SECTIONS[sectionKey];
+  const items = data.items || [];
+  const total = data.total || 0;
+  const page = data.page || 1;
+  const totalPages = data.total_pages || 1;
+
+  let html = '<div class="toolbar">';
+  html += '<div class="search-wrap"><svg class="search-icon" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="11" cy="11" r="8"/><line x1="21" y1="21" x2="16.65" y2="16.65"/></svg>';
+  html += '<input type="text" placeholder="Rechercher..." value="' + esc(currentSection.search) + '" onkeyup="if(event.key===\'Enter\')searchTable(\'' + sectionKey + '\',this.value)"></div>';
+  html += '<div class="spacer"></div>';
+  html += '<div class="pagination"><span>' + total + ' résultat(s)</span>';
+  if (totalPages > 1) {
+    if (page > 1) html += '<button class="btn btn-sm" onclick="loadTable(\'' + sectionKey + '\',' + (page - 1) + ')">‹</button>';
+    html += '<span style="padding:0 6px;font-weight:600">' + page + '/' + totalPages + '</span>';
+    if (page < totalPages) html += '<button class="btn btn-sm" onclick="loadTable(\'' + sectionKey + '\',' + (page + 1) + ')">›</button>';
+  }
+  html += '</div></div>';
+
+  html += '<div class="table-wrap"><table class="table"><thead><tr>';
+  cfg.columns.forEach(c => { html += '<th>' + c.label + '</th>'; });
+  if (cfg.canEdit || cfg.canDelete) html += '<th style="text-align:right">Actions</th>';
+  html += '</tr></thead><tbody>';
+
+  if (items.length === 0) {
+    html += '<tr><td class="empty" colspan="' + (cfg.columns.length + (cfg.canEdit || cfg.canDelete ? 1 : 0)) + '">Aucune donnée</td></tr>';
+  } else {
+    items.forEach(r => {
+      html += '<tr>';
+      cfg.columns.forEach(c => { html += '<td>' + (c.render ? c.render(r) : esc(r[c.key])) + '</td>'; });
+      if (cfg.canEdit || cfg.canDelete) {
+        html += '<td class="actions">';
+        if (cfg.canEdit) html += '<button class="btn btn-sm" onclick="openModal(\'' + sectionKey + '\',' + JSON.stringify(r).replace(/"/g,'&quot;') + ')" title="Modifier"><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M11 4H4a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-7"/><path d="M18.5 2.5a2.121 2.121 0 0 1 3 3L12 15l-4 1 1-4 9.5-9.5z"/></svg></button>';
+        if (cfg.canDelete) html += '<button class="btn btn-sm btn-danger" onclick="confirmDelete(\'' + sectionKey + '\',' + r.id + ',\'' + esc(r.name || r.title || r.author_name || r.payer_name || r.requester_name || r.full_name || '') + '\')" title="Supprimer"><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="3 6 5 6 21 6"/><path d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6m3 0V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2"/></svg></button>';
+        html += '</td>';
+      }
+      html += '</tr>';
+    });
+  }
+  html += '</tbody></table></div>';
+
+  document.getElementById('card-' + sectionKey).innerHTML = html;
+}
+
+function searchTable(sectionKey, val) {
+  loadTable(sectionKey, 1, val);
+}
+
+// ============= MODAL =============
+function openModal(sectionKey, record) {
+  modalSection = sectionKey;
+  modalRecord = record;
+  const cfg = SECTIONS[sectionKey];
+  if (!cfg) return;
+
+  document.getElementById('modalTitle').textContent = cfg.formTitle(record);
+  document.getElementById('modalSaveBtn').textContent = record ? 'Enregistrer' : 'Créer';
+
+  let body = '';
+  const fields = cfg.formFields(record);
+  fields.forEach(f => {
+    body += '<div class="form-group">';
+    body += '<label class="form-label">' + f.label + (f.required ? ' <span style="color:var(--danger)">*</span>' : '') + '</label>';
+    if (f.type === 'checkbox') {
+      body += '<label style="display:flex;align-items:center;gap:8px;cursor:pointer;padding:4px 0"><input type="checkbox" name="' + f.name + '" ' + (f.value ? 'checked' : '') + ' style="width:auto"> ' + f.label + '</label>';
+    } else if (f.type === 'select') {
+      body += '<select name="' + f.name + '">';
+      (f.options || []).forEach(o => {
+        body += '<option value="' + o.v + '"' + (String(f.value) === String(o.v) ? ' selected' : '') + '>' + o.l + '</option>';
+      });
+      body += '</select>';
+    } else if (f.type === 'gei-select') {
+      body += '<select name="gei_id" id="geiSelect_' + sectionKey + '"><option value="">— Aucun —</option></select>';
+    } else if (f.type === 'textarea') {
+      body += '<textarea name="' + f.name + '" ' + (f.required ? 'required' : '') + '>' + esc(String(f.value ?? '')) + '</textarea>';
+    } else {
+      body += '<input type="' + f.type + '" name="' + f.name + '" value="' + esc(String(f.value ?? '')) + '" ' + (f.required ? 'required' : '') + '>';
+    }
+    body += '</div>';
+  });
+  document.getElementById('modalBody').innerHTML = body;
+
+  // Load GEI options for gei-select fields
+  document.querySelectorAll('select[name="gei_id"]').forEach(sel => {
+    if (sel.options.length <= 1) {
+      api('/dashboard/api/geis/?per_page=100').then(d => {
+        (d.items || []).forEach(g => {
+          const opt = document.createElement('option');
+          opt.value = g.id;
+          opt.textContent = g.name + ' (' + g.city + ')';
+          if (record && record.gei__name === g.name) opt.selected = true;
+          sel.appendChild(opt);
+        });
+      });
+    }
+  });
+
+  document.getElementById('modalOverlay').classList.add('open');
+}
+
+function closeModal() {
+  document.getElementById('modalOverlay').classList.remove('open');
+  modalRecord = null;
+  modalSection = null;
+}
+
+function saveModal() {
+  const cfg = SECTIONS[modalSection];
+  if (!cfg) return;
+  const form = document.getElementById('modalBody');
+  const inputs = form.querySelectorAll('input, select, textarea');
+  const data = {};
+  inputs.forEach(inp => {
+    if (inp.type === 'checkbox') data[inp.name] = inp.checked;
+    else if (inp.type === 'number') data[inp.name] = parseInt(inp.value) || 0;
+    else data[inp.name] = inp.value;
+  });
+
+  if (cfg.serializeForm) Object.assign(data, cfg.serializeForm(data));
+
+  if (modalRecord) {
+    // Edit
+    api(cfg.detailUrl(modalRecord), { method: 'PUT', body: JSON.stringify(data) })
+      .then(() => { toast('Modifié avec succès', 'success'); closeModal(); loadTable(modalSection); })
+      .catch(e => toast(e.message, 'error'));
+  } else {
+    // Create
+    api(cfg.createEndpoint, { method: 'POST', body: JSON.stringify(data) })
+      .then(() => { toast('Créé avec succès', 'success'); closeModal(); loadTable(modalSection); })
+      .catch(e => toast(e.message, 'error'));
+  }
+}
+
+function confirmDelete(sectionKey, id, label) {
+  const cfg = SECTIONS[sectionKey];
+  if (!cfg) return;
+  document.getElementById('modalTitle').textContent = 'Confirmer la suppression';
+  document.getElementById('modalSaveBtn').textContent = 'Supprimer';
+  document.getElementById('modalSaveBtn').className = 'btn btn-danger';
+  document.getElementById('modalBody').innerHTML = '<div class="confirm-body"><div class="confirm-icon">⚠</div><div class="confirm-text">Supprimer <strong>' + esc(label) + '</strong> ?<br>Cette action est irréversible.</div></div>';
+  document.getElementById('modalFoot').querySelector('.btn:first-child').textContent = 'Annuler';
+
+  modalSection = sectionKey;
+  modalRecord = { id, _delete: true };
+
+  document.getElementById('modalOverlay').classList.add('open');
+  // Override save button
+  document.getElementById('modalSaveBtn').onclick = () => {
+    api(cfg.detailUrl({ id }), { method: 'DELETE' })
+      .then(() => { toast('Supprimé avec succès', 'success'); closeModal(); loadTable(modalSection); })
+      .catch(e => toast(e.message, 'error'));
+  };
+}
+
+// Reset modal save button on close
+document.getElementById('modalOverlay').addEventListener('click', function(e) {
+  if (e.target === this) closeModal();
+});
+
+// ============= EXPORT =============
+function renderExport() {
+  const models = ['members','courses','payments','bookings','contacts','geis','providers','enrollments','testimonials'];
+  const labels = { members:'Membres', courses:'Cours', payments:'Paiements', bookings:'Réservations', contacts:'Contacts', geis:'GEIs', providers:'Fournisseurs', enrollments:'Inscriptions', testimonials:'Témoignages' };
+  const container = document.getElementById('exportButtons');
+  container.innerHTML = models.map(m => '<a class="btn" href="/dashboard/api/export/' + m + '/" target="_blank"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="7 10 12 15 17 10"/><line x1="12" y1="15" x2="12" y2="3"/></svg> ' + labels[m] + '</a>').join('');
+}
+
+// Init
+document.addEventListener('DOMContentLoaded', () => {
+  // Load dashboard metrics
+  loadMetrics();
+
+  // Check URL hash for navigation
+  const hash = window.location.hash.slice(1);
+  if (hash && document.getElementById('section-' + hash)) navigateTo(hash, true);
+  else navigateTo('dashboard', true);
+});
+</script>
 </body>
 </html>

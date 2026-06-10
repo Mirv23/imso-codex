@@ -39,6 +39,7 @@ class DashboardView(LoginRequiredMixin, TemplateView):
     def get_context_data(self, **kwargs: Any) -> dict[str, Any]:
         context = super().get_context_data(**kwargs)
         context["summary"] = get_dashboard_summary()
+        context["django_version"] = "5.2.15"
         return context
 
 
@@ -265,6 +266,27 @@ def _error(msg: str, status: int = 400) -> JsonResponse:
 
 def _ok() -> JsonResponse:
     return JsonResponse({"ok": True})
+
+
+@login_required(login_url="/login/")
+@require_http_methods(["POST"])
+def member_create(request: HttpRequest) -> JsonResponse:
+    data = _json_body(request)
+    for f in ("first_name", "last_name", "phone"):
+        if f not in data:
+            return _error(f"Missing field: {f}")
+    m = Member.objects.create(
+        first_name=data["first_name"],
+        last_name=data["last_name"],
+        email=data.get("email", ""),
+        phone=data["phone"],
+        gei_id=data.get("gei_id") or data.get("gei"),
+        status=data.get("status", Member.Status.PROSPECT),
+        joined_at=data.get("joined_at"),
+        monthly_saving_htg=data.get("monthly_saving_htg", 0),
+    )
+    logger.info("Member %d created by user %s (%s %s)", m.pk, request.user.username, m.first_name, m.last_name)
+    return JsonResponse(_serialize_member(m), status=201)
 
 
 # ── Members ──────────────────────────────────────────────
