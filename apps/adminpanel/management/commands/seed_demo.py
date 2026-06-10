@@ -129,9 +129,47 @@ class Command(BaseCommand):
             if created:
                 self.stdout.write(f"  + Temoignage: {t['author_name']}")
 
+        # ── Membres ─────────────────────────────────────────
+        from datetime import date
+
+        members_data = [
+            ("Marie", "Claude", "marie.claude@email.com", "+509 31 00 00 01", "Pétion-Ville", Member.Status.ACTIVE),
+            ("Jean", "Baptiste", "jean.baptiste@email.com", "+509 31 00 00 02", "Pétion-Ville", Member.Status.ACTIVE),
+            ("Rose", "Meneus", "rose.meneus@email.com", "+509 31 00 00 03", "Pétion-Ville", Member.Status.ACTIVE),
+            ("Pierre", "Richard", "pierre.richard@email.com", "+509 31 00 00 04", "Cap-Haïtien", Member.Status.ACTIVE),
+            ("Anne", "Marie", "anne.marie@email.com", "+509 31 00 00 05", "Cap-Haïtien", Member.Status.ACTIVE),
+            ("Paul", "Emmanuel", "paul.emmanuel@email.com", "+509 31 00 00 06", "Cap-Haïtien", Member.Status.ACTIVE),
+            ("Sophie", "Destin", "sophie.destin@email.com", "+509 31 00 00 07", "Jacmel", Member.Status.ACTIVE),
+            ("Michel", "Ange", "michel.ange@email.com", "+509 31 00 00 08", "Jacmel", Member.Status.ACTIVE),
+            ("Carline", "Pierre", "carline.pierre@email.com", "+509 31 00 00 09", "Pétion-Ville", Member.Status.ACTIVE),
+            ("Edner", "Saint", "edner.saint@email.com", "+509 31 00 00 10", "Gonaïves", Member.Status.ACTIVE),
+            ("Fabienne", "Noel", "fabienne.noel@email.com", "+509 31 00 00 11", "Jacmel", Member.Status.ACTIVE),
+            ("Marc", "Donald", "marc.donald@email.com", "+509 31 00 00 12", "Cap-Haïtien", Member.Status.ACTIVE),
+        ]
+
+        gei_map = {g.city: g for g in GEI.objects.all()}
+
+        for first, last, email, phone, city, status in members_data:
+            gei = gei_map.get(city)
+            member, created = Member.objects.get_or_create(
+                first_name=first,
+                last_name=last,
+                defaults={
+                    "email": email,
+                    "phone": phone,
+                    "gei": gei,
+                    "status": status,
+                    "joined_at": date.today(),
+                    "monthly_saving_htg": 0,
+                },
+            )
+            if created:
+                self.stdout.write(f"  + Membre: {first} {last}")
+
         self.stdout.write(self.style.SUCCESS("Donnees de demonstration ajoutees avec succes."))
         self.stdout.write("")
-        self.stdout.write("Résumé :")
+        self.stdout.write("Resume :")
         self.stdout.write(f"  GEI : {GEI.objects.count()}")
         self.stdout.write(f"  Cours : {Course.objects.filter(is_active=True).count()}")
-        self.stdout.write(f"  Témoignages : {Testimonial.objects.filter(is_active=True).count()}")
+        self.stdout.write(f"  Temoignages : {Testimonial.objects.filter(is_active=True).count()}")
+        self.stdout.write(f"  Membres actifs : {Member.objects.filter(status=Member.Status.ACTIVE).count()}")
