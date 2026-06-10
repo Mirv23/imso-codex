@@ -15,9 +15,11 @@ from django.views.generic import TemplateView, RedirectView
 from apps.adminpanel.models import (
     Course,
     Enrollment,
+    GEI,
     Member,
     Payment,
     PaymentProvider,
+    Testimonial,
     VenueBooking,
 )
 from .forms import ContactRequestForm, CourseEnrollmentRequestForm, VenueBookingRequestForm
@@ -44,7 +46,6 @@ class HomeView(TemplateView):
         context["total_courses"] = courses.count()
         context["total_geis"] = GEI.objects.filter(is_active=True).count()
 
-        from apps.adminpanel.models import Testimonial
         context["testimonials"] = Testimonial.objects.filter(is_active=True)
 
         return context
