@@ -34,17 +34,11 @@ from .models import (
 
 
 class DashboardView(LoginRequiredMixin, TemplateView):
-    template_name = "adminpanel/dashboard_bundled.html"
+    template_name = "adminpanel/simple_dashboard.html"
 
     def get_context_data(self, **kwargs: Any) -> dict[str, Any]:
         context = super().get_context_data(**kwargs)
         context["summary"] = get_dashboard_summary()
-        context["members_json"] = json.dumps(_serialize_members_for_react())
-        context["payments_json"] = json.dumps(_serialize_payments_for_react())
-        context["courses_json"] = json.dumps(_serialize_courses_for_react())
-        context["revenue_json"] = json.dumps(_serialize_revenue_for_react())
-        context["categories_json"] = json.dumps(_serialize_categories_for_react())
-        context["notifs_json"] = json.dumps(_serialize_notifs_for_react())
         return context
 
 
