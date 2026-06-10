@@ -31,9 +31,11 @@ def _run_startup_migrations():
         try:
             with connection.cursor() as cursor:
                 cursor.execute("SELECT COUNT(*) FROM adminpanel_course")
-                count = cursor.fetchone()[0]
-            if count == 0:
-                print("[startup] No data found, seeding demo data...", flush=True)
+                course_count = cursor.fetchone()[0]
+                cursor.execute("SELECT COUNT(*) FROM adminpanel_member")
+                member_count = cursor.fetchone()[0]
+            if course_count == 0 or member_count == 0:
+                print(f"[startup] Data incomplete ({course_count} courses, {member_count} members), re-seeding...", flush=True)
                 call_command("seed_demo")
         except Exception as e:
             print(f"[startup] Seed check failed: {e}", flush=True)
