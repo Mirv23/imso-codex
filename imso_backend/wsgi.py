@@ -16,6 +16,7 @@ def _setup():
 def _run_startup_migrations():
     if os.environ.get("RUN_MIGRATIONS_ON_STARTUP", "").lower() in ("1", "true", "yes"):
         from django.core.management import call_command
+        from django.db import connection
 
         try:
             call_command("migrate", "--noinput")
@@ -26,6 +27,16 @@ def _run_startup_migrations():
             call_command("ensure_admin")
         except Exception as e:
             print(f"[startup] ensure_admin failed: {e}", flush=True)
+
+        try:
+            with connection.cursor() as cursor:
+                cursor.execute("SELECT COUNT(*) FROM adminpanel_course")
+                count = cursor.fetchone()[0]
+            if count == 0:
+                print("[startup] No data found, seeding demo data...", flush=True)
+                call_command("seed_demo")
+        except Exception as e:
+            print(f"[startup] Seed check failed: {e}", flush=True)
 
 
 _setup()
