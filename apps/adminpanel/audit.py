@@ -81,6 +81,7 @@ def connect() -> None:
     from django.db.models.signals import post_delete, post_save
 
     from .models import (
+        BlogPost,
         ContactRequest,
         Course,
         Enrollment,
@@ -106,6 +107,7 @@ def connect() -> None:
         ContactRequest,
         Product,
         Order,
+        BlogPost,
     ]
     for model in audited:
         post_save.connect(_on_save, sender=model, dispatch_uid=f"audit_save_{model.__name__}")

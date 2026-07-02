@@ -1,0 +1,36 @@
+{% include 'core/partials/header.html' %}
+<main style="padding-top:120px">
+  <section class="section">
+    <div class="container">
+      <div class="section__head reveal">
+        <span class="label"><span class="label__bullet"></span>Blog</span>
+        <h2 class="section__title">Actualités &amp; conseils</h2>
+        <p class="section__intro">Nos articles sur l'épargne, l'entrepreneuriat et la vie des GEI.</p>
+      </div>
+      <div class="courses__grid">
+        {% for post in posts %}
+        <article class="course-card reveal">
+          {% if post.cover_image %}
+          <div class="course-card__band course-card__band--g" style="height:120px;padding:0">
+            <img src="{{ post.cover_image.url }}" alt="{{ post.title }}" style="width:100%;height:100%;object-fit:cover" loading="lazy">
+          </div>
+          {% else %}
+          <div class="course-card__band course-card__band--{% cycle 'g' 'a' 't' %}"><span class="course-card__tag">Article</span></div>
+          {% endif %}
+          <div class="course-card__body">
+            <h3 class="course-card__title"><a href="{% url 'core:blog_detail' post.slug %}">{{ post.title }}</a></h3>
+            <p style="color:var(--muted);font-size:14px;line-height:1.6">{{ post.excerpt|default:post.body|truncatewords:24 }}</p>
+            <div class="course-card__meta">
+              <span style="font-size:12px;color:var(--muted)">{{ post.published_at|date:"d M Y" }}</span>
+              <a class="btn btn--ghost btn--small" href="{% url 'core:blog_detail' post.slug %}">Lire</a>
+            </div>
+          </div>
+        </article>
+        {% empty %}
+        <p style="grid-column:1 / -1;text-align:center;color:var(--muted);padding:40px 0">Aucun article publié pour le moment.</p>
+        {% endfor %}
+      </div>
+    </div>
+  </section>
+</main>
+{% include 'core/partials/footer.html' %}

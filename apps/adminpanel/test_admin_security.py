@@ -2,8 +2,8 @@
 
 import pytest
 from django.contrib.auth import get_user_model
-from django.core.cache import cache
-from django.test import Client
+from django.core.cache import caches
+from django.test import Client, override_settings
 from django.urls import reverse
 
 from .models import AuditLog, Course, Enrollment, GEI, Member, Payment, PaymentProvider
@@ -126,8 +126,14 @@ class TestAuditLog:
 
 @pytest.mark.django_db
 class TestLoginRateLimit:
+    # Cache isolé pour ce test : évite toute contamination du compteur de
+    # rate-limit par les autres tests qui partagent le LocMemCache par défaut.
+    @override_settings(CACHES={"default": {
+        "BACKEND": "django.core.cache.backends.locmem.LocMemCache",
+        "LOCATION": "ratelimit-login-isolated",
+    }})
     def test_login_brute_force_blocked(self):
-        cache.clear()
+        caches["default"].clear()
         client = Client()
         statuses = []
         for _ in range(8):

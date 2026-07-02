@@ -1,6 +1,8 @@
 from django.urls import path
 
 from .views import (
+    BlogDetailView,
+    BlogListView,
     ContactRequestCreateView,
     CourseEnrollmentCreateView,
     HomeView,
@@ -33,6 +35,8 @@ urlpatterns = [
     path("api/paiement/confirm-manual/", confirm_manual_payment, name="payment_confirm_manual"),
     path("api/paiement/confirmation/<str:reference>/", PaymentConfirmationView.as_view(), name="payment_confirmation"),
     path("paiement/<str:type>/<int:id>/", PaymentPageView.as_view(), name="payment_page"),
+    path("blog/", BlogListView.as_view(), name="blog_list"),
+    path("blog/<slug:slug>/", BlogDetailView.as_view(), name="blog_detail"),
     path("health/", healthcheck, name="healthcheck"),
     path("api/webhook/<str:provider>/", webhook_receiver, name="webhook"),
 ]

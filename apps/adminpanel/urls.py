@@ -2,6 +2,9 @@ from django.urls import include, path
 
 from .views import (
     DashboardView,
+    blog_create,
+    blog_detail,
+    blog_list,
     booking_detail,
     booking_list,
     contact_detail,
@@ -19,6 +22,11 @@ from .views import (
     member_create,
     member_detail,
     member_list,
+    order_detail,
+    order_list,
+    product_create,
+    product_detail,
+    product_list,
     notification_check,
     notification_list,
     notification_read,
@@ -93,6 +101,14 @@ urlpatterns = [
     path("api/v1/testimonials/create/", testimonial_create, name="testimonial-create-v1"),
     path("api/testimonials/<int:pk>/", testimonial_detail, name="testimonial-detail"),
     path("api/v1/testimonials/<int:pk>/", testimonial_detail, name="testimonial-detail-v1"),
+    path("api/products/", product_list, name="product-list"),
+    path("api/products/create/", product_create, name="product-create"),
+    path("api/products/<int:pk>/", product_detail, name="product-detail"),
+    path("api/orders/", order_list, name="order-list"),
+    path("api/orders/<int:pk>/", order_detail, name="order-detail"),
+    path("api/blog/", blog_list, name="blog-list"),
+    path("api/blog/create/", blog_create, name="blog-create"),
+    path("api/blog/<int:pk>/", blog_detail, name="blog-detail"),
     path("api/export/<str:model_name>/", export_csv, name="export-csv"),
 ]
 

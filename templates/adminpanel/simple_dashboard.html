@@ -225,6 +225,15 @@ textarea { resize: vertical; min-height: 80px; }
         <span class="ico"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M4 4h16c1.1 0 2 .9 2 2v12c0 1.1-.9 2-2 2H4c-1.1 0-2-.9-2-2V6c0-1.1.9-2 2-2z"/><polyline points="22,6 12,13 2,6"/></svg></span>
         Contacts
       </button>
+      <div class="sb-section">Boutique</div>
+      <button class="sb-item" data-section="products" onclick="navigateTo('products')">
+        <span class="ico"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M20 7l-8-4-8 4m16 0l-8 4m8-4v10l-8 4m0-10L4 7m8 4v10M4 7v10l8 4"/></svg></span>
+        Produits
+      </button>
+      <button class="sb-item" data-section="orders" onclick="navigateTo('orders')">
+        <span class="ico"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="9" cy="21" r="1"/><circle cx="20" cy="21" r="1"/><path d="M1 1h4l2.68 13.39a2 2 0 0 0 2 1.61h9.72a2 2 0 0 0 2-1.61L23 6H6"/></svg></span>
+        Commandes
+      </button>
       <div class="sb-section">Configuration</div>
       <button class="sb-item" data-section="testimonials" onclick="navigateTo('testimonials')">
         <span class="ico"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z"/></svg></span>
@@ -233,6 +242,10 @@ textarea { resize: vertical; min-height: 80px; }
       <button class="sb-item" data-section="providers" onclick="navigateTo('providers')">
         <span class="ico"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M12 1a3 3 0 0 0-3 3v8a3 3 0 0 0 6 0V4a3 3 0 0 0-3-3z"/><path d="M19 10v2a7 7 0 0 1-14 0v-2"/><line x1="12" y1="19" x2="12" y2="23"/><line x1="8" y1="23" x2="16" y2="23"/></svg></span>
         Fournisseurs
+      </button>
+      <button class="sb-item" data-section="blog" onclick="navigateTo('blog')">
+        <span class="ico"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M4 19.5A2.5 2.5 0 0 1 6.5 17H20"/><path d="M6.5 2H20v20H6.5A2.5 2.5 0 0 1 4 19.5v-15A2.5 2.5 0 0 1 6.5 2z"/><line x1="8" y1="7" x2="16" y2="7"/><line x1="8" y1="11" x2="14" y2="11"/></svg></span>
+        Blog
       </button>
       <div class="sb-section">Système</div>
       <button class="sb-item" data-section="export" onclick="navigateTo('export')">
@@ -300,6 +313,9 @@ textarea { resize: vertical; min-height: 80px; }
       <div class="section" id="section-contacts"><div class="card" id="card-contacts"></div></div>
       <div class="section" id="section-testimonials"><div class="card" id="card-testimonials"></div></div>
       <div class="section" id="section-providers"><div class="card" id="card-providers"></div></div>
+      <div class="section" id="section-products"><div class="card" id="card-products"></div></div>
+      <div class="section" id="section-orders"><div class="card" id="card-orders"></div></div>
+      <div class="section" id="section-blog"><div class="card" id="card-blog"></div></div>
       <div class="section" id="section-export"><div class="card"><div class="card-head"><div class="card-title">Export CSV</div></div><div style="padding:18px 22px 22px"><p style="color:var(--muted);margin-bottom:16px">Téléchargez les données de chaque modèle au format CSV.</p><div id="exportButtons" style="display:flex;flex-wrap:wrap;gap:10px"></div></div></div></div>
     </div>
   </div>
@@ -358,7 +374,7 @@ function navigateTo(section, resetPage = true) {
   if (navEl) navEl.classList.add('active');
   currentSection.name = section;
   if (resetPage) { currentSection.page = 1; currentSection.search = ''; }
-  const titles = { dashboard:'Tableau de bord', members:'Membres', geis:'GEIs', courses:'Cours', payments:'Paiements', bookings:'Réservations', enrollments:'Inscriptions', contacts:'Contacts', testimonials:'Témoignages', providers:'Fournisseurs', export:'Export CSV' };
+  const titles = { dashboard:'Tableau de bord', members:'Membres', geis:'GEIs', courses:'Cours', payments:'Paiements', bookings:'Réservations', enrollments:'Inscriptions', contacts:'Contacts', testimonials:'Témoignages', providers:'Fournisseurs', products:'Produits', orders:'Commandes', blog:'Blog', export:'Export CSV' };
   document.getElementById('pageTitle').textContent = titles[section] || section;
   document.getElementById('headerActions').innerHTML = '';
   if (section === 'dashboard') loadMetrics();
@@ -579,6 +595,70 @@ const SECTIONS = {
     ],
     detailUrl: r => '/dashboard/api/providers/' + r.id + '/',
   },
+  products: {
+    title: 'Produits',
+    endpoint: '/dashboard/api/products/',
+    createEndpoint: '/dashboard/api/products/create/',
+    canCreate: true, canEdit: true, canDelete: true,
+    columns: [
+      { key:'name', label:'Produit', render: r => `<strong>${esc(r.name)}</strong><br><span style="font-size:11px;color:var(--muted)">${({book:'Livre',workbook:'Cahier',kit:'Kit complet',other:'Autre'})[r.kind]||esc(r.kind)}</span>` },
+      { key:'price_htg', label:'Prix', render: r => fmt(r.price_htg) + ' HTG' },
+      { key:'stock', label:'Stock', render: r => r.stock > 0 ? r.stock : '<span class="pill red">0</span>' },
+      { key:'is_active', label:'Actif', render: r => r.is_active ? '<span class="pill green">Oui</span>' : '<span class="pill red">Non</span>' },
+      { key:'sort_order', label:'Ordre', render: r => r.sort_order },
+    ],
+    formTitle: r => r ? 'Modifier le produit' : 'Nouveau produit',
+    formFields: r => [
+      { name:'name', label:'Nom', type:'text', value: r?.name || '', required: true },
+      { name:'kind', label:'Type', type:'select', options:[{v:'kit',l:'Kit complet'},{v:'book',l:'Livre'},{v:'workbook',l:'Cahier'},{v:'other',l:'Autre'}], value: r?.kind || 'kit' },
+      { name:'description', label:'Description', type:'textarea', value: r?.description || '' },
+      { name:'price_htg', label:'Prix (HTG)', type:'number', value: r?.price_htg || 0 },
+      { name:'stock', label:'Stock', type:'number', value: r?.stock || 0 },
+      { name:'sort_order', label:'Ordre d\'affichage', type:'number', value: r?.sort_order || 0 },
+      { name:'is_active', label:'Actif', type:'checkbox', value: r?.is_active ?? true },
+    ],
+    detailUrl: r => '/dashboard/api/products/' + r.id + '/',
+  },
+  orders: {
+    title: 'Commandes',
+    endpoint: '/dashboard/api/orders/',
+    canCreate: false, canEdit: true, canDelete: false,
+    columns: [
+      { key:'reference', label:'Réf.', render: r => `<code style="font-size:11px">${esc(r.reference)}</code>` },
+      { key:'customer_name', label:'Client', render: r => `<strong>${esc(r.customer_name)}</strong><br><span style="font-size:11px;color:var(--muted)">${esc(r.customer_phone)}</span>` },
+      { key:'items', label:'Articles', render: r => (r.items||[]).map(i => esc(i.quantity + '× ' + i.product_name)).join('<br>') || '—' },
+      { key:'total_htg', label:'Total', render: r => fmt(r.total_htg) + ' HTG' },
+      { key:'city', label:'Livraison', render: r => esc(r.city || '—') },
+      { key:'status', label:'Statut', render: r => statusBadge(r.status) },
+    ],
+    formTitle: () => 'Modifier la commande',
+    formFields: r => [
+      { name:'status', label:'Statut', type:'select', options:[{v:'pending',l:'En attente'},{v:'paid',l:'Payée'},{v:'preparing',l:'En préparation'},{v:'shipped',l:'Expédiée'},{v:'delivered',l:'Livrée'},{v:'cancelled',l:'Annulée'}], value: r?.status || 'pending' },
+      { name:'note', label:'Note interne', type:'textarea', value: r?.note || '' },
+    ],
+    detailUrl: r => '/dashboard/api/orders/' + r.id + '/',
+  },
+  blog: {
+    title: 'Blog',
+    endpoint: '/dashboard/api/blog/',
+    createEndpoint: '/dashboard/api/blog/create/',
+    canCreate: true, canEdit: true, canDelete: true,
+    columns: [
+      { key:'title', label:'Titre', render: r => `<strong>${esc(r.title)}</strong>` },
+      { key:'author', label:'Auteur', render: r => esc(r.author || '—') },
+      { key:'status', label:'Statut', render: r => ({draft:'<span class="pill amber">Brouillon</span>',published:'<span class="pill green">Publié</span>',scheduled:'<span class="pill blue">Programmé</span>'})[r.status] || esc(r.status) },
+      { key:'published_at', label:'Publié le', render: r => r.published_at ? new Date(r.published_at).toLocaleDateString('fr-FR') : '<span style="color:var(--muted)">—</span>' },
+    ],
+    formTitle: r => r ? 'Modifier l\'article' : 'Nouvel article',
+    formFields: r => [
+      { name:'title', label:'Titre', type:'text', value: r?.title || '', required: true },
+      { name:'author', label:'Auteur', type:'text', value: r?.author || '' },
+      { name:'excerpt', label:'Résumé (court)', type:'textarea', value: r?.excerpt || '' },
+      { name:'body', label:'Contenu', type:'textarea', value: r?.body || '', required: true },
+      { name:'status', label:'Statut', type:'select', options:[{v:'draft',l:'Brouillon'},{v:'published',l:'Publié'},{v:'scheduled',l:'Programmé'}], value: r?.status || 'draft' },
+    ],
+    detailUrl: r => '/dashboard/api/blog/' + r.id + '/',
+  },
 };
 
 // Échappement sûr pour le texte HTML ET les valeurs d'attribut (guillemets inclus).
@@ -598,12 +678,13 @@ function statusBadge(status) {
     paid:'green', pending:'amber', failed:'red', cancelled:'gray', refunded:'blue',
     requested:'blue', payment_pending:'amber', admin_review:'amber', confirmed:'green',
     confirmed_enrollment:'green',
+    preparing:'amber', shipped:'blue', delivered:'green',
   };
   const labels = {
     active:'Actif', paused:'En pause', alumni:'Ancien', prospect:'Prospect',
     paid:'Payé', pending:'En attente', failed:'Échoué', cancelled:'Annulé', refunded:'Remboursé',
     requested:'Demandée', payment_pending:'Paiement attendu', admin_review:'En validation', confirmed:'Confirmée',
-    confirmed:'Confirmée',
+    preparing:'En préparation', shipped:'Expédiée', delivered:'Livrée',
   };
   const color = map[status] || 'gray';
   const label = labels[status] || status;
@@ -817,8 +898,8 @@ document.getElementById('modalOverlay').addEventListener('click', function(e) {
 
 // ============= EXPORT =============
 function renderExport() {
-  const models = ['members','courses','payments','bookings','contacts','geis','providers','enrollments','testimonials'];
-  const labels = { members:'Membres', courses:'Cours', payments:'Paiements', bookings:'Réservations', contacts:'Contacts', geis:'GEIs', providers:'Fournisseurs', enrollments:'Inscriptions', testimonials:'Témoignages' };
+  const models = ['members','courses','payments','bookings','contacts','geis','providers','enrollments','testimonials','products','orders','blog'];
+  const labels = { members:'Membres', courses:'Cours', payments:'Paiements', bookings:'Réservations', contacts:'Contacts', geis:'GEIs', providers:'Fournisseurs', enrollments:'Inscriptions', testimonials:'Témoignages', products:'Produits', orders:'Commandes', blog:'Blog' };
   const container = document.getElementById('exportButtons');
   container.innerHTML = models.map(m => '<a class="btn" href="/dashboard/api/export/' + m + '/" target="_blank"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="7 10 12 15 17 10"/><line x1="12" y1="15" x2="12" y2="3"/></svg> ' + labels[m] + '</a>').join('');
 }

@@ -15,9 +15,15 @@
     <div class="courses__grid" id="shopGrid">
       {% for product in products %}
       <article class="course-card reveal" data-delay="{{ forloop.counter|default:1 }}">
+        {% if product.image %}
+        <div class="course-card__band course-card__band--g" style="height:150px;padding:0">
+          <img src="{{ product.image.url }}" alt="{{ product.name }}" style="width:100%;height:100%;object-fit:cover" loading="lazy">
+        </div>
+        {% else %}
         <div class="course-card__band course-card__band--{% cycle 'g' 'a' 't' 'g' 'a' 't' %}">
           <span class="course-card__tag">{{ product.get_kind_display }}</span>
         </div>
+        {% endif %}
         <div class="course-card__body">
           <h3 class="course-card__title">{{ product.name }}</h3>
           <p class="course-card__desc" style="color:var(--muted);font-size:14px;margin:6px 0 12px;">{{ product.description|truncatewords:24 }}</p>

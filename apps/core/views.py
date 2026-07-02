@@ -14,6 +14,7 @@ from django.views import View
 from django.views.generic import TemplateView, RedirectView
 
 from apps.adminpanel.models import (
+    BlogPost,
     Course,
     Enrollment,
     GEI,
@@ -53,9 +54,34 @@ class HomeView(TemplateView):
         context["testimonials"] = Testimonial.objects.filter(is_active=True)
 
         context["products"] = Product.objects.filter(is_active=True).only(
-            "id", "name", "slug", "kind", "description", "price_htg", "stock", "sort_order"
+            "id", "name", "slug", "kind", "description", "price_htg", "stock", "sort_order", "image"
         )
 
+        return context
+
+
+class BlogListView(TemplateView):
+    template_name = "core/blog_list.html"
+
+    def get_context_data(self, **kwargs: Any) -> dict[str, Any]:
+        context = super().get_context_data(**kwargs)
+        context["posts"] = BlogPost.objects.filter(
+            status=BlogPost.Status.PUBLISHED, published_at__lte=timezone.now()
+        ).order_by("-published_at")
+        return context
+
+
+class BlogDetailView(TemplateView):
+    template_name = "core/blog_detail.html"
+
+    def get_context_data(self, **kwargs: Any) -> dict[str, Any]:
+        context = super().get_context_data(**kwargs)
+        context["post"] = get_object_or_404(
+            BlogPost,
+            slug=kwargs.get("slug"),
+            status=BlogPost.Status.PUBLISHED,
+            published_at__lte=timezone.now(),
+        )
         return context
 
 

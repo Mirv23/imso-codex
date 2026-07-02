@@ -23,14 +23,17 @@ logger = logging.getLogger(__name__)
 from .permissions import StaffRequiredMixin, staff_required
 from .models import (
     AdminNotification,
+    BlogPost,
     ContactRequest,
     Course,
     EncryptedCharField,
     Enrollment,
     GEI,
     Member,
+    Order,
     Payment,
     PaymentProvider,
+    Product,
     Testimonial,
     VenueBooking,
 )
@@ -1030,6 +1033,218 @@ def testimonial_create(request: HttpRequest) -> JsonResponse:
     return JsonResponse({"ok": True, "id": t.pk}, status=201)
 
 
+# ── Products (boutique) ──────────────────────────────────
+
+def _serialize_product(p: Product) -> dict[str, Any]:
+    return {
+        "id": p.pk,
+        "name": p.name,
+        "slug": p.slug,
+        "kind": p.kind,
+        "description": p.description,
+        "price_htg": p.price_htg,
+        "stock": p.stock,
+        "is_active": p.is_active,
+        "sort_order": p.sort_order,
+        "created_at": p.created_at.isoformat(),
+    }
+
+
+@staff_required
+def product_list(request: HttpRequest) -> JsonResponse:
+    qs = Product.objects.all()
+    search = request.GET.get("search")
+    if search:
+        qs = qs.filter(Q(name__icontains=search) | Q(description__icontains=search))
+    active = request.GET.get("active")
+    if active is not None:
+        qs = qs.filter(is_active=active.lower() in ("1", "true"))
+    qs = qs.order_by("sort_order", "name")
+    return _paginated_response(qs, request, _serialize_product)
+
+
+@staff_required
+@require_http_methods(["POST"])
+def product_create(request: HttpRequest) -> JsonResponse:
+    data = _json_body(request)
+    if "name" not in data:
+        return _error("Missing field: name")
+    p = Product.objects.create(
+        name=data["name"],
+        kind=data.get("kind", Product.Kind.KIT),
+        description=data.get("description", ""),
+        price_htg=data.get("price_htg", 0),
+        stock=data.get("stock", 0),
+        is_active=data.get("is_active", True),
+        sort_order=data.get("sort_order", 0),
+    )
+    logger.info("Product %d created by user %s (%s)", p.pk, request.user.username, p.name)
+    return JsonResponse(_serialize_product(p), status=201)
+
+
+@ensure_csrf_cookie
+@staff_required
+@require_http_methods(["GET", "PUT", "DELETE"])
+def product_detail(request: HttpRequest, pk: int) -> JsonResponse:
+    try:
+        p = Product.objects.get(pk=pk)
+    except Product.DoesNotExist:
+        return _error("Product not found", 404)
+    if request.method == "GET":
+        return JsonResponse(_serialize_product(p))
+    elif request.method == "PUT":
+        data = _json_body(request)
+        for fld in ("name", "kind", "description", "price_htg", "stock", "is_active", "sort_order"):
+            if fld in data:
+                setattr(p, fld, data[fld])
+        p.save()
+        logger.info("Product %d updated by user %s", pk, request.user.username)
+        return JsonResponse(_serialize_product(p))
+    elif request.method == "DELETE":
+        if p.order_items.exists():
+            return _error("Ce produit apparaît dans des commandes. Désactivez-le plutôt.", 409)
+        logger.info("Product %d deleted by user %s", pk, request.user.username)
+        p.delete()
+        return _ok()
+
+
+# ── Orders (commandes boutique) ──────────────────────────
+
+def _serialize_order(o: Order) -> dict[str, Any]:
+    return {
+        "id": o.pk,
+        "reference": o.reference,
+        "customer_name": o.customer_name,
+        "customer_phone": o.customer_phone,
+        "customer_email": o.customer_email,
+        "delivery_address": o.delivery_address,
+        "city": o.city,
+        "status": o.status,
+        "total_htg": o.total_htg,
+        "note": o.note,
+        "items": [
+            {
+                "id": it.pk,
+                "product_name": it.product_name,
+                "quantity": it.quantity,
+                "unit_price_htg": it.unit_price_htg,
+            }
+            for it in o.items.all()
+        ],
+        "created_at": o.created_at.isoformat(),
+    }
+
+
+@staff_required
+def order_list(request: HttpRequest) -> JsonResponse:
+    qs = Order.objects.prefetch_related("items").all()
+    status = request.GET.get("status")
+    if status:
+        qs = qs.filter(status=status)
+    search = request.GET.get("search")
+    if search:
+        qs = qs.filter(
+            Q(reference__icontains=search)
+            | Q(customer_name__icontains=search)
+            | Q(customer_phone__icontains=search)
+        )
+    qs = qs.order_by("-created_at")
+    return _paginated_response(qs, request, _serialize_order)
+
+
+@ensure_csrf_cookie
+@staff_required
+@require_http_methods(["GET", "PUT"])
+def order_detail(request: HttpRequest, pk: int) -> JsonResponse:
+    try:
+        o = Order.objects.prefetch_related("items").get(pk=pk)
+    except Order.DoesNotExist:
+        return _error("Order not found", 404)
+    if request.method == "GET":
+        return JsonResponse(_serialize_order(o))
+    data = _json_body(request)
+    if "status" in data:
+        o.status = data["status"]
+    for fld in ("note", "delivery_address", "city", "customer_name", "customer_phone", "customer_email"):
+        if fld in data:
+            setattr(o, fld, data[fld])
+    o.save()
+    logger.info("Order %d updated by user %s (status: %s)", pk, request.user.username, o.status)
+    return JsonResponse(_serialize_order(o))
+
+
+# ── Blog ─────────────────────────────────────────────────
+
+def _serialize_blogpost(b: BlogPost) -> dict[str, Any]:
+    return {
+        "id": b.pk,
+        "title": b.title,
+        "slug": b.slug,
+        "excerpt": b.excerpt,
+        "body": b.body,
+        "author": b.author,
+        "status": b.status,
+        "published_at": b.published_at.isoformat() if b.published_at else None,
+        "scheduled_for": b.scheduled_for.isoformat() if b.scheduled_for else None,
+        "created_at": b.created_at.isoformat(),
+    }
+
+
+@staff_required
+def blog_list(request: HttpRequest) -> JsonResponse:
+    qs = BlogPost.objects.all()
+    search = request.GET.get("search")
+    if search:
+        qs = qs.filter(Q(title__icontains=search) | Q(body__icontains=search) | Q(author__icontains=search))
+    status = request.GET.get("status")
+    if status:
+        qs = qs.filter(status=status)
+    qs = qs.order_by("-created_at")
+    return _paginated_response(qs, request, _serialize_blogpost)
+
+
+@staff_required
+@require_http_methods(["POST"])
+def blog_create(request: HttpRequest) -> JsonResponse:
+    data = _json_body(request)
+    for f in ("title", "body"):
+        if f not in data:
+            return _error(f"Missing field: {f}")
+    b = BlogPost.objects.create(
+        title=data["title"],
+        body=data["body"],
+        excerpt=data.get("excerpt", ""),
+        author=data.get("author", ""),
+        status=data.get("status", BlogPost.Status.DRAFT),
+    )
+    logger.info("BlogPost %d created by user %s (%s)", b.pk, request.user.username, b.title)
+    return JsonResponse(_serialize_blogpost(b), status=201)
+
+
+@ensure_csrf_cookie
+@staff_required
+@require_http_methods(["GET", "PUT", "DELETE"])
+def blog_detail(request: HttpRequest, pk: int) -> JsonResponse:
+    try:
+        b = BlogPost.objects.get(pk=pk)
+    except BlogPost.DoesNotExist:
+        return _error("Article introuvable", 404)
+    if request.method == "GET":
+        return JsonResponse(_serialize_blogpost(b))
+    elif request.method == "PUT":
+        data = _json_body(request)
+        for fld in ("title", "body", "excerpt", "author", "status"):
+            if fld in data:
+                setattr(b, fld, data[fld])
+        b.save()
+        logger.info("BlogPost %d updated by user %s (status: %s)", pk, request.user.username, b.status)
+        return JsonResponse(_serialize_blogpost(b))
+    elif request.method == "DELETE":
+        logger.info("BlogPost %d deleted by user %s", pk, request.user.username)
+        b.delete()
+        return _ok()
+
+
 # ── Export CSV ───────────────────────────────────────────
 
 ALLOWED_EXPORT_MODELS = {
@@ -1042,6 +1257,9 @@ ALLOWED_EXPORT_MODELS = {
     "providers": PaymentProvider,
     "enrollments": Enrollment,
     "testimonials": Testimonial,
+    "products": Product,
+    "orders": Order,
+    "blog": BlogPost,
 }
 
 # Champs jamais exportés (secrets fournisseurs de paiement, etc.).

@@ -1,0 +1,20 @@
+{% include 'core/partials/header.html' %}
+<main style="padding-top:120px">
+  <article class="section">
+    <div class="container" style="max-width:820px">
+      <a href="{% url 'core:blog_list' %}" class="link-arrow" style="margin-bottom:8px">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" style="transform:rotate(180deg)"><path d="M5 12h14M13 5l7 7-7 7"></path></svg>
+        Tous les articles
+      </a>
+      <h1 class="section__title" style="margin-top:16px">{{ post.title }}</h1>
+      <p style="color:var(--muted);font-size:14px;margin-bottom:8px">
+        {{ post.published_at|date:"d F Y" }}{% if post.author %} · {{ post.author }}{% endif %}
+      </p>
+      {% if post.cover_image %}
+      <img src="{{ post.cover_image.url }}" alt="{{ post.title }}" style="width:100%;border-radius:20px;margin:20px 0" loading="lazy">
+      {% endif %}
+      <div style="font-size:17px;line-height:1.8;color:var(--text)">{{ post.body|linebreaks }}</div>
+    </div>
+  </article>
+</main>
+{% include 'core/partials/footer.html' %}

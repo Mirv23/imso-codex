@@ -1,55 +1,74 @@
 from __future__ import annotations
 
 import base64
+import hashlib
 import os
 
 from typing import Any
 
+from cryptography.fernet import Fernet, InvalidToken
 from django.conf import settings
 from django.db import models
 from django.utils import timezone
 from django.utils.text import slugify
 
 
-def _obfuscation_key() -> bytes:
-    key = os.environ.get("DJANGO_SECRET_KEY", "")
-    return key.encode("utf-8") if key else b"imso-fallback-key-32chars!!"
+_FERNET_PREFIX = "fer:"   # nouveau chiffrement (Fernet / AES)
+_LEGACY_PREFIX = "enc:"   # ancien XOR — encore lu pour compatibilité
 
 
-def _xor_encrypt(plaintext: str) -> str:
-    key = _obfuscation_key()
-    plain_bytes = plaintext.encode("utf-8")
-    result = bytes(plain_bytes[i] ^ key[i % len(key)] for i in range(len(plain_bytes)))
-    return base64.urlsafe_b64encode(result).decode("ascii")
+def _fernet() -> Fernet:
+    """Clé Fernet dérivée de FIELD_ENCRYPTION_KEY (ou DJANGO_SECRET_KEY en repli)."""
+    key_material = os.environ.get("FIELD_ENCRYPTION_KEY") or os.environ.get("DJANGO_SECRET_KEY", "")
+    digest = hashlib.sha256(key_material.encode("utf-8")).digest()
+    return Fernet(base64.urlsafe_b64encode(digest))
 
 
-def _xor_decrypt(ciphertext: str) -> str:
-    key = _obfuscation_key()
+def _legacy_xor_decrypt(ciphertext: str) -> str:
+    key = (os.environ.get("DJANGO_SECRET_KEY", "") or "imso-fallback-key-32chars!!").encode("utf-8")
     raw = base64.urlsafe_b64decode(ciphertext.encode("ascii"))
     result = bytes(raw[i] ^ key[i % len(key)] for i in range(len(raw)))
     return result.decode("utf-8")
 
 
+def _decrypt_value(value: str) -> str:
+    if value.startswith(_FERNET_PREFIX):
+        try:
+            return _fernet().decrypt(value[len(_FERNET_PREFIX):].encode("ascii")).decode("utf-8")
+        except (InvalidToken, ValueError):
+            return ""
+    if value.startswith(_LEGACY_PREFIX):
+        try:
+            return _legacy_xor_decrypt(value[len(_LEGACY_PREFIX):])
+        except Exception:
+            return ""
+    return value  # valeur héritée en clair
+
+
 class EncryptedCharField(models.CharField):
+    """Champ chiffré au repos avec Fernet (AES-128-CBC + HMAC).
+
+    Lit encore les anciennes valeurs XOR (`enc:`) et les valeurs en clair, mais
+    réécrit toujours en Fernet (`fer:`).
+    """
+
     def from_db_value(self, value: str | None, expression: Any, connection: Any) -> str | None:
         if value is None:
             return value
-        # Cohérent avec get_prep_value qui préfixe "enc:". Sans ce strip, le
-        # base64 échoue (Incorrect padding). On tolère aussi les valeurs
-        # héritées non chiffrées (sans préfixe).
-        if value.startswith("enc:"):
-            return _xor_decrypt(value[4:])
-        return value
+        return _decrypt_value(value)
 
     def to_python(self, value: Any) -> Any:
-        if isinstance(value, str) and value.startswith("enc:"):
-            return _xor_decrypt(value[4:])
+        if isinstance(value, str) and (value.startswith(_FERNET_PREFIX) or value.startswith(_LEGACY_PREFIX)):
+            return _decrypt_value(value)
         return value
 
     def get_prep_value(self, value: Any) -> str | None:
         if value is None:
             return None
-        return "enc:" + _xor_encrypt(value)
+        if value == "":
+            return ""
+        token = _fernet().encrypt(str(value).encode("utf-8")).decode("ascii")
+        return _FERNET_PREFIX + token
 
 
 class TimestampedModel(models.Model):
@@ -403,6 +422,52 @@ class OrderItem(models.Model):
     @property
     def line_total(self) -> int:
         return self.quantity * self.unit_price_htg
+
+
+class BlogPost(TimestampedModel):
+    """Article de blog. Publication immédiate, brouillon ou programmée."""
+
+    class Status(models.TextChoices):
+        DRAFT = "draft", "Brouillon"
+        PUBLISHED = "published", "Publié"
+        SCHEDULED = "scheduled", "Programmé"
+
+    title = models.CharField(max_length=200)
+    slug = models.SlugField(max_length=220, unique=True, blank=True)
+    excerpt = models.CharField(max_length=300, blank=True)
+    body = models.TextField()
+    cover_image = models.FileField(upload_to="blog/", blank=True)
+    author = models.CharField(max_length=120, blank=True)
+    status = models.CharField(max_length=20, choices=Status.choices, default=Status.DRAFT)
+    published_at = models.DateTimeField(null=True, blank=True)
+    scheduled_for = models.DateTimeField(null=True, blank=True)
+
+    class Meta:
+        ordering = ["-published_at", "-created_at"]
+
+    def save(self, *args: Any, **kwargs: Any) -> None:
+        if not self.slug and self.title:
+            base = slugify(self.title)[:210] or "article"
+            slug = base
+            i = 2
+            while BlogPost.objects.exclude(pk=self.pk).filter(slug=slug).exists():
+                slug = f"{base}-{i}"
+                i += 1
+            self.slug = slug
+        if self.status == self.Status.PUBLISHED and not self.published_at:
+            self.published_at = timezone.now()
+        super().save(*args, **kwargs)
+
+    @property
+    def is_public(self) -> bool:
+        return (
+            self.status == self.Status.PUBLISHED
+            and self.published_at is not None
+            and self.published_at <= timezone.now()
+        )
+
+    def __str__(self) -> str:
+        return self.title
 
 
 class AdminNotification(models.Model):

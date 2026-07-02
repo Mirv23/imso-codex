@@ -9,6 +9,7 @@ from django.contrib import admin
 from .models import (
     AdminNotification,
     AuditLog,
+    BlogPost,
     ContactRequest,
     Course,
     Enrollment,
@@ -107,6 +108,15 @@ class OrderAdmin(admin.ModelAdmin):
     search_fields = ("reference", "customer_name", "customer_phone", "customer_email")
     readonly_fields = ("reference", "total_htg")
     inlines = [OrderItemInline]
+
+
+@admin.register(BlogPost)
+class BlogPostAdmin(admin.ModelAdmin):
+    list_display = ("title", "status", "author", "published_at", "scheduled_for")
+    list_filter = ("status",)
+    search_fields = ("title", "body", "author")
+    prepopulated_fields = {"slug": ("title",)}
+    readonly_fields = ("created_at", "updated_at")
 
 
 @admin.register(AdminNotification)
