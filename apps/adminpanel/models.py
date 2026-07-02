@@ -5,6 +5,7 @@ import os
 
 from typing import Any
 
+from django.conf import settings
 from django.db import models
 from django.utils import timezone
 
@@ -32,7 +33,12 @@ class EncryptedCharField(models.CharField):
     def from_db_value(self, value: str | None, expression: Any, connection: Any) -> str | None:
         if value is None:
             return value
-        return _xor_decrypt(value)
+        # Cohérent avec get_prep_value qui préfixe "enc:". Sans ce strip, le
+        # base64 échoue (Incorrect padding). On tolère aussi les valeurs
+        # héritées non chiffrées (sans préfixe).
+        if value.startswith("enc:"):
+            return _xor_decrypt(value[4:])
+        return value
 
     def to_python(self, value: Any) -> Any:
         if isinstance(value, str) and value.startswith("enc:"):
@@ -324,3 +330,37 @@ class AdminNotification(models.Model):
 
     def __str__(self) -> str:
         return f"[{self.get_notification_type_display()}] {self.message}"
+
+
+class AuditLog(models.Model):
+    """Trace persistante des actions du personnel (qui, quoi, quand).
+
+    Indispensable dès qu'on manipule de l'argent : permet de savoir qui a validé
+    un paiement, modifié un montant ou supprimé un enregistrement.
+    """
+
+    class Action(models.TextChoices):
+        CREATE = "create", "Création"
+        UPDATE = "update", "Modification"
+        DELETE = "delete", "Suppression"
+
+    user = models.ForeignKey(
+        settings.AUTH_USER_MODEL,
+        on_delete=models.SET_NULL,
+        null=True,
+        blank=True,
+        related_name="audit_logs",
+    )
+    username = models.CharField(max_length=150, blank=True)  # figé même si le compte est supprimé
+    action = models.CharField(max_length=20, choices=Action.choices)
+    model_name = models.CharField(max_length=80)
+    object_id = models.CharField(max_length=40, blank=True)
+    object_label = models.CharField(max_length=200, blank=True)
+    detail = models.TextField(blank=True)
+    created_at = models.DateTimeField(auto_now_add=True)
+
+    class Meta:
+        ordering = ["-created_at"]
+
+    def __str__(self) -> str:
+        return f"{self.created_at:%Y-%m-%d %H:%M} · {self.username} · {self.action} {self.model_name}#{self.object_id}"

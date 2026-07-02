@@ -6,23 +6,26 @@ import logging
 from datetime import timedelta
 from typing import Any, Callable, Generator
 
-from django.contrib.auth.decorators import login_required
+from django.contrib.auth.views import LoginView
 from django.core.cache import cache
-from django.contrib.auth.mixins import LoginRequiredMixin
 from django.db.models import Count, Sum, Q
 from django.db.models.query import QuerySet
 from django.http import HttpRequest, HttpResponse, JsonResponse, StreamingHttpResponse
 from django.utils import timezone
+from django.utils.decorators import method_decorator
 from django.views.decorators.csrf import ensure_csrf_cookie
 from django.views.decorators.http import require_http_methods
 from django.views.generic import TemplateView
+from django_ratelimit.decorators import ratelimit
 
 logger = logging.getLogger(__name__)
 
+from .permissions import StaffRequiredMixin, staff_required
 from .models import (
     AdminNotification,
     ContactRequest,
     Course,
+    EncryptedCharField,
     Enrollment,
     GEI,
     Member,
@@ -33,7 +36,16 @@ from .models import (
 )
 
 
-class DashboardView(LoginRequiredMixin, TemplateView):
+@method_decorator(ratelimit(key="ip", rate="10/m", method="POST", block=True), name="post")
+@method_decorator(ratelimit(key="post:username", rate="5/m", method="POST", block=True), name="post")
+class RateLimitedLoginView(LoginView):
+    """Login admin avec limitation anti-force-brute (par IP et par identifiant)."""
+
+    template_name = "adminpanel/login.html"
+    redirect_authenticated_user = True
+
+
+class DashboardView(StaffRequiredMixin, TemplateView):
     template_name = "adminpanel/simple_dashboard.html"
 
     def get_context_data(self, **kwargs: Any) -> dict[str, Any]:
@@ -268,7 +280,29 @@ def _ok() -> JsonResponse:
     return JsonResponse({"ok": True})
 
 
-@login_required(login_url="/login/")
+def _deletion_block_reason(instance: Any) -> str | None:
+    """Retourne un message si la suppression est dangereuse (données liées), sinon None.
+
+    Évite les suppressions destructrices : un membre supprimé efface en cascade
+    ses inscriptions ; un GEI/cours/fournisseur supprimé casse des liens. On
+    conseille plutôt de désactiver (statut) que de supprimer.
+    """
+    if isinstance(instance, Member):
+        if instance.enrollments.exists():
+            return "Ce membre possède des inscriptions. Passez son statut à « Ancien » plutôt que de le supprimer."
+    elif isinstance(instance, GEI):
+        if instance.members.exists():
+            return "Des membres sont rattachés à ce GEI. Désactivez-le plutôt que de le supprimer."
+    elif isinstance(instance, Course):
+        if instance.enrollments.exists():
+            return "Ce cours a des inscriptions. Désactivez-le plutôt que de le supprimer."
+    elif isinstance(instance, PaymentProvider):
+        if instance.payments.exists():
+            return "Ce fournisseur est lié à des paiements. Désactivez-le plutôt que de le supprimer."
+    return None
+
+
+@staff_required
 @require_http_methods(["POST"])
 def member_create(request: HttpRequest) -> JsonResponse:
     data = _json_body(request)
@@ -308,7 +342,7 @@ def _serialize_member(m: Member) -> dict[str, Any]:
     }
 
 
-@login_required(login_url="/login/")
+@staff_required
 def member_list(request: HttpRequest) -> JsonResponse:
     qs = Member.objects.select_related("gei").all()
     search = request.GET.get("search")
@@ -328,7 +362,7 @@ def member_list(request: HttpRequest) -> JsonResponse:
     return _paginated_response(qs, request, _serialize_member)
 
 
-@login_required(login_url="/login/")
+@staff_required
 def member_detail(request: HttpRequest, pk: int) -> JsonResponse:
     try:
         m = Member.objects.select_related("gei").get(pk=pk)
@@ -349,6 +383,9 @@ def member_detail(request: HttpRequest, pk: int) -> JsonResponse:
         logger.info("Member %d updated by user %s", pk, request.user.username)
         return JsonResponse(_serialize_member(m))
     elif request.method == "DELETE":
+        reason = _deletion_block_reason(m)
+        if reason:
+            return _error(reason, 409)
         logger.info("Member %d deleted by user %s", pk, request.user.username)
         m.delete()
         return _ok()
@@ -376,7 +413,7 @@ def _serialize_course(c: Course, enroll_count: int | None = None) -> dict[str, A
     }
 
 
-@login_required(login_url="/login/")
+@staff_required
 def course_list(request: HttpRequest) -> JsonResponse:
     qs = Course.objects.annotate(enrollment_count=Count("enrollments")).all()
     search = request.GET.get("search")
@@ -397,7 +434,7 @@ def course_list(request: HttpRequest) -> JsonResponse:
 
 
 @ensure_csrf_cookie
-@login_required(login_url="/login/")
+@staff_required
 @require_http_methods(["GET", "PUT", "DELETE"])
 def course_detail(request: HttpRequest, pk: int) -> JsonResponse:
     try:
@@ -416,12 +453,15 @@ def course_detail(request: HttpRequest, pk: int) -> JsonResponse:
         logger.info("Course %d updated by user %s", pk, request.user.username)
         return JsonResponse(_serialize_course(c))
     elif request.method == "DELETE":
+        reason = _deletion_block_reason(c)
+        if reason:
+            return _error(reason, 409)
         logger.info("Course %d deleted by user %s", pk, request.user.username)
         c.delete()
         return _ok()
 
 
-@login_required(login_url="/login/")
+@staff_required
 @require_http_methods(["POST"])
 def course_create(request: HttpRequest) -> JsonResponse:
     data = _json_body(request)
@@ -470,7 +510,7 @@ def _serialize_booking(b: VenueBooking) -> dict[str, Any]:
     }
 
 
-@login_required(login_url="/login/")
+@staff_required
 def booking_list(request: HttpRequest) -> JsonResponse:
     qs = VenueBooking.objects.prefetch_related("payments").all()
     status = request.GET.get("status")
@@ -487,7 +527,7 @@ def booking_list(request: HttpRequest) -> JsonResponse:
 
 
 @ensure_csrf_cookie
-@login_required(login_url="/login/")
+@staff_required
 @require_http_methods(["GET", "PUT"])
 def booking_detail(request: HttpRequest, pk: int) -> JsonResponse:
     try:
@@ -534,7 +574,7 @@ def _serialize_payment(p: Payment) -> dict[str, Any]:
     }
 
 
-@login_required(login_url="/login/")
+@staff_required
 def payment_list(request: HttpRequest) -> JsonResponse:
     qs = Payment.objects.select_related("provider").all()
     status = request.GET.get("status")
@@ -554,7 +594,7 @@ def payment_list(request: HttpRequest) -> JsonResponse:
 
 
 @ensure_csrf_cookie
-@login_required(login_url="/login/")
+@staff_required
 @require_http_methods(["GET", "PUT"])
 def payment_detail(request: HttpRequest, pk: int) -> JsonResponse:
     try:
@@ -593,7 +633,7 @@ def _serialize_contact(c: ContactRequest) -> dict[str, Any]:
     }
 
 
-@login_required(login_url="/login/")
+@staff_required
 def contact_list(request: HttpRequest) -> JsonResponse:
     qs = ContactRequest.objects.all()
     processed = request.GET.get("processed")
@@ -604,7 +644,7 @@ def contact_list(request: HttpRequest) -> JsonResponse:
 
 
 @ensure_csrf_cookie
-@login_required(login_url="/login/")
+@staff_required
 @require_http_methods(["GET", "PUT"])
 def contact_detail(request: HttpRequest, pk: int) -> JsonResponse:
     try:
@@ -641,7 +681,7 @@ def _serialize_gei(g: GEI, member_count: int | None = None) -> dict[str, Any]:
     }
 
 
-@login_required(login_url="/login/")
+@staff_required
 def gei_list(request: HttpRequest) -> JsonResponse:
     qs = GEI.objects.annotate(member_count=Count("members")).all()
     search = request.GET.get("search")
@@ -655,7 +695,7 @@ def gei_list(request: HttpRequest) -> JsonResponse:
 
 
 @ensure_csrf_cookie
-@login_required(login_url="/login/")
+@staff_required
 @require_http_methods(["GET", "PUT", "DELETE"])
 def gei_detail(request: HttpRequest, pk: int) -> JsonResponse:
     try:
@@ -673,12 +713,15 @@ def gei_detail(request: HttpRequest, pk: int) -> JsonResponse:
         logger.info("GEI %d updated by user %s", pk, request.user.username)
         return JsonResponse(_serialize_gei(g))
     elif request.method == "DELETE":
+        reason = _deletion_block_reason(g)
+        if reason:
+            return _error(reason, 409)
         logger.info("GEI %d deleted by user %s", pk, request.user.username)
         g.delete()
         return _ok()
 
 
-@login_required(login_url="/login/")
+@staff_required
 @require_http_methods(["POST"])
 def gei_create(request: HttpRequest) -> JsonResponse:
     data = _json_body(request)
@@ -710,14 +753,14 @@ def _serialize_provider(p: PaymentProvider) -> dict[str, Any]:
     }
 
 
-@login_required(login_url="/login/")
+@staff_required
 def provider_list(request: HttpRequest) -> JsonResponse:
     qs = PaymentProvider.objects.all().order_by("sort_order", "name")
     return _paginated_response(qs, request, _serialize_provider)
 
 
 @ensure_csrf_cookie
-@login_required(login_url="/login/")
+@staff_required
 @require_http_methods(["GET", "PUT", "DELETE"])
 def provider_detail(request: HttpRequest, pk: int) -> JsonResponse:
     try:
@@ -736,12 +779,15 @@ def provider_detail(request: HttpRequest, pk: int) -> JsonResponse:
         logger.info("Provider %d updated by user %s", pk, request.user.username)
         return JsonResponse(_serialize_provider(p))
     elif request.method == "DELETE":
+        reason = _deletion_block_reason(p)
+        if reason:
+            return _error(reason, 409)
         logger.info("Provider %d deleted by user %s", pk, request.user.username)
         p.delete()
         return _ok()
 
 
-@login_required(login_url="/login/")
+@staff_required
 @require_http_methods(["POST"])
 def provider_create(request: HttpRequest) -> JsonResponse:
     data = _json_body(request)
@@ -781,7 +827,7 @@ def _serialize_enrollment(e: Enrollment) -> dict[str, Any]:
     }
 
 
-@login_required(login_url="/login/")
+@staff_required
 def enrollment_list(request: HttpRequest) -> JsonResponse:
     qs = Enrollment.objects.select_related("member", "course").all()
     status = request.GET.get("status")
@@ -792,7 +838,7 @@ def enrollment_list(request: HttpRequest) -> JsonResponse:
 
 
 @ensure_csrf_cookie
-@login_required(login_url="/login/")
+@staff_required
 @require_http_methods(["GET", "PUT"])
 def enrollment_detail(request: HttpRequest, pk: int) -> JsonResponse:
     try:
@@ -812,7 +858,7 @@ def enrollment_detail(request: HttpRequest, pk: int) -> JsonResponse:
 
 # ── Summary ──────────────────────────────────────────────
 
-@login_required(login_url="/login/")
+@staff_required
 def dashboard_summary(request: HttpRequest) -> JsonResponse:
     return JsonResponse(get_dashboard_summary(request))
 
@@ -863,14 +909,14 @@ def _serialize_notification(n: AdminNotification) -> dict[str, Any]:
     }
 
 
-@login_required(login_url="/login/")
+@staff_required
 def notification_list(request: HttpRequest) -> JsonResponse:
     qs = AdminNotification.objects.all()
     qs = qs.order_by("-is_read", "-created_at")[:20]
     return JsonResponse([_serialize_notification(n) for n in qs], safe=False)
 
 
-@login_required(login_url="/login/")
+@staff_required
 def notification_check(request: HttpRequest) -> JsonResponse:
     since = request.GET.get("since")
     qs = AdminNotification.objects.all()
@@ -892,7 +938,7 @@ def notification_check(request: HttpRequest) -> JsonResponse:
     })
 
 
-@login_required(login_url="/login/")
+@staff_required
 @require_http_methods(["POST"])
 def notification_read(request: HttpRequest, pk: int) -> JsonResponse:
     try:
@@ -904,7 +950,7 @@ def notification_read(request: HttpRequest, pk: int) -> JsonResponse:
     return _ok()
 
 
-@login_required(login_url="/login/")
+@staff_required
 @require_http_methods(["POST"])
 def notification_read_all(request: HttpRequest) -> JsonResponse:
     AdminNotification.objects.filter(is_read=False).update(is_read=True)
@@ -914,7 +960,7 @@ def notification_read_all(request: HttpRequest) -> JsonResponse:
 # ── Testimonials (v1) ─────────────────────────────────────
 
 
-@login_required(login_url="/login/")
+@staff_required
 @require_http_methods(["GET"])
 def testimonial_list(request: HttpRequest) -> JsonResponse:
     qs = Testimonial.objects.all()
@@ -935,7 +981,7 @@ def testimonial_list(request: HttpRequest) -> JsonResponse:
     return JsonResponse(data, safe=False)
 
 
-@login_required(login_url="/login/")
+@staff_required
 @require_http_methods(["GET", "PUT", "DELETE"])
 def testimonial_detail(request: HttpRequest, pk: int) -> JsonResponse:
     try:
@@ -969,7 +1015,7 @@ def testimonial_detail(request: HttpRequest, pk: int) -> JsonResponse:
     return _ok()
 
 
-@login_required(login_url="/login/")
+@staff_required
 @require_http_methods(["POST"])
 def testimonial_create(request: HttpRequest) -> JsonResponse:
     data = json.loads(request.body.decode("utf-8"))
@@ -998,6 +1044,22 @@ ALLOWED_EXPORT_MODELS = {
     "testimonials": Testimonial,
 }
 
+# Champs jamais exportés (secrets fournisseurs de paiement, etc.).
+SENSITIVE_EXPORT_FIELDS = {"api_secret_key", "api_public_key"}
+
+
+def _export_fields(model_class) -> list[str]:
+    """Champs exportables d'un modèle, en excluant les secrets et les champs
+    chiffrés (dont la valeur serait déchiffrée par `getattr`)."""
+    fields = []
+    for f in model_class._meta.fields:
+        if f.name in SENSITIVE_EXPORT_FIELDS:
+            continue
+        if isinstance(f, EncryptedCharField):
+            continue
+        fields.append(f.name)
+    return fields
+
 
 def _csv_stream(queryset: QuerySet, fields: list[str]) -> Generator[str, None, None]:
     import csv, io
@@ -1014,13 +1076,13 @@ def _csv_stream(queryset: QuerySet, fields: list[str]) -> Generator[str, None, N
         buffer.truncate(0)
 
 
-@login_required(login_url="/login/")
+@staff_required
 def export_csv(request: HttpRequest, model_name: str) -> HttpResponse:
     if model_name not in ALLOWED_EXPORT_MODELS:
         return _error(f"Modèle non autorisé: {model_name}", 404)
     model_class = ALLOWED_EXPORT_MODELS[model_name]
     qs = model_class.objects.all()
-    fields = [f.name for f in model_class._meta.fields]
+    fields = _export_fields(model_class)
     response = StreamingHttpResponse(_csv_stream(qs, fields), content_type="text/csv")
     response["Content-Disposition"] = f'attachment; filename="{model_name}.csv"'
     return response

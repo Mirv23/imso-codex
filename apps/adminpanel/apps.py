@@ -8,3 +8,6 @@ class AdminpanelConfig(AppConfig):
 
     def ready(self):
         import apps.adminpanel.signals  # noqa
+
+        from . import audit
+        audit.connect()

@@ -581,11 +581,15 @@ const SECTIONS = {
   },
 };
 
+// Échappement sûr pour le texte HTML ET les valeurs d'attribut (guillemets inclus).
 function esc(s) {
-  if (!s) return '';
-  const d = document.createElement('div');
-  d.textContent = s;
-  return d.innerHTML;
+  if (s === null || s === undefined) return '';
+  return String(s)
+    .replace(/&/g, '&amp;')
+    .replace(/</g, '&lt;')
+    .replace(/>/g, '&gt;')
+    .replace(/"/g, '&quot;')
+    .replace(/'/g, '&#39;');
 }
 
 function statusBadge(status) {
@@ -609,6 +613,9 @@ function statusBadge(status) {
 // ============= TABLE RENDERING =============
 let modalRecord = null;
 let modalSection = null;
+// Cache des lignes affichées, par section puis par id. Évite d'injecter les
+// données (potentiellement piégées) dans le HTML : on n'embarque que l'id.
+const _rowCache = {};
 
 function loadTable(sectionKey, page, search) {
   const cfg = SECTIONS[sectionKey];
@@ -641,6 +648,9 @@ function loadTable(sectionKey, page, search) {
 function renderTable(sectionKey, data) {
   const cfg = SECTIONS[sectionKey];
   const items = data.items || [];
+  // Mémorise les enregistrements pour édition/suppression sans les mettre dans le DOM.
+  _rowCache[sectionKey] = {};
+  items.forEach(r => { _rowCache[sectionKey][r.id] = r; });
   const total = data.total || 0;
   const page = data.page || 1;
   const totalPages = data.total_pages || 1;
@@ -670,8 +680,8 @@ function renderTable(sectionKey, data) {
       cfg.columns.forEach(c => { html += '<td>' + (c.render ? c.render(r) : esc(r[c.key])) + '</td>'; });
       if (cfg.canEdit || cfg.canDelete) {
         html += '<td class="actions">';
-        if (cfg.canEdit) html += '<button class="btn btn-sm" onclick="openModal(\'' + sectionKey + '\',' + JSON.stringify(r).replace(/"/g,'&quot;') + ')" title="Modifier"><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M11 4H4a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-7"/><path d="M18.5 2.5a2.121 2.121 0 0 1 3 3L12 15l-4 1 1-4 9.5-9.5z"/></svg></button>';
-        if (cfg.canDelete) html += '<button class="btn btn-sm btn-danger" onclick="confirmDelete(\'' + sectionKey + '\',' + r.id + ',\'' + esc(r.name || r.title || r.author_name || r.payer_name || r.requester_name || r.full_name || '') + '\')" title="Supprimer"><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="3 6 5 6 21 6"/><path d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6m3 0V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2"/></svg></button>';
+        if (cfg.canEdit) html += '<button class="btn btn-sm" onclick="editRow(\'' + sectionKey + '\',' + r.id + ')" title="Modifier"><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M11 4H4a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-7"/><path d="M18.5 2.5a2.121 2.121 0 0 1 3 3L12 15l-4 1 1-4 9.5-9.5z"/></svg></button>';
+        if (cfg.canDelete) html += '<button class="btn btn-sm btn-danger" onclick="confirmDelete(\'' + sectionKey + '\',' + r.id + ')" title="Supprimer"><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="3 6 5 6 21 6"/><path d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6m3 0V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2"/></svg></button>';
         html += '</td>';
       }
       html += '</tr>';
@@ -687,6 +697,12 @@ function searchTable(sectionKey, val) {
 }
 
 // ============= MODAL =============
+// Ouvre le formulaire d'édition à partir de l'id (l'enregistrement vient du cache).
+function editRow(sectionKey, id) {
+  const record = (_rowCache[sectionKey] || {})[id] || null;
+  openModal(sectionKey, record);
+}
+
 function openModal(sectionKey, record) {
   modalSection = sectionKey;
   modalRecord = record;
@@ -771,9 +787,11 @@ function saveModal() {
   }
 }
 
-function confirmDelete(sectionKey, id, label) {
+function confirmDelete(sectionKey, id) {
   const cfg = SECTIONS[sectionKey];
   if (!cfg) return;
+  const rec = (_rowCache[sectionKey] || {})[id] || {};
+  const label = rec.name || rec.title || rec.author_name || rec.payer_name || rec.requester_name || rec.full_name || ('#' + id);
   document.getElementById('modalTitle').textContent = 'Confirmer la suppression';
   document.getElementById('modalSaveBtn').textContent = 'Supprimer';
   document.getElementById('modalSaveBtn').className = 'btn btn-danger';

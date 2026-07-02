@@ -4,8 +4,9 @@ from django.db.models import Count, Sum
 from django.utils import timezone
 from rest_framework import filters, status, viewsets
 from rest_framework.decorators import action
-from rest_framework.permissions import IsAuthenticated
 from rest_framework.response import Response
+
+from .permissions import IsStaff
 
 from .models import (
     AdminNotification,
@@ -36,7 +37,7 @@ from .serializers import (
 class GEIViewSet(viewsets.ModelViewSet):
     queryset = GEI.objects.annotate(member_count=Count("members")).all()
     serializer_class = GEISerializer
-    permission_classes = [IsAuthenticated]
+    permission_classes = [IsStaff]
     filter_backends = [filters.SearchFilter, filters.OrderingFilter]
     search_fields = ["name", "city", "coordinator"]
     ordering_fields = ["name", "city", "created_at"]
@@ -46,7 +47,7 @@ class GEIViewSet(viewsets.ModelViewSet):
 class MemberViewSet(viewsets.ModelViewSet):
     queryset = Member.objects.select_related("gei").all()
     serializer_class = MemberSerializer
-    permission_classes = [IsAuthenticated]
+    permission_classes = [IsStaff]
     filter_backends = [filters.SearchFilter, filters.OrderingFilter]
     search_fields = ["first_name", "last_name", "email", "phone"]
     ordering_fields = ["last_name", "first_name", "created_at", "monthly_saving_htg"]
@@ -56,7 +57,7 @@ class MemberViewSet(viewsets.ModelViewSet):
 class CourseViewSet(viewsets.ModelViewSet):
     queryset = Course.objects.annotate(enrollment_count=Count("enrollments")).all()
     serializer_class = CourseSerializer
-    permission_classes = [IsAuthenticated]
+    permission_classes = [IsStaff]
     filter_backends = [filters.SearchFilter, filters.OrderingFilter]
     search_fields = ["title", "instructor", "category", "city"]
     ordering_fields = ["title", "category", "price_htg", "created_at"]
@@ -66,7 +67,7 @@ class CourseViewSet(viewsets.ModelViewSet):
 class EnrollmentViewSet(viewsets.ModelViewSet):
     queryset = Enrollment.objects.select_related("member", "course").all()
     serializer_class = EnrollmentSerializer
-    permission_classes = [IsAuthenticated]
+    permission_classes = [IsStaff]
     filter_backends = [filters.SearchFilter, filters.OrderingFilter]
     search_fields = ["member__first_name", "member__last_name", "course__title"]
     ordering_fields = ["created_at", "status"]
@@ -76,7 +77,7 @@ class EnrollmentViewSet(viewsets.ModelViewSet):
 class VenueBookingViewSet(viewsets.ModelViewSet):
     queryset = VenueBooking.objects.prefetch_related("payments").all()
     serializer_class = VenueBookingSerializer
-    permission_classes = [IsAuthenticated]
+    permission_classes = [IsStaff]
     filter_backends = [filters.SearchFilter, filters.OrderingFilter]
     search_fields = ["requester_name", "requester_phone", "requester_email", "event_type"]
     ordering_fields = ["event_date", "start_time", "created_at"]
@@ -86,7 +87,7 @@ class VenueBookingViewSet(viewsets.ModelViewSet):
 class PaymentProviderViewSet(viewsets.ModelViewSet):
     queryset = PaymentProvider.objects.all()
     serializer_class = PaymentProviderSerializer
-    permission_classes = [IsAuthenticated]
+    permission_classes = [IsStaff]
     filter_backends = [filters.SearchFilter, filters.OrderingFilter]
     search_fields = ["name", "provider_type"]
     ordering_fields = ["sort_order", "name"]
@@ -96,7 +97,7 @@ class PaymentProviderViewSet(viewsets.ModelViewSet):
 class PaymentViewSet(viewsets.ModelViewSet):
     queryset = Payment.objects.select_related("provider").all()
     serializer_class = PaymentSerializer
-    permission_classes = [IsAuthenticated]
+    permission_classes = [IsStaff]
     filter_backends = [filters.SearchFilter, filters.OrderingFilter]
     search_fields = ["reference", "payer_name", "payer_phone", "payer_email", "external_reference"]
     ordering_fields = ["created_at", "amount_htg", "paid_at"]
@@ -106,7 +107,7 @@ class PaymentViewSet(viewsets.ModelViewSet):
 class ContactRequestViewSet(viewsets.ModelViewSet):
     queryset = ContactRequest.objects.all()
     serializer_class = ContactRequestSerializer
-    permission_classes = [IsAuthenticated]
+    permission_classes = [IsStaff]
     filter_backends = [filters.SearchFilter, filters.OrderingFilter]
     search_fields = ["full_name", "phone", "email", "message"]
     ordering_fields = ["created_at", "subject"]
@@ -116,7 +117,7 @@ class ContactRequestViewSet(viewsets.ModelViewSet):
 class AdminNotificationViewSet(viewsets.ReadOnlyModelViewSet):
     queryset = AdminNotification.objects.all()
     serializer_class = AdminNotificationSerializer
-    permission_classes = [IsAuthenticated]
+    permission_classes = [IsStaff]
     filter_backends = [filters.OrderingFilter]
     ordering = ["-is_read", "-created_at"]
 
@@ -136,7 +137,7 @@ class AdminNotificationViewSet(viewsets.ReadOnlyModelViewSet):
 class TestimonialViewSet(viewsets.ModelViewSet):
     queryset = Testimonial.objects.all()
     serializer_class = TestimonialSerializer
-    permission_classes = [IsAuthenticated]
+    permission_classes = [IsStaff]
     filter_backends = [filters.SearchFilter, filters.OrderingFilter]
     search_fields = ["author_name", "location", "text"]
     ordering_fields = ["sort_order", "created_at", "author_name"]
@@ -144,7 +145,7 @@ class TestimonialViewSet(viewsets.ModelViewSet):
 
 
 class DashboardSummaryViewSet(viewsets.ViewSet):
-    permission_classes = [IsAuthenticated]
+    permission_classes = [IsStaff]
 
     @action(detail=False, methods=["get"])
     def summary(self, request):
