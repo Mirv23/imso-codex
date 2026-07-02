@@ -91,6 +91,7 @@ def connect() -> None:
         Payment,
         PaymentProvider,
         Product,
+        SiteSetting,
         Testimonial,
         VenueBooking,
     )
@@ -108,6 +109,7 @@ def connect() -> None:
         Product,
         Order,
         BlogPost,
+        SiteSetting,
     ]
     for model in audited:
         post_save.connect(_on_save, sender=model, dispatch_uid=f"audit_save_{model.__name__}")

@@ -69,12 +69,12 @@
         Mutuelle de solidarité · Haïti
       </span>
       <h1 class="hero__title reveal" data-delay="1">
-        Ensemble, nous créons de la <em>richesse</em>
+        {% if site.hero_title %}{{ site.hero_title }}{% else %}Ensemble, nous créons de la <em>richesse</em>{% endif %}
       </h1>
       <p class="hero__sub reveal" data-delay="2">
-        IMSO réunit entrepreneurs, épargnants et formateurs au sein de Groupes
+        {% if site.hero_subtitle %}{{ site.hero_subtitle }}{% else %}IMSO réunit entrepreneurs, épargnants et formateurs au sein de Groupes
         d'Entraide Intégrée. Épargne collective, microcrédit responsable et
-        formation continue — un modèle bâti par et pour les communautés haïtiennes.
+        formation continue — un modèle bâti par et pour les communautés haïtiennes.{% endif %}
       </p>
       <div class="hero__ctas reveal" data-delay="3">
         <a href="#rejoindre" class="btn btn--primary">

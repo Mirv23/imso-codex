@@ -424,6 +424,72 @@ class OrderItem(models.Model):
         return self.quantity * self.unit_price_htg
 
 
+class SiteSetting(models.Model):
+    """Paramètres globaux du site (singleton, pk=1). Édités depuis le dashboard."""
+
+    # ── Identité ──
+    site_name = models.CharField(max_length=120, default="IMSO")
+    tagline = models.CharField(max_length=200, blank=True, default="Impact Mutuelle de Solidarité")
+    logo = models.FileField(upload_to="site/", blank=True)
+
+    # ── Contact ──
+    contact_phone = models.CharField(max_length=60, blank=True)
+    contact_whatsapp = models.CharField(max_length=60, blank=True)
+    contact_email = models.EmailField(blank=True)
+    contact_address = models.CharField(max_length=255, blank=True)
+
+    # ── Réseaux sociaux ──
+    facebook_url = models.URLField(blank=True)
+    instagram_url = models.URLField(blank=True)
+    twitter_url = models.URLField(blank=True)
+    linkedin_url = models.URLField(blank=True)
+    youtube_url = models.URLField(blank=True)
+
+    # ── Couleurs (thème) ──
+    color_primary = models.CharField(max_length=9, blank=True, default="#3C9626", help_text="Couleur principale (hex)")
+    color_primary_dark = models.CharField(max_length=9, blank=True, default="#2A6E1B")
+    color_accent = models.CharField(max_length=9, blank=True, default="#5BB143")
+    color_highlight = models.CharField(max_length=9, blank=True, default="#E87A18")
+
+    # ── Textes éditables (page d'accueil) ──
+    hero_title = models.CharField(max_length=200, blank=True)
+    hero_subtitle = models.TextField(blank=True)
+    hero_cta_text = models.CharField(max_length=60, blank=True, default="Adhérer")
+    about_title = models.CharField(max_length=200, blank=True)
+    about_text = models.TextField(blank=True)
+    shop_intro = models.TextField(blank=True, help_text="Texte d'intro de la boutique")
+    footer_text = models.TextField(blank=True)
+
+    # ── Affichage (toggles) ──
+    show_shop = models.BooleanField(default=True)
+    show_blog = models.BooleanField(default=True)
+    show_courses = models.BooleanField(default=True)
+    show_testimonials = models.BooleanField(default=True)
+    maintenance_mode = models.BooleanField(default=False, help_text="Affiche un bandeau maintenance")
+
+    # ── SEO ──
+    meta_description = models.CharField(max_length=300, blank=True)
+    meta_keywords = models.CharField(max_length=300, blank=True)
+
+    updated_at = models.DateTimeField(auto_now=True)
+
+    class Meta:
+        verbose_name = "Paramètres du site"
+        verbose_name_plural = "Paramètres du site"
+
+    def save(self, *args: Any, **kwargs: Any) -> None:
+        self.pk = 1  # singleton
+        super().save(*args, **kwargs)
+
+    @classmethod
+    def load(cls) -> "SiteSetting":
+        obj, _ = cls.objects.get_or_create(pk=1)
+        return obj
+
+    def __str__(self) -> str:
+        return "Paramètres du site"
+
+
 class BlogPost(TimestampedModel):
     """Article de blog. Publication immédiate, brouillon ou programmée."""
 

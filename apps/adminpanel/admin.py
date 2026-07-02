@@ -20,6 +20,7 @@ from .models import (
     Payment,
     PaymentProvider,
     Product,
+    SiteSetting,
     Testimonial,
     VenueBooking,
 )
@@ -108,6 +109,17 @@ class OrderAdmin(admin.ModelAdmin):
     search_fields = ("reference", "customer_name", "customer_phone", "customer_email")
     readonly_fields = ("reference", "total_htg")
     inlines = [OrderItemInline]
+
+
+@admin.register(SiteSetting)
+class SiteSettingAdmin(admin.ModelAdmin):
+    list_display = ("site_name", "contact_email", "updated_at")
+
+    def has_add_permission(self, request):
+        return not SiteSetting.objects.exists()
+
+    def has_delete_permission(self, request, obj=None):
+        return False
 
 
 @admin.register(BlogPost)

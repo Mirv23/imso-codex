@@ -6,6 +6,7 @@ import logging
 from datetime import timedelta
 from typing import Any, Callable, Generator
 
+from django.contrib.auth import get_user_model
 from django.contrib.auth.views import LoginView
 from django.core.cache import cache
 from django.db.models import Count, Sum, Q
@@ -34,9 +35,12 @@ from .models import (
     Payment,
     PaymentProvider,
     Product,
+    SiteSetting,
     Testimonial,
     VenueBooking,
 )
+
+User = get_user_model()
 
 
 @method_decorator(ratelimit(key="ip", rate="10/m", method="POST", block=True), name="post")
@@ -751,6 +755,8 @@ def _serialize_provider(p: PaymentProvider) -> dict[str, Any]:
         "is_active": p.is_active,
         "instructions": p.instructions,
         "checkout_url": p.checkout_url,
+        "api_public_key": p.api_public_key,
+        "has_secret": bool(p.api_secret_key),  # jamais la valeur, juste sa présence
         "sort_order": p.sort_order,
         "created_at": p.created_at.isoformat(),
     }
@@ -778,6 +784,10 @@ def provider_detail(request: HttpRequest, pk: int) -> JsonResponse:
                      "checkout_url", "api_public_key", "sort_order"):
             if fld in data:
                 setattr(p, fld, data[fld])
+        # La clé secrète n'est mise à jour que si une nouvelle valeur est fournie
+        # (un champ vide ne l'efface pas — évite de la perdre en éditant le reste).
+        if data.get("api_secret_key"):
+            p.api_secret_key = data["api_secret_key"]
         p.save()
         logger.info("Provider %d updated by user %s", pk, request.user.username)
         return JsonResponse(_serialize_provider(p))
@@ -803,6 +813,7 @@ def provider_create(request: HttpRequest) -> JsonResponse:
         instructions=data.get("instructions", ""),
         checkout_url=data.get("checkout_url", ""),
         api_public_key=data.get("api_public_key", ""),
+        api_secret_key=data.get("api_secret_key", ""),
         sort_order=data.get("sort_order", 0),
     )
     logger.info("Provider %d created by user %s (%s)", p.pk, request.user.username, p.name)
@@ -1046,6 +1057,7 @@ def _serialize_product(p: Product) -> dict[str, Any]:
         "stock": p.stock,
         "is_active": p.is_active,
         "sort_order": p.sort_order,
+        "image": p.image.url if p.image else "",
         "created_at": p.created_at.isoformat(),
     }
 
@@ -1184,6 +1196,7 @@ def _serialize_blogpost(b: BlogPost) -> dict[str, Any]:
         "body": b.body,
         "author": b.author,
         "status": b.status,
+        "cover_image": b.cover_image.url if b.cover_image else "",
         "published_at": b.published_at.isoformat() if b.published_at else None,
         "scheduled_for": b.scheduled_for.isoformat() if b.scheduled_for else None,
         "created_at": b.created_at.isoformat(),
@@ -1242,6 +1255,184 @@ def blog_detail(request: HttpRequest, pk: int) -> JsonResponse:
     elif request.method == "DELETE":
         logger.info("BlogPost %d deleted by user %s", pk, request.user.username)
         b.delete()
+        return _ok()
+
+
+# ── Paramètres du site (singleton) ───────────────────────
+
+SETTINGS_TEXT_FIELDS = [
+    "site_name", "tagline", "contact_phone", "contact_whatsapp", "contact_email", "contact_address",
+    "facebook_url", "instagram_url", "twitter_url", "linkedin_url", "youtube_url",
+    "color_primary", "color_primary_dark", "color_accent", "color_highlight",
+    "hero_title", "hero_subtitle", "hero_cta_text", "about_title", "about_text", "shop_intro", "footer_text",
+    "meta_description", "meta_keywords",
+]
+SETTINGS_BOOL_FIELDS = ["show_shop", "show_blog", "show_courses", "show_testimonials", "maintenance_mode"]
+
+
+def _serialize_settings(s: SiteSetting) -> dict[str, Any]:
+    data = {f: getattr(s, f) for f in SETTINGS_TEXT_FIELDS + SETTINGS_BOOL_FIELDS}
+    data["logo"] = s.logo.url if s.logo else ""
+    data["updated_at"] = s.updated_at.isoformat()
+    return data
+
+
+@ensure_csrf_cookie
+@staff_required
+@require_http_methods(["GET", "PUT"])
+def site_settings_detail(request: HttpRequest) -> JsonResponse:
+    s = SiteSetting.load()
+    if request.method == "GET":
+        return JsonResponse(_serialize_settings(s))
+    data = _json_body(request)
+    for f in SETTINGS_TEXT_FIELDS:
+        if f in data:
+            setattr(s, f, data[f] or "")
+    for f in SETTINGS_BOOL_FIELDS:
+        if f in data:
+            setattr(s, f, bool(data[f]))
+    s.save()
+    logger.info("Site settings updated by user %s", request.user.username)
+    return JsonResponse(_serialize_settings(s))
+
+
+# ── Upload d'images ──────────────────────────────────────
+
+_UPLOAD_TARGETS = {
+    "product": (Product, "image"),
+    "blog": (BlogPost, "cover_image"),
+    "testimonial": (Testimonial, "photo"),
+    "site": (SiteSetting, "logo"),
+}
+_MAX_UPLOAD_BYTES = 5 * 1024 * 1024
+
+
+@staff_required
+@require_http_methods(["POST"])
+def upload_image(request: HttpRequest, target: str, pk: int) -> JsonResponse:
+    if target not in _UPLOAD_TARGETS:
+        return _error(f"Cible d'upload invalide: {target}", 404)
+    model_class, field = _UPLOAD_TARGETS[target]
+    if target == "site":
+        obj = SiteSetting.load()
+    else:
+        try:
+            obj = model_class.objects.get(pk=pk)
+        except model_class.DoesNotExist:
+            return _error("Élément introuvable", 404)
+
+    f = request.FILES.get("file")
+    if not f:
+        return _error("Aucun fichier fourni", 400)
+    if f.size > _MAX_UPLOAD_BYTES:
+        return _error("Fichier trop volumineux (max 5 Mo)", 400)
+    content_type = getattr(f, "content_type", "") or ""
+    if not content_type.startswith("image/"):
+        return _error("Le fichier doit être une image", 400)
+
+    setattr(obj, field, f)
+    obj.save()
+    logger.info("Image uploaded (%s #%s, field %s) by user %s", target, getattr(obj, "pk", "-"), field, request.user.username)
+    return JsonResponse({"ok": True, "url": getattr(obj, field).url})
+
+
+# ── Administrateurs (comptes staff) ──────────────────────
+
+def _serialize_admin(u) -> dict[str, Any]:
+    return {
+        "id": u.pk,
+        "username": u.username,
+        "email": u.email,
+        "is_staff": u.is_staff,
+        "is_superuser": u.is_superuser,
+        "is_active": u.is_active,
+        "last_login": u.last_login.isoformat() if u.last_login else None,
+        "date_joined": u.date_joined.isoformat(),
+    }
+
+
+def _require_superuser(request):
+    if not request.user.is_superuser:
+        return _error("Réservé aux super-administrateurs.", 403)
+    return None
+
+
+@staff_required
+def admin_user_list(request: HttpRequest) -> JsonResponse:
+    qs = User.objects.filter(is_staff=True).order_by("-is_superuser", "username")
+    search = request.GET.get("search")
+    if search:
+        qs = qs.filter(Q(username__icontains=search) | Q(email__icontains=search))
+    return _paginated_response(qs, request, _serialize_admin)
+
+
+@staff_required
+@require_http_methods(["POST"])
+def admin_user_create(request: HttpRequest) -> JsonResponse:
+    denied = _require_superuser(request)
+    if denied:
+        return denied
+    data = _json_body(request)
+    username = (data.get("username") or "").strip()
+    password = data.get("password") or ""
+    if not username or not password:
+        return _error("Nom d'utilisateur et mot de passe requis.")
+    if User.objects.filter(username=username).exists():
+        return _error("Ce nom d'utilisateur existe déjà.", 409)
+    user = User.objects.create(
+        username=username,
+        email=(data.get("email") or "").strip(),
+        is_staff=True,
+        is_superuser=bool(data.get("is_superuser", False)),
+        is_active=True,
+    )
+    user.set_password(password)
+    user.save()
+    logger.info("Admin user '%s' created by %s (superuser=%s)", username, request.user.username, user.is_superuser)
+    return JsonResponse(_serialize_admin(user), status=201)
+
+
+@ensure_csrf_cookie
+@staff_required
+@require_http_methods(["GET", "PUT", "DELETE"])
+def admin_user_detail(request: HttpRequest, pk: int) -> JsonResponse:
+    try:
+        user = User.objects.get(pk=pk)
+    except User.DoesNotExist:
+        return _error("Administrateur introuvable", 404)
+
+    if request.method == "GET":
+        return JsonResponse(_serialize_admin(user))
+
+    denied = _require_superuser(request)
+    if denied:
+        return denied
+
+    if request.method == "PUT":
+        data = _json_body(request)
+        if "email" in data:
+            user.email = (data.get("email") or "").strip()
+        if "is_active" in data:
+            # Empêche de se désactiver soi-même
+            if user.pk == request.user.pk and not data["is_active"]:
+                return _error("Vous ne pouvez pas désactiver votre propre compte.", 400)
+            user.is_active = bool(data["is_active"])
+        if "is_superuser" in data:
+            user.is_superuser = bool(data["is_superuser"])
+        if data.get("password"):
+            user.set_password(data["password"])
+        user.is_staff = True
+        user.save()
+        logger.info("Admin user '%s' updated by %s", user.username, request.user.username)
+        return JsonResponse(_serialize_admin(user))
+
+    if request.method == "DELETE":
+        if user.pk == request.user.pk:
+            return _error("Vous ne pouvez pas supprimer votre propre compte.", 400)
+        if user.is_superuser and User.objects.filter(is_superuser=True).count() <= 1:
+            return _error("Impossible de supprimer le dernier super-administrateur.", 400)
+        logger.info("Admin user '%s' deleted by %s", user.username, request.user.username)
+        user.delete()
         return _ok()
 
 

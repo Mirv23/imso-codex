@@ -247,6 +247,15 @@ textarea { resize: vertical; min-height: 80px; }
         <span class="ico"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M4 19.5A2.5 2.5 0 0 1 6.5 17H20"/><path d="M6.5 2H20v20H6.5A2.5 2.5 0 0 1 4 19.5v-15A2.5 2.5 0 0 1 6.5 2z"/><line x1="8" y1="7" x2="16" y2="7"/><line x1="8" y1="11" x2="14" y2="11"/></svg></span>
         Blog
       </button>
+      <div class="sb-section">Site</div>
+      <button class="sb-item" data-section="settings" onclick="navigateTo('settings')">
+        <span class="ico"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="3"/><path d="M19.4 15a1.65 1.65 0 0 0 .33 1.82l.06.06a2 2 0 1 1-2.83 2.83l-.06-.06a1.65 1.65 0 0 0-1.82-.33 1.65 1.65 0 0 0-1 1.51V21a2 2 0 0 1-4 0v-.09A1.65 1.65 0 0 0 9 19.4a1.65 1.65 0 0 0-1.82.33l-.06.06a2 2 0 1 1-2.83-2.83l.06-.06a1.65 1.65 0 0 0 .33-1.82 1.65 1.65 0 0 0-1.51-1H3a2 2 0 0 1 0-4h.09A1.65 1.65 0 0 0 4.6 9a1.65 1.65 0 0 0-.33-1.82l-.06-.06a2 2 0 1 1 2.83-2.83l.06.06a1.65 1.65 0 0 0 1.82.33H9a1.65 1.65 0 0 0 1-1.51V3a2 2 0 0 1 4 0v.09a1.65 1.65 0 0 0 1 1.51 1.65 1.65 0 0 0 1.82-.33l.06-.06a2 2 0 1 1 2.83 2.83l-.06.06a1.65 1.65 0 0 0-.33 1.82V9a1.65 1.65 0 0 0 1.51 1H21a2 2 0 0 1 0 4h-.09a1.65 1.65 0 0 0-1.51 1z"/></svg></span>
+        Paramètres
+      </button>
+      <button class="sb-item" data-section="admins" onclick="navigateTo('admins')">
+        <span class="ico"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M16 21v-2a4 4 0 0 0-4-4H6a4 4 0 0 0-4 4v2"/><circle cx="9" cy="7" r="4"/><path d="M22 11l-3 3-2-2"/></svg></span>
+        Administrateurs
+      </button>
       <div class="sb-section">Système</div>
       <button class="sb-item" data-section="export" onclick="navigateTo('export')">
         <span class="ico"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="7 10 12 15 17 10"/><line x1="12" y1="15" x2="12" y2="3"/></svg></span>
@@ -316,6 +325,8 @@ textarea { resize: vertical; min-height: 80px; }
       <div class="section" id="section-products"><div class="card" id="card-products"></div></div>
       <div class="section" id="section-orders"><div class="card" id="card-orders"></div></div>
       <div class="section" id="section-blog"><div class="card" id="card-blog"></div></div>
+      <div class="section" id="section-admins"><div class="card" id="card-admins"></div></div>
+      <div class="section" id="section-settings"><div id="card-settings"></div></div>
       <div class="section" id="section-export"><div class="card"><div class="card-head"><div class="card-title">Export CSV</div></div><div style="padding:18px 22px 22px"><p style="color:var(--muted);margin-bottom:16px">Téléchargez les données de chaque modèle au format CSV.</p><div id="exportButtons" style="display:flex;flex-wrap:wrap;gap:10px"></div></div></div></div>
     </div>
   </div>
@@ -374,11 +385,12 @@ function navigateTo(section, resetPage = true) {
   if (navEl) navEl.classList.add('active');
   currentSection.name = section;
   if (resetPage) { currentSection.page = 1; currentSection.search = ''; }
-  const titles = { dashboard:'Tableau de bord', members:'Membres', geis:'GEIs', courses:'Cours', payments:'Paiements', bookings:'Réservations', enrollments:'Inscriptions', contacts:'Contacts', testimonials:'Témoignages', providers:'Fournisseurs', products:'Produits', orders:'Commandes', blog:'Blog', export:'Export CSV' };
+  const titles = { dashboard:'Tableau de bord', members:'Membres', geis:'GEIs', courses:'Cours', payments:'Paiements', bookings:'Réservations', enrollments:'Inscriptions', contacts:'Contacts', testimonials:'Témoignages', providers:'Fournisseurs', products:'Produits', orders:'Commandes', blog:'Blog', settings:'Paramètres', admins:'Administrateurs', export:'Export CSV' };
   document.getElementById('pageTitle').textContent = titles[section] || section;
   document.getElementById('headerActions').innerHTML = '';
   if (section === 'dashboard') loadMetrics();
   else if (section === 'export') renderExport();
+  else if (section === 'settings') renderSettings();
   else loadTable(section);
 }
 
@@ -588,8 +600,11 @@ const SECTIONS = {
     formTitle: r => r ? 'Modifier le fournisseur' : 'Nouveau fournisseur',
     formFields: r => [
       { name:'name', label:'Nom', type:'text', value: r?.name || '', required: true },
-      { name:'provider_type', label:'Type', type:'select', options:[{v:'manual',l:'Manuel'},{v:'moncash',l:'MonCash'},{v:'natcash',l:'NatCash'},{v:'bank',l:'Virement'},{v:'cash',l:'Espèces'},{v:'stripe',l:'Stripe'},{v:'other',l:'Autre'}], value: r?.provider_type || 'manual' },
-      { name:'instructions', label:'Instructions', type:'textarea', value: r?.instructions || '' },
+      { name:'provider_type', label:'Type', type:'select', options:[{v:'manual',l:'Manuel'},{v:'moncash',l:'MonCash'},{v:'natcash',l:'NatCash'},{v:'bank',l:'Virement'},{v:'cash',l:'Espèces'},{v:'stripe',l:'Stripe'},{v:'paypal',l:'PayPal'},{v:'other',l:'Autre'}], value: r?.provider_type || 'manual' },
+      { name:'instructions', label:'Instructions client (n° MonCash/NatCash, compte bancaire…)', type:'textarea', value: r?.instructions || '' },
+      { name:'checkout_url', label:'Lien de paiement externe (Stripe/PayPal — optionnel)', type:'text', value: r?.checkout_url || '' },
+      { name:'api_public_key', label:'Clé publique / API key', type:'text', value: r?.api_public_key || '' },
+      { name:'api_secret_key', label: (r && r.has_secret) ? 'Clé secrète (définie — laisser vide pour garder)' : 'Clé secrète / API secret', type:'password', value: '' },
       { name:'is_active', label:'Actif', type:'checkbox', value: r?.is_active ?? true },
       { name:'sort_order', label:'Ordre d\'affichage', type:'number', value: r?.sort_order || 0 },
     ],
@@ -599,7 +614,7 @@ const SECTIONS = {
     title: 'Produits',
     endpoint: '/dashboard/api/products/',
     createEndpoint: '/dashboard/api/products/create/',
-    canCreate: true, canEdit: true, canDelete: true,
+    canCreate: true, canEdit: true, canDelete: true, uploadTarget: 'product',
     columns: [
       { key:'name', label:'Produit', render: r => `<strong>${esc(r.name)}</strong><br><span style="font-size:11px;color:var(--muted)">${({book:'Livre',workbook:'Cahier',kit:'Kit complet',other:'Autre'})[r.kind]||esc(r.kind)}</span>` },
       { key:'price_htg', label:'Prix', render: r => fmt(r.price_htg) + ' HTG' },
@@ -616,6 +631,7 @@ const SECTIONS = {
       { name:'stock', label:'Stock', type:'number', value: r?.stock || 0 },
       { name:'sort_order', label:'Ordre d\'affichage', type:'number', value: r?.sort_order || 0 },
       { name:'is_active', label:'Actif', type:'checkbox', value: r?.is_active ?? true },
+      { name:'image', label:'Image du produit (livre/cahier)', type:'image', value: r?.image || '' },
     ],
     detailUrl: r => '/dashboard/api/products/' + r.id + '/',
   },
@@ -642,7 +658,7 @@ const SECTIONS = {
     title: 'Blog',
     endpoint: '/dashboard/api/blog/',
     createEndpoint: '/dashboard/api/blog/create/',
-    canCreate: true, canEdit: true, canDelete: true,
+    canCreate: true, canEdit: true, canDelete: true, uploadTarget: 'blog',
     columns: [
       { key:'title', label:'Titre', render: r => `<strong>${esc(r.title)}</strong>` },
       { key:'author', label:'Auteur', render: r => esc(r.author || '—') },
@@ -656,8 +672,34 @@ const SECTIONS = {
       { name:'excerpt', label:'Résumé (court)', type:'textarea', value: r?.excerpt || '' },
       { name:'body', label:'Contenu', type:'textarea', value: r?.body || '', required: true },
       { name:'status', label:'Statut', type:'select', options:[{v:'draft',l:'Brouillon'},{v:'published',l:'Publié'},{v:'scheduled',l:'Programmé'}], value: r?.status || 'draft' },
+      { name:'cover_image', label:'Image de couverture', type:'image', value: r?.cover_image || '' },
     ],
     detailUrl: r => '/dashboard/api/blog/' + r.id + '/',
+  },
+  admins: {
+    title: 'Administrateurs',
+    endpoint: '/dashboard/api/admins/',
+    createEndpoint: '/dashboard/api/admins/create/',
+    canCreate: true, canEdit: true, canDelete: true,
+    columns: [
+      { key:'username', label:'Utilisateur', render: r => `<strong>${esc(r.username)}</strong><br><span style="font-size:11px;color:var(--muted)">${esc(r.email || '')}</span>` },
+      { key:'role', label:'Rôle', render: r => r.is_superuser ? '<span class="pill blue">Super-admin</span>' : '<span class="pill green">Admin</span>' },
+      { key:'is_active', label:'Actif', render: r => r.is_active ? '<span class="pill green">Oui</span>' : '<span class="pill red">Non</span>' },
+      { key:'last_login', label:'Dernière connexion', render: r => r.last_login ? new Date(r.last_login).toLocaleDateString('fr-FR') : '<span style="color:var(--muted)">jamais</span>' },
+    ],
+    formTitle: r => r ? 'Modifier l\'administrateur' : 'Nouvel administrateur',
+    formFields: r => r ? [
+      { name:'email', label:'Email', type:'email', value: r?.email || '' },
+      { name:'password', label:'Nouveau mot de passe (vide = inchangé)', type:'password', value: '' },
+      { name:'is_superuser', label:'Super-administrateur', type:'checkbox', value: r?.is_superuser || false },
+      { name:'is_active', label:'Compte actif', type:'checkbox', value: r?.is_active ?? true },
+    ] : [
+      { name:'username', label:'Nom d\'utilisateur', type:'text', value: '', required: true },
+      { name:'email', label:'Email', type:'email', value: '' },
+      { name:'password', label:'Mot de passe', type:'password', value: '', required: true },
+      { name:'is_superuser', label:'Super-administrateur (peut gérer les autres admins)', type:'checkbox', value: false },
+    ],
+    detailUrl: r => '/dashboard/api/admins/' + r.id + '/',
   },
 };
 
@@ -810,6 +852,11 @@ function openModal(sectionKey, record) {
       body += '<select name="gei_id" id="geiSelect_' + sectionKey + '"><option value="">— Aucun —</option></select>';
     } else if (f.type === 'textarea') {
       body += '<textarea name="' + f.name + '" ' + (f.required ? 'required' : '') + '>' + esc(String(f.value ?? '')) + '</textarea>';
+    } else if (f.type === 'image') {
+      body += '<div style="display:flex;align-items:center;gap:12px">';
+      if (f.value) body += '<img src="' + esc(String(f.value)) + '" alt="" style="width:56px;height:56px;object-fit:cover;border-radius:8px;border:1px solid var(--border)">';
+      body += '<input type="file" name="' + f.name + '" accept="image/*" data-image="1" style="flex:1">';
+      body += '</div><div style="font-size:11px;color:var(--muted);margin-top:4px">JPG/PNG, max 5 Mo.' + (f.value ? ' Laisser vide pour garder l\'image actuelle.' : '') + '</div>';
     } else {
       body += '<input type="' + f.type + '" name="' + f.name + '" value="' + esc(String(f.value ?? '')) + '" ' + (f.required ? 'required' : '') + '>';
     }
@@ -841,13 +888,25 @@ function closeModal() {
   modalSection = null;
 }
 
+// Upload d'une image sélectionnée (après création/édition, sur la cible de la section).
+function uploadPendingImage(cfg, recordId) {
+  if (!cfg.uploadTarget || !recordId) return Promise.resolve();
+  const fileInput = document.querySelector('#modalBody input[type="file"][data-image="1"]');
+  if (!fileInput || !fileInput.files || !fileInput.files[0]) return Promise.resolve();
+  const fd = new FormData();
+  fd.append('file', fileInput.files[0]);
+  return fetch('/dashboard/api/upload/' + cfg.uploadTarget + '/' + recordId + '/', {
+    method: 'POST', headers: { 'X-CSRFToken': CSRF }, credentials: 'same-origin', body: fd,
+  }).then(r => { if (!r.ok) return r.json().then(e => { throw new Error(e.error || 'Upload échoué') }); });
+}
+
 function saveModal() {
   const cfg = SECTIONS[modalSection];
   if (!cfg) return;
   const form = document.getElementById('modalBody');
-  const inputs = form.querySelectorAll('input, select, textarea');
   const data = {};
-  inputs.forEach(inp => {
+  form.querySelectorAll('input, select, textarea').forEach(inp => {
+    if (inp.type === 'file') return; // géré séparément (upload)
     if (inp.type === 'checkbox') data[inp.name] = inp.checked;
     else if (inp.type === 'number') data[inp.name] = parseInt(inp.value) || 0;
     else data[inp.name] = inp.value;
@@ -855,24 +914,102 @@ function saveModal() {
 
   if (cfg.serializeForm) Object.assign(data, cfg.serializeForm(data));
 
-  if (modalRecord) {
-    // Edit
-    api(cfg.detailUrl(modalRecord), { method: 'PUT', body: JSON.stringify(data) })
-      .then(() => { toast('Modifié avec succès', 'success'); closeModal(); loadTable(modalSection); })
-      .catch(e => toast(e.message, 'error'));
-  } else {
-    // Create
-    api(cfg.createEndpoint, { method: 'POST', body: JSON.stringify(data) })
-      .then(() => { toast('Créé avec succès', 'success'); closeModal(); loadTable(modalSection); })
-      .catch(e => toast(e.message, 'error'));
-  }
+  const isEdit = !!modalRecord;
+  const req = isEdit
+    ? api(cfg.detailUrl(modalRecord), { method: 'PUT', body: JSON.stringify(data) })
+    : api(cfg.createEndpoint, { method: 'POST', body: JSON.stringify(data) });
+
+  req.then(saved => uploadPendingImage(cfg, (saved && saved.id) || (modalRecord && modalRecord.id)))
+    .then(() => { toast(isEdit ? 'Modifié avec succès' : 'Créé avec succès', 'success'); closeModal(); loadTable(modalSection); })
+    .catch(e => toast(e.message, 'error'));
+}
+
+// ============= PARAMÈTRES DU SITE =============
+const SETTINGS_BOOLS = ['show_shop','show_blog','show_courses','show_testimonials','maintenance_mode'];
+
+function _sf(label, name, val, type) {
+  type = type || 'text';
+  if (type === 'textarea') return '<div class="form-group"><label class="form-label">' + esc(label) + '</label><textarea name="' + name + '">' + esc(String(val ?? '')) + '</textarea></div>';
+  if (type === 'checkbox') return '<div class="form-group"><label style="display:flex;align-items:center;gap:8px;cursor:pointer"><input type="checkbox" name="' + name + '" ' + (val ? 'checked' : '') + ' style="width:auto"> ' + esc(label) + '</label></div>';
+  if (type === 'color') return '<div class="form-group"><label class="form-label">' + esc(label) + '</label><input type="color" name="' + name + '" value="' + esc(String(val || '#000000')) + '" style="height:40px;padding:3px"></div>';
+  return '<div class="form-group"><label class="form-label">' + esc(label) + '</label><input type="' + type + '" name="' + name + '" value="' + esc(String(val ?? '')) + '"></div>';
+}
+
+function renderSettings() {
+  document.getElementById('headerActions').innerHTML = '';
+  api('/dashboard/api/settings/').then(s => {
+    const g = (title, inner) => '<div class="card" style="margin-bottom:16px"><div class="card-head"><div class="card-title">' + title + '</div></div><div style="padding:18px 22px">' + inner + '</div></div>';
+    let h = '';
+    h += g('Identité',
+      _sf('Nom du site','site_name',s.site_name) +
+      _sf('Slogan','tagline',s.tagline) +
+      '<div class="form-group"><label class="form-label">Logo</label>' + (s.logo ? '<img src="' + esc(s.logo) + '" style="height:44px;display:block;margin-bottom:6px">' : '') + '<input type="file" id="settingsLogo" accept="image/*"></div>');
+    h += g('Contact',
+      _sf('Téléphone','contact_phone',s.contact_phone) +
+      _sf('WhatsApp (format international, ex: 50938221804)','contact_whatsapp',s.contact_whatsapp) +
+      _sf('Email','contact_email',s.contact_email,'email') +
+      _sf('Adresse','contact_address',s.contact_address));
+    h += g('Réseaux sociaux',
+      _sf('Facebook','facebook_url',s.facebook_url,'url') +
+      _sf('Instagram','instagram_url',s.instagram_url,'url') +
+      _sf('Twitter / X','twitter_url',s.twitter_url,'url') +
+      _sf('LinkedIn','linkedin_url',s.linkedin_url,'url') +
+      _sf('YouTube','youtube_url',s.youtube_url,'url'));
+    h += g('Couleurs du thème',
+      '<div style="display:grid;grid-template-columns:repeat(2,1fr);gap:12px">' +
+      _sf('Principale','color_primary',s.color_primary,'color') +
+      _sf('Principale foncée','color_primary_dark',s.color_primary_dark,'color') +
+      _sf('Accent','color_accent',s.color_accent,'color') +
+      _sf('Highlight','color_highlight',s.color_highlight,'color') + '</div>');
+    h += g('Textes de la page d\'accueil',
+      _sf('Titre héro','hero_title',s.hero_title) +
+      _sf('Sous-titre héro','hero_subtitle',s.hero_subtitle,'textarea') +
+      _sf('Titre section « À propos »','about_title',s.about_title) +
+      _sf('Texte « À propos »','about_text',s.about_text,'textarea') +
+      _sf('Intro boutique','shop_intro',s.shop_intro,'textarea') +
+      _sf('Texte du pied de page','footer_text',s.footer_text,'textarea'));
+    h += g('Affichage',
+      _sf('Afficher la boutique','show_shop',s.show_shop,'checkbox') +
+      _sf('Afficher le blog','show_blog',s.show_blog,'checkbox') +
+      _sf('Afficher les cours','show_courses',s.show_courses,'checkbox') +
+      _sf('Afficher les témoignages','show_testimonials',s.show_testimonials,'checkbox') +
+      _sf('Mode maintenance','maintenance_mode',s.maintenance_mode,'checkbox'));
+    h += g('SEO',
+      _sf('Meta description','meta_description',s.meta_description,'textarea') +
+      _sf('Mots-clés','meta_keywords',s.meta_keywords));
+    h += '<div style="padding:4px 0 24px"><button class="btn btn-primary" onclick="saveSettings()">Enregistrer les paramètres</button></div>';
+    document.getElementById('card-settings').innerHTML = h;
+  }).catch(e => {
+    document.getElementById('card-settings').innerHTML = '<div class="card"><div style="padding:24px;color:var(--danger)">' + esc(e.message) + '</div></div>';
+  });
+}
+
+function saveSettings() {
+  const root = document.getElementById('card-settings');
+  const data = {};
+  root.querySelectorAll('input, textarea').forEach(inp => {
+    if (inp.type === 'file') return;
+    if (inp.type === 'checkbox') data[inp.name] = inp.checked;
+    else data[inp.name] = inp.value;
+  });
+  api('/dashboard/api/settings/', { method: 'PUT', body: JSON.stringify(data) })
+    .then(() => {
+      const logo = document.getElementById('settingsLogo');
+      if (logo && logo.files && logo.files[0]) {
+        const fd = new FormData(); fd.append('file', logo.files[0]);
+        return fetch('/dashboard/api/upload/site/1/', { method: 'POST', headers: { 'X-CSRFToken': CSRF }, credentials: 'same-origin', body: fd })
+          .then(r => { if (!r.ok) return r.json().then(e => { throw new Error(e.error || 'Upload logo échoué') }); });
+      }
+    })
+    .then(() => toast('Paramètres enregistrés', 'success'))
+    .catch(e => toast(e.message, 'error'));
 }
 
 function confirmDelete(sectionKey, id) {
   const cfg = SECTIONS[sectionKey];
   if (!cfg) return;
   const rec = (_rowCache[sectionKey] || {})[id] || {};
-  const label = rec.name || rec.title || rec.author_name || rec.payer_name || rec.requester_name || rec.full_name || ('#' + id);
+  const label = rec.name || rec.title || rec.author_name || rec.payer_name || rec.requester_name || rec.full_name || rec.username || ('#' + id);
   document.getElementById('modalTitle').textContent = 'Confirmer la suppression';
   document.getElementById('modalSaveBtn').textContent = 'Supprimer';
   document.getElementById('modalSaveBtn').className = 'btn btn-danger';

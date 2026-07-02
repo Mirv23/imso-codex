@@ -2178,5 +2178,15 @@ a { color: inherit; text-decoration: none; }
 .modal__success-icon svg { width: 26px; height: 26px; }
 
 </style>
+{% if site %}
+<style>
+:root {
+  --primary: {{ site.color_primary|default:"#3C9626" }};
+  --primary-dark: {{ site.color_primary_dark|default:"#2A6E1B" }};
+  --accent: {{ site.color_accent|default:"#5BB143" }};
+  --highlight: {{ site.color_highlight|default:"#E87A18" }};
+}
+</style>
+{% endif %}
 </head>
 <body>

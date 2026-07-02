@@ -2,11 +2,16 @@ from django.urls import include, path
 
 from .views import (
     DashboardView,
+    admin_user_create,
+    admin_user_detail,
+    admin_user_list,
     blog_create,
     blog_detail,
     blog_list,
     booking_detail,
     booking_list,
+    site_settings_detail,
+    upload_image,
     contact_detail,
     contact_list,
     course_create,
@@ -109,6 +114,11 @@ urlpatterns = [
     path("api/blog/", blog_list, name="blog-list"),
     path("api/blog/create/", blog_create, name="blog-create"),
     path("api/blog/<int:pk>/", blog_detail, name="blog-detail"),
+    path("api/settings/", site_settings_detail, name="settings-detail"),
+    path("api/upload/<str:target>/<int:pk>/", upload_image, name="upload-image"),
+    path("api/admins/", admin_user_list, name="admin-list"),
+    path("api/admins/create/", admin_user_create, name="admin-create"),
+    path("api/admins/<int:pk>/", admin_user_detail, name="admin-detail"),
     path("api/export/<str:model_name>/", export_csv, name="export-csv"),
 ]
 

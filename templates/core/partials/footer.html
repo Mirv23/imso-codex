@@ -5,22 +5,23 @@
       <div>
         <div class="brand-logo footer__brand-logo" style="margin-bottom: 18px;"><img src="{% static 'website/assets/9f2647f0-409d-40a1-969b-7969601ef459.png' %}" alt="IMSO"></div>
         <p class="footer__tagline">
-          Impact Mutuelle de Solidarité — épargne collective, microcrédit
-          responsable et formation continue au service des communautés haïtiennes.
+          {% if site.footer_text %}{{ site.footer_text }}{% else %}Impact Mutuelle de Solidarité — épargne collective, microcrédit
+          responsable et formation continue au service des communautés haïtiennes.{% endif %}
         </p>
         <div class="socials">
-          <a class="social" href="#" aria-label="Facebook">
+          {% if site.facebook_url %}<a class="social" href="{{ site.facebook_url }}" target="_blank" rel="noopener" aria-label="Facebook">
             <svg viewBox="0 0 24 24" fill="currentColor"><path d="M13 22v-8h3l1-4h-4V7.5c0-1.1.4-2 2-2h2V2h-3c-3 0-5 1.8-5 5v3H6v4h3v8z"></path></svg>
-          </a>
-          <a class="social" href="#" aria-label="Instagram">
+          </a>{% endif %}
+          {% if site.instagram_url %}<a class="social" href="{{ site.instagram_url }}" target="_blank" rel="noopener" aria-label="Instagram">
             <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="3" y="3" width="18" height="18" rx="5"></rect><circle cx="12" cy="12" r="4"></circle><circle cx="17.5" cy="6.5" r="1" fill="currentColor"></circle></svg>
-          </a>
-          <a class="social" href="#" aria-label="WhatsApp">
+          </a>{% endif %}
+          {% if site.contact_whatsapp %}<a class="social" href="https://wa.me/{{ site.contact_whatsapp }}" target="_blank" rel="noopener" aria-label="WhatsApp">
             <svg viewBox="0 0 24 24" fill="currentColor"><path d="M12 2a10 10 0 00-8.6 15L2 22l5.3-1.4A10 10 0 1012 2zm5.3 14c-.2.6-1.2 1.2-1.7 1.3-.4.1-1 .1-1.6-.1-.4-.1-.9-.3-1.5-.5-2.7-1.2-4.4-3.9-4.6-4-.1-.2-1-1.3-1-2.5s.6-1.8.8-2c.2-.2.5-.3.7-.3h.5c.2 0 .4 0 .6.4l.8 2c.1.2.1.4 0 .5l-.3.4-.4.4c-.1.1-.2.3-.1.5.1.3.6 1.2 1.4 2 .9.9 1.7 1.1 2 1.3.2.1.4.1.5 0l.8-1c.1-.2.4-.1.5-.1l1.9.9c.2.1.4.2.4.3 0 .2 0 .8-.2 1.5z"></path></svg>
-          </a>
-          <a class="social" href="#" aria-label="YouTube">
+          </a>{% endif %}
+          {% if site.youtube_url %}<a class="social" href="{{ site.youtube_url }}" target="_blank" rel="noopener" aria-label="YouTube">
             <svg viewBox="0 0 24 24" fill="currentColor"><path d="M22 7.4a3 3 0 00-2-2C18.3 5 12 5 12 5s-6.3 0-8 .4a3 3 0 00-2 2C1.6 9.1 1.6 12 1.6 12s0 2.9.4 4.6a3 3 0 002 2c1.7.4 8 .4 8 .4s6.3 0 8-.4a3 3 0 002-2c.4-1.7.4-4.6.4-4.6s0-2.9-.4-4.6zM10 15V9l5.2 3z"></path></svg>
-          </a>
+          </a>{% endif %}
+          {% if not site or not site.facebook_url and not site.instagram_url and not site.contact_whatsapp and not site.youtube_url %}<a class="social" href="#" aria-label="Facebook"><svg viewBox="0 0 24 24" fill="currentColor"><path d="M13 22v-8h3l1-4h-4V7.5c0-1.1.4-2 2-2h2V2h-3c-3 0-5 1.8-5 5v3H6v4h3v8z"></path></svg></a>{% endif %}
         </div>
       </div>
       <div class="footer__col">
@@ -48,15 +49,15 @@
         <ul role="list" class="footer__contact">
           <li>
             <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M21 10c0 7-9 13-9 13S3 17 3 10a9 9 0 0118 0z"></path><circle cx="12" cy="10" r="3"></circle></svg>
-            <span>32, Rue Capois<br>Port-au-Prince, Haïti</span>
+            <span>{{ site.contact_address|default:"32, Rue Capois, Port-au-Prince, Haïti" }}</span>
           </li>
           <li>
             <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M22 16.9V20a2 2 0 01-2.2 2A20 20 0 012 4.2 2 2 0 014 2h3.1a2 2 0 012 1.7l.7 3.6a2 2 0 01-.6 2L8 10.5a16 16 0 005.6 5.6l1.2-1.3a2 2 0 012-.6l3.6.8a2 2 0 011.6 2z"></path></svg>
-            <span>+509 38 22 18 04</span>
+            <span>{{ site.contact_phone|default:"+509 38 22 18 04" }}</span>
           </li>
           <li>
             <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="5" width="18" height="14" rx="2"></rect><path d="M3 7l9 6 9-6"></path></svg>
-            <span>bonjour@imso.ht</span>
+            <span>{{ site.contact_email|default:"bonjour@imso.ht" }}</span>
           </li>
         </ul>
       </div>

@@ -79,6 +79,7 @@ TEMPLATES = [
                 "django.template.context_processors.request",
                 "django.contrib.auth.context_processors.auth",
                 "django.contrib.messages.context_processors.messages",
+                "apps.core.context_processors.site_settings",
             ],
         },
     },
@@ -110,9 +111,17 @@ STATIC_ROOT = BASE_DIR / "staticfiles"
 STATICFILES_DIRS = [BASE_DIR / "static"]
 WHITENOISE_USE_FINDERS = True
 STORAGES = {
+    # Stockage des fichiers uploadés (images produits/blog/logo, captures paiement).
+    # En prod Vercel (FS éphémère), remplacer par un stockage objet via
+    # DJANGO_FILE_STORAGE (ex. S3 / Supabase Storage) — cf. plan Phase 0.
+    "default": {
+        "BACKEND": os.environ.get(
+            "DJANGO_FILE_STORAGE", "django.core.files.storage.FileSystemStorage"
+        ),
+    },
     "staticfiles": {
         "BACKEND": "whitenoise.storage.CompressedStaticFilesStorage",
-    }
+    },
 }
 
 DEFAULT_AUTO_FIELD = "django.db.models.BigAutoField"
@@ -190,16 +199,9 @@ else:
     }
 
 # ── File Storage ─────────────────────────────────────────
-DEFAULT_FILE_STORAGE = os.environ.get(
-    "DJANGO_FILE_STORAGE",
-    "django.core.files.storage.FileSystemStorage",
-)
+# Le backend est configuré dans STORAGES["default"] (via DJANGO_FILE_STORAGE).
 MEDIA_URL = "/media/"
 MEDIA_ROOT = BASE_DIR / "media"
-# If DJANGO_S3_BUCKET is defined, use S3Boto3Storage:
-# DEFAULT_FILE_STORAGE = "storages.backends.s3boto3.S3Boto3Storage"
-# Requires: pip install django-storages[boto3]
-# Then set AWS_ACCESS_KEY_ID, AWS_SECRET_ACCESS_KEY, AWS_STORAGE_BUCKET_NAME, etc.
 
 LOGIN_URL = "/login/"
 LOGIN_REDIRECT_URL = "/dashboard/"
