@@ -303,8 +303,16 @@ const DATA = {
   payerEmail: '{{ payer_email|escapejs }}',
   bookingId: {{ booking_id|default:"null" }},
   enrollmentId: {{ enrollment_id|default:"null" }},
+  orderId: {{ order_id|default:"null" }},
   providers: {{ providers_json|safe }}
 };
+
+// Associe le type de paiement au chemin d'URL et à l'identifiant correspondant.
+function paymentTarget() {
+  if (DATA.type === 'venue') return { path: 'reservation', id: DATA.bookingId };
+  if (DATA.type === 'product') return { path: 'commande', id: DATA.orderId };
+  return { path: 'cours', id: DATA.enrollmentId };
+}
 
 function formatMoney(n) {
   return Number(n).toLocaleString('fr-FR') + ' HTG';
@@ -466,10 +474,9 @@ async function processPayment() {
   btn.textContent = 'Traitement...';
 
   try {
-    const typePath = DATA.type === 'venue' ? 'reservation' : 'cours';
-    const id = DATA.type === 'venue' ? DATA.bookingId : DATA.enrollmentId;
+    const target = paymentTarget();
 
-    const res = await fetch('/api/paiement/' + typePath + '/' + id + '/', {
+    const res = await fetch('/api/paiement/' + target.path + '/' + target.id + '/', {
       method: 'POST',
       headers: { 'Content-Type': 'application/json', 'X-CSRFToken': '{{ csrf_token }}' },
       body: JSON.stringify({
@@ -511,8 +518,7 @@ async function confirmManualPayment() {
   btn.textContent = 'Envoi en cours...';
 
   try {
-    const typePath = DATA.type === 'venue' ? 'reservation' : 'cours';
-    const id = DATA.type === 'venue' ? DATA.bookingId : DATA.enrollmentId;
+    const target = paymentTarget();
 
     const formData = new FormData();
     formData.append('provider_id', selectedProvider);
@@ -522,7 +528,7 @@ async function confirmManualPayment() {
     if (manualPaymentData.transactionId) formData.append('transaction_id', manualPaymentData.transactionId);
     if (manualPaymentData.screenshot) formData.append('screenshot', manualPaymentData.screenshot);
 
-    const res = await fetch('/api/paiement/' + typePath + '/' + id + '/', {
+    const res = await fetch('/api/paiement/' + target.path + '/' + target.id + '/', {
       method: 'POST',
       headers: { 'X-CSRFToken': '{{ csrf_token }}' },
       body: formData,
@@ -545,6 +551,8 @@ function showSuccess(data) {
   let message = 'Votre demande de paiement a été enregistrée. Un administrateur validera votre réservation sous 24h.';
   if (DATA.type === 'course') {
     message = 'Votre inscription est en attente de confirmation de paiement. Vous recevrez une confirmation sous 24h.';
+  } else if (DATA.type === 'product') {
+    message = 'Votre commande est enregistrée. Après validation du paiement, nous préparons votre kit et vous contactons pour la livraison.';
   }
 
   app.innerHTML = `

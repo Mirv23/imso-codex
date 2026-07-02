@@ -86,8 +86,10 @@ def connect() -> None:
         Enrollment,
         GEI,
         Member,
+        Order,
         Payment,
         PaymentProvider,
+        Product,
         Testimonial,
         VenueBooking,
     )
@@ -102,6 +104,8 @@ def connect() -> None:
         Enrollment,
         Testimonial,
         ContactRequest,
+        Product,
+        Order,
     ]
     for model in audited:
         post_save.connect(_on_save, sender=model, dispatch_uid=f"audit_save_{model.__name__}")

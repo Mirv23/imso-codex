@@ -5,6 +5,7 @@ import logging
 from typing import Any
 
 from django_ratelimit.decorators import ratelimit
+from django.db import transaction
 from django.http import HttpRequest, JsonResponse, HttpResponseBadRequest, HttpResponseRedirect
 from django.utils.decorators import method_decorator
 from django.shortcuts import get_object_or_404, render, redirect
@@ -17,8 +18,11 @@ from apps.adminpanel.models import (
     Enrollment,
     GEI,
     Member,
+    Order,
+    OrderItem,
     Payment,
     PaymentProvider,
+    Product,
     Testimonial,
     VenueBooking,
 )
@@ -47,6 +51,10 @@ class HomeView(TemplateView):
         context["total_geis"] = GEI.objects.filter(is_active=True).count()
 
         context["testimonials"] = Testimonial.objects.filter(is_active=True)
+
+        context["products"] = Product.objects.filter(is_active=True).only(
+            "id", "name", "slug", "kind", "description", "price_htg", "stock", "sort_order"
+        )
 
         return context
 
@@ -188,6 +196,7 @@ class PaymentPageView(TemplateView):
         context["payer_email"] = ""
         context["booking_id"] = None
         context["enrollment_id"] = None
+        context["order_id"] = None
 
         if payment_type == "reservation":
             booking = get_object_or_404(VenueBooking, id=payment_id)
@@ -212,6 +221,16 @@ class PaymentPageView(TemplateView):
             context["payer_phone"] = enrollment.member.phone
             context["payer_email"] = enrollment.member.email
             context["enrollment_id"] = enrollment.id
+        elif payment_type == "commande":
+            order = get_object_or_404(Order, id=payment_id)
+            context["order"] = order
+            context["payment_purpose"] = "product"
+            context["payment_label"] = f"Commande {order.reference}"
+            context["amount_htg"] = order.total_htg
+            context["payer_name"] = order.customer_name
+            context["payer_phone"] = order.customer_phone
+            context["payer_email"] = order.customer_email
+            context["order_id"] = order.id
 
         return context
 
@@ -236,6 +255,7 @@ class PaymentProcessView(View):
 
         booking = None
         enrollment = None
+        order = None
         purpose = Payment.Purpose.OTHER
         amount = 0
         payer_name = data.get("payer_name", "")
@@ -261,6 +281,13 @@ class PaymentProcessView(View):
             payer_name = payer_name or enrollment.member.get_full_name() or enrollment.member.first_name
             payer_phone = payer_phone or enrollment.member.phone
             payer_email = payer_email or enrollment.member.email
+        elif type == "commande":
+            order = get_object_or_404(Order, id=id)
+            purpose = Payment.Purpose.PRODUCT
+            amount = order.total_htg
+            payer_name = payer_name or order.customer_name
+            payer_phone = payer_phone or order.customer_phone
+            payer_email = payer_email or order.customer_email
 
         # Extract fields from JSON or form-data
         transaction_id = ""
@@ -294,6 +321,7 @@ class PaymentProcessView(View):
             amount_htg=amount,
             venue_booking=booking,
             enrollment=enrollment,
+            order=order,
             notes=notes,
         )
 
@@ -402,3 +430,90 @@ def get_active_courses(request: HttpRequest) -> JsonResponse:
         "id", "title", "category", "city", "instructor", "price_htg", "capacity", "description", "public_slug"
     )
     return JsonResponse(list(courses), safe=False)
+
+
+def get_active_products(request: HttpRequest) -> JsonResponse:
+    """Liste publique des produits en vente (boutique du kit)."""
+    products = Product.objects.filter(is_active=True).values(
+        "id", "name", "slug", "kind", "description", "price_htg", "stock", "sort_order"
+    )
+    return JsonResponse(list(products), safe=False)
+
+
+class OrderCreateView(View):
+    """Crée une commande boutique. Le total est TOUJOURS recalculé côté serveur
+    à partir des prix en base — jamais depuis les montants envoyés par le client."""
+
+    @method_decorator(ratelimit(key="ip", rate="10/m", method="POST", block=True))
+    def post(self, request: HttpRequest) -> JsonResponse:
+        try:
+            data = json.loads(request.body.decode("utf-8"))
+        except json.JSONDecodeError:
+            return JsonResponse({"ok": False, "error": "JSON invalide"}, status=400)
+
+        name = (data.get("customer_name") or "").strip()
+        phone = (data.get("customer_phone") or "").strip()
+        address = (data.get("delivery_address") or "").strip()
+        items = data.get("items") or []
+
+        errors: dict[str, list[str]] = {}
+        if not name:
+            errors["customer_name"] = ["Nom requis."]
+        if not phone:
+            errors["customer_phone"] = ["Téléphone requis."]
+        if not address:
+            errors["delivery_address"] = ["Adresse de livraison requise."]
+        if not isinstance(items, list) or not items:
+            errors["items"] = ["Le panier est vide."]
+        if errors:
+            return JsonResponse({"ok": False, "errors": errors}, status=400)
+
+        with transaction.atomic():
+            order = Order.objects.create(
+                customer_name=name,
+                customer_phone=phone,
+                customer_email=(data.get("customer_email") or "").strip(),
+                delivery_address=address,
+                city=(data.get("city") or "").strip(),
+                note=(data.get("note") or "").strip(),
+            )
+            total = 0
+            for raw in items:
+                try:
+                    qty = int(raw.get("quantity", 1))
+                except (TypeError, ValueError, AttributeError):
+                    continue
+                if qty < 1:
+                    continue
+                try:
+                    product = Product.objects.get(id=raw.get("product_id"), is_active=True)
+                except (Product.DoesNotExist, ValueError, TypeError):
+                    continue
+                OrderItem.objects.create(
+                    order=order,
+                    product=product,
+                    product_name=product.name,
+                    quantity=qty,
+                    unit_price_htg=product.price_htg,
+                )
+                total += qty * product.price_htg
+
+            if total <= 0:
+                order.delete()
+                return JsonResponse(
+                    {"ok": False, "error": "Aucun produit valide dans la commande."},
+                    status=400,
+                )
+            order.total_htg = total
+            order.save(update_fields=["total_htg", "updated_at"])
+
+        return JsonResponse(
+            {
+                "ok": True,
+                "id": order.id,
+                "reference": order.reference,
+                "total_htg": order.total_htg,
+                "payment_url": f"/paiement/commande/{order.id}/",
+            },
+            status=201,
+        )

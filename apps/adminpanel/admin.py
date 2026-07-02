@@ -14,8 +14,11 @@ from .models import (
     Enrollment,
     GEI,
     Member,
+    Order,
+    OrderItem,
     Payment,
     PaymentProvider,
+    Product,
     Testimonial,
     VenueBooking,
 )
@@ -81,6 +84,29 @@ class ContactRequestAdmin(admin.ModelAdmin):
 class TestimonialAdmin(admin.ModelAdmin):
     list_display = ("author_name", "location", "is_active", "sort_order")
     list_filter = ("is_active",)
+
+
+@admin.register(Product)
+class ProductAdmin(admin.ModelAdmin):
+    list_display = ("name", "kind", "price_htg", "stock", "is_active", "sort_order")
+    list_filter = ("kind", "is_active")
+    search_fields = ("name", "description")
+    prepopulated_fields = {"slug": ("name",)}
+
+
+class OrderItemInline(admin.TabularInline):
+    model = OrderItem
+    extra = 0
+    readonly_fields = ("product_name", "unit_price_htg")
+
+
+@admin.register(Order)
+class OrderAdmin(admin.ModelAdmin):
+    list_display = ("reference", "customer_name", "city", "total_htg", "status", "created_at")
+    list_filter = ("status", "city")
+    search_fields = ("reference", "customer_name", "customer_phone", "customer_email")
+    readonly_fields = ("reference", "total_htg")
+    inlines = [OrderItemInline]
 
 
 @admin.register(AdminNotification)

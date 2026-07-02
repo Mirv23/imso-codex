@@ -4,10 +4,11 @@ from typing import Any
 
 from django.conf import settings
 from django.core.mail import send_mail
+from django.db import transaction
 from django.db.models.signals import post_save, pre_save
 from django.dispatch import receiver
 
-from .models import ContactRequest, Enrollment, Payment, VenueBooking, AdminNotification
+from .models import ContactRequest, Enrollment, Order, Payment, VenueBooking, AdminNotification
 
 
 def _notify_admin_by_email(subject: str, message: str) -> None:
@@ -118,6 +119,16 @@ def payment_cascade_status(sender: type[Payment], instance: Payment, created: bo
     if instance.enrollment and instance.enrollment.status == Enrollment.Status.PENDING:
         instance.enrollment.status = Enrollment.Status.CONFIRMED
         instance.enrollment.save(update_fields=["status", "updated_at"])
+    if instance.order and instance.order.status == Order.Status.PENDING:
+        with transaction.atomic():
+            order = instance.order
+            order.status = Order.Status.PAID
+            order.save(update_fields=["status", "updated_at"])
+            for item in order.items.select_related("product"):
+                product = item.product
+                if product:
+                    product.stock = max(0, product.stock - item.quantity)
+                    product.save(update_fields=["stock", "updated_at"])
 
 
 @receiver(post_save, sender=ContactRequest)

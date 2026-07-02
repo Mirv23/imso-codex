@@ -1,0 +1,172 @@
+{% load static %}
+<!-- Boutique : kit d'éducation financière -->
+<section class="section" id="boutique">
+  <div class="container">
+    <div class="section__head reveal">
+      <span class="label"><span class="label__bullet"></span>Boutique</span>
+      <h2 class="section__title">Commandez votre kit d'éducation financière.</h2>
+      <p class="section__intro">
+        Un livre et un cahier pratique pour maîtriser l'épargne, le budget et
+        l'entrepreneuriat. Commandez en ligne et payez via nos moyens locaux ;
+        nous vous livrons après confirmation du paiement.
+      </p>
+    </div>
+
+    <div class="courses__grid" id="shopGrid">
+      {% for product in products %}
+      <article class="course-card reveal" data-delay="{{ forloop.counter|default:1 }}">
+        <div class="course-card__band course-card__band--{% cycle 'g' 'a' 't' 'g' 'a' 't' %}">
+          <span class="course-card__tag">{{ product.get_kind_display }}</span>
+        </div>
+        <div class="course-card__body">
+          <h3 class="course-card__title">{{ product.name }}</h3>
+          <p class="course-card__desc" style="color:var(--muted);font-size:14px;margin:6px 0 12px;">{{ product.description|truncatewords:24 }}</p>
+          <div class="course-card__meta">
+            <div class="course-card__price">{{ product.price_htg }} <small>HTG</small></div>
+            {% if product.stock > 0 %}
+            <button class="btn btn--primary btn--small js-order"
+                    data-id="{{ product.id }}"
+                    data-name="{{ product.name }}"
+                    data-price="{{ product.price_htg }}">Commander</button>
+            {% else %}
+            <button class="btn btn--ghost btn--small" disabled>Rupture de stock</button>
+            {% endif %}
+          </div>
+        </div>
+      </article>
+      {% empty %}
+      <p style="grid-column: 1 / -1; text-align: center; color: var(--muted); padding: 40px 0;">
+        Le kit sera bientôt disponible à la commande. Revenez très vite !
+      </p>
+      {% endfor %}
+    </div>
+  </div>
+</section>
+
+<!-- Modal commande -->
+<div class="modal-scrim" id="orderModal" aria-hidden="true">
+  <div class="modal" role="dialog" aria-modal="true" aria-labelledby="orderModalTitle">
+    <div class="modal__head">
+      <h3 class="modal__title" id="orderModalTitle">Commander</h3>
+      <button class="modal__close" id="orderModalClose" aria-label="Fermer">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><path d="M18 6L6 18M6 6l12 12"></path></svg>
+      </button>
+    </div>
+    <p class="modal__sub" id="orderModalSub">Renseignez vos coordonnées de livraison. Le paiement se fait à l'étape suivante.</p>
+    <form class="modal__form" id="orderForm" novalidate="">
+      {% csrf_token %}
+      <input type="hidden" name="product_id" id="oProductId">
+      <div class="field">
+        <label for="oQty">Quantité</label>
+        <input id="oQty" name="quantity" type="number" min="1" value="1" required="">
+      </div>
+      <div class="field">
+        <label for="oName">Nom complet</label>
+        <input id="oName" name="customer_name" type="text" required="" placeholder="Marie-Claire Pierre">
+      </div>
+      <div class="field">
+        <label for="oPhone">Téléphone</label>
+        <input id="oPhone" name="customer_phone" type="tel" required="" placeholder="+509 38 22 18 04">
+      </div>
+      <div class="field">
+        <label for="oEmail">Email (optionnel)</label>
+        <input id="oEmail" name="customer_email" type="email" placeholder="exemple@email.com">
+      </div>
+      <div class="field">
+        <label for="oCity">Ville</label>
+        <input id="oCity" name="city" type="text" placeholder="Port-au-Prince">
+      </div>
+      <div class="field">
+        <label for="oAddress">Adresse de livraison</label>
+        <textarea id="oAddress" name="delivery_address" required="" placeholder="Rue, quartier, points de repère…"></textarea>
+      </div>
+      <p class="modal__sub" id="orderTotal" style="font-weight:600;color:var(--text);"></p>
+      <p class="modal__error" id="orderError" style="display:none;color:var(--danger,#EF4444);font-size:13px;"></p>
+      <button type="submit" class="btn btn--primary btn--block" id="orderSubmit" style="margin-top:8px;">Continuer vers le paiement</button>
+    </form>
+  </div>
+</div>
+
+<script>
+(function () {
+  function getCookie(name) {
+    var m = document.cookie.match(new RegExp('(^|; )' + name + '=([^;]+)'));
+    return m ? decodeURIComponent(m[2]) : '';
+  }
+  var modal = document.getElementById('orderModal');
+  var form = document.getElementById('orderForm');
+  if (!modal || !form) return;
+  var unitPrice = 0;
+  var qtyInput = document.getElementById('oQty');
+  var totalEl = document.getElementById('orderTotal');
+  var errorEl = document.getElementById('orderError');
+  var submitBtn = document.getElementById('orderSubmit');
+
+  function fmt(n) { return Number(n).toLocaleString('fr-FR'); }
+  function refreshTotal() {
+    var q = Math.max(1, parseInt(qtyInput.value || '1', 10));
+    totalEl.textContent = 'Total : ' + fmt(unitPrice * q) + ' HTG';
+  }
+  function openModal(id, name, price) {
+    document.getElementById('oProductId').value = id;
+    document.getElementById('orderModalTitle').textContent = 'Commander — ' + name;
+    unitPrice = Number(price) || 0;
+    qtyInput.value = 1;
+    errorEl.style.display = 'none';
+    refreshTotal();
+    modal.setAttribute('aria-hidden', 'false');
+    modal.classList.add('open');
+  }
+  function closeModal() {
+    modal.setAttribute('aria-hidden', 'true');
+    modal.classList.remove('open');
+  }
+
+  document.querySelectorAll('.js-order').forEach(function (btn) {
+    btn.addEventListener('click', function () {
+      openModal(btn.dataset.id, btn.dataset.name, btn.dataset.price);
+    });
+  });
+  document.getElementById('orderModalClose').addEventListener('click', closeModal);
+  modal.addEventListener('click', function (e) { if (e.target === modal) closeModal(); });
+  qtyInput.addEventListener('input', refreshTotal);
+
+  form.addEventListener('submit', function (e) {
+    e.preventDefault();
+    errorEl.style.display = 'none';
+    submitBtn.disabled = true;
+    var payload = {
+      customer_name: document.getElementById('oName').value.trim(),
+      customer_phone: document.getElementById('oPhone').value.trim(),
+      customer_email: document.getElementById('oEmail').value.trim(),
+      city: document.getElementById('oCity').value.trim(),
+      delivery_address: document.getElementById('oAddress').value.trim(),
+      items: [{
+        product_id: parseInt(document.getElementById('oProductId').value, 10),
+        quantity: Math.max(1, parseInt(qtyInput.value || '1', 10))
+      }]
+    };
+    fetch('/api/orders/', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json', 'X-CSRFToken': getCookie('csrftoken') },
+      credentials: 'same-origin',
+      body: JSON.stringify(payload)
+    }).then(function (r) {
+      return r.json().then(function (data) { return { ok: r.ok, data: data }; });
+    }).then(function (res) {
+      if (res.ok && res.data.payment_url) {
+        window.location.href = res.data.payment_url;
+      } else {
+        var msg = res.data.error || 'Impossible de créer la commande. Vérifiez vos informations.';
+        errorEl.textContent = msg;
+        errorEl.style.display = 'block';
+        submitBtn.disabled = false;
+      }
+    }).catch(function () {
+      errorEl.textContent = 'Erreur réseau. Réessayez.';
+      errorEl.style.display = 'block';
+      submitBtn.disabled = false;
+    });
+  });
+})();
+</script>

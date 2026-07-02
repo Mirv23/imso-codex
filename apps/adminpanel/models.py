@@ -8,6 +8,7 @@ from typing import Any
 from django.conf import settings
 from django.db import models
 from django.utils import timezone
+from django.utils.text import slugify
 
 
 def _obfuscation_key() -> bytes:
@@ -204,6 +205,7 @@ class Payment(TimestampedModel):
         VENUE = "venue", "Reservation de salle"
         COURSE = "course", "Inscription cours"
         MEMBERSHIP = "membership", "Adhesion"
+        PRODUCT = "product", "Commande boutique"
         OTHER = "other", "Autre"
 
     class Status(models.TextChoices):
@@ -232,6 +234,7 @@ class Payment(TimestampedModel):
     notes = models.TextField(blank=True)
     venue_booking = models.ForeignKey(VenueBooking, on_delete=models.SET_NULL, null=True, blank=True, related_name="payments")
     enrollment = models.ForeignKey(Enrollment, on_delete=models.SET_NULL, null=True, blank=True, related_name="payments")
+    order = models.ForeignKey("Order", on_delete=models.SET_NULL, null=True, blank=True, related_name="payments")
     screenshot = models.FileField(upload_to="screenshots/", blank=True)
 
     class Meta:
@@ -305,6 +308,101 @@ class Testimonial(TimestampedModel):
 
     def __str__(self) -> str:
         return f"{self.author_name} - {self.location}"
+
+
+class Product(TimestampedModel):
+    """Article vendu en boutique (kit d'éducation financière : livre, cahier…)."""
+
+    class Kind(models.TextChoices):
+        BOOK = "book", "Livre"
+        WORKBOOK = "workbook", "Cahier"
+        KIT = "kit", "Kit complet"
+        OTHER = "other", "Autre"
+
+    name = models.CharField(max_length=180)
+    slug = models.SlugField(max_length=200, unique=True, blank=True)
+    kind = models.CharField(max_length=20, choices=Kind.choices, default=Kind.KIT)
+    description = models.TextField(blank=True)
+    price_htg = models.PositiveIntegerField(default=0)
+    stock = models.PositiveIntegerField(default=0)
+    image = models.FileField(upload_to="products/", blank=True)
+    is_active = models.BooleanField(default=True)
+    sort_order = models.PositiveIntegerField(default=0)
+
+    class Meta:
+        ordering = ["sort_order", "name"]
+
+    def save(self, *args: Any, **kwargs: Any) -> None:
+        if not self.slug and self.name:
+            base = slugify(self.name)[:190] or "produit"
+            slug = base
+            i = 2
+            while Product.objects.exclude(pk=self.pk).filter(slug=slug).exists():
+                slug = f"{base}-{i}"
+                i += 1
+            self.slug = slug
+        super().save(*args, **kwargs)
+
+    @property
+    def in_stock(self) -> bool:
+        return self.stock > 0
+
+    def __str__(self) -> str:
+        return self.name
+
+
+class Order(TimestampedModel):
+    """Commande boutique. Le paiement (manuel) est géré via le modèle Payment."""
+
+    class Status(models.TextChoices):
+        PENDING = "pending", "En attente de paiement"
+        PAID = "paid", "Payée"
+        PREPARING = "preparing", "En préparation"
+        SHIPPED = "shipped", "Expédiée"
+        DELIVERED = "delivered", "Livrée"
+        CANCELLED = "cancelled", "Annulée"
+
+    reference = models.CharField(max_length=40, unique=True, blank=True)
+    customer_name = models.CharField(max_length=140)
+    customer_phone = models.CharField(max_length=40)
+    customer_email = models.EmailField(blank=True)
+    delivery_address = models.TextField()
+    city = models.CharField(max_length=120, blank=True)
+    status = models.CharField(max_length=20, choices=Status.choices, default=Status.PENDING)
+    total_htg = models.PositiveIntegerField(default=0)
+    note = models.TextField(blank=True)
+
+    class Meta:
+        ordering = ["-created_at"]
+
+    def save(self, *args: Any, **kwargs: Any) -> None:
+        if not self.reference:
+            stamp = timezone.now().strftime("%Y%m%d%H%M%S")
+            self.reference = f"IMSO-CMD-{stamp}"
+        super().save(*args, **kwargs)
+
+    def recompute_total(self) -> int:
+        total = sum(item.line_total for item in self.items.all())
+        self.total_htg = total
+        return total
+
+    def __str__(self) -> str:
+        return f"{self.reference} - {self.customer_name}"
+
+
+class OrderItem(models.Model):
+    order = models.ForeignKey(Order, on_delete=models.CASCADE, related_name="items")
+    product = models.ForeignKey(Product, on_delete=models.SET_NULL, null=True, blank=True, related_name="order_items")
+    product_name = models.CharField(max_length=180)  # figé au moment de la commande
+    quantity = models.PositiveIntegerField(default=1)
+    unit_price_htg = models.PositiveIntegerField(default=0)  # figé au moment de la commande
+
+    def __str__(self) -> str:
+        return f"{self.quantity} × {self.product_name}"
+
+    @property
+    def line_total(self) -> int:
+        return self.quantity * self.unit_price_htg
 
 
 class AdminNotification(models.Model):
