@@ -910,6 +910,20 @@ def get_dashboard_summary(request: HttpRequest | None = None) -> dict[str, Any]:
     return result
 
 
+@staff_required
+def dashboard_charts(request: HttpRequest) -> JsonResponse:
+    """Données pour les graphiques du tableau de bord (courbes + donuts)."""
+    pay_status = list(Payment.objects.values("status").annotate(c=Count("id")))
+    mem_status = list(Member.objects.values("status").annotate(c=Count("id")))
+    cats = Course.objects.values("category").annotate(c=Count("id")).order_by("-c")
+    return JsonResponse({
+        "revenue": _serialize_revenue_for_react(),
+        "payments_by_status": [{"key": r["status"], "value": r["c"]} for r in pay_status],
+        "members_by_status": [{"key": r["status"], "value": r["c"]} for r in mem_status],
+        "categories": [{"name": r["category"] or "Autre", "value": r["c"]} for r in cats if r["category"]],
+    })
+
+
 # ── Notifications ────────────────────────────────────────
 
 def _serialize_notification(n: AdminNotification) -> dict[str, Any]:

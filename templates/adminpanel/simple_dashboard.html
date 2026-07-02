@@ -1,5 +1,6 @@
 <!DOCTYPE html>
 <html lang="fr">
+{% load static %}
 <head>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">
@@ -40,7 +41,8 @@ textarea { resize: vertical; min-height: 80px; }
   inset: 0 auto 0 0; display: flex; flex-direction: column; z-index: 30;
 }
 .sb-brand { padding: 20px 16px 12px; display: flex; align-items: center; gap: 10px; border-bottom: 1px solid rgba(255,255,255,0.06); }
-.sb-logo { width: 34px; height: 34px; border-radius: 9px; background: linear-gradient(135deg, var(--primary), #3a8862); display: grid; place-items: center; color: #fff; font-weight: 700; font-size: 14px; }
+.sb-logo { width: 38px; height: 38px; border-radius: 10px; background: #fff; display: grid; place-items: center; overflow: hidden; padding: 3px; box-shadow: 0 1px 3px rgba(0,0,0,0.15); }
+.sb-logo img { width: 100%; height: 100%; object-fit: contain; display: block; }
 .sb-name { font-weight: 700; font-size: 15px; color: #fff; }
 .sb-tag { background: rgba(255,255,255,0.08); color: #94A3B8; font-size: 10px; font-weight: 600; padding: 2px 7px; border-radius: 999px; margin-left: auto; }
 .sb-nav { padding: 8px; flex: 1; overflow-y: auto; }
@@ -181,14 +183,62 @@ textarea { resize: vertical; min-height: 80px; }
 .grid-2 { display: grid; grid-template-columns: 1fr 1fr; gap: 18px; margin-top: 18px; }
 @media (max-width: 900px) { .grid-2 { grid-template-columns: 1fr; } }
 @media (max-width: 640px) { .sidebar { width: 0; overflow: hidden; } .main { margin-left: 0; } .content { padding: 16px; } .header { padding: 0 16px; } }
+/* ===== Tableau de bord — refonte (cartes + graphiques animés) ===== */
+.stat-grid { display:grid; grid-template-columns:repeat(auto-fit,minmax(205px,1fr)); gap:16px; margin-bottom:20px; }
+.stat { position:relative; background:var(--card); border:1px solid var(--border); border-radius:var(--radius-lg); padding:18px; overflow:hidden; box-shadow:var(--shadow-sm); transition:transform .25s ease, box-shadow .25s ease; opacity:0; transform:translateY(12px); animation:dashIn .5s cubic-bezier(.4,0,.2,1) forwards; }
+.stat:hover { transform:translateY(-4px); box-shadow:var(--shadow-lg); }
+.stat::before { content:''; position:absolute; left:0; top:0; bottom:0; width:4px; background:var(--stat-c,var(--primary)); }
+.stat__top { display:flex; align-items:center; justify-content:space-between; margin-bottom:14px; }
+.stat__icon { width:40px; height:40px; border-radius:12px; display:grid; place-items:center; }
+.stat__icon svg { width:20px; height:20px; }
+.stat__value { font-size:27px; font-weight:800; letter-spacing:-.02em; line-height:1; color:var(--text); font-variant-numeric:tabular-nums; }
+.stat__label { font-size:12.5px; color:var(--muted); margin-top:7px; font-weight:500; }
+@keyframes dashIn { to { opacity:1; transform:none; } }
+
+.chart-grid { display:grid; grid-template-columns:repeat(auto-fit,minmax(310px,1fr)); gap:16px; }
+.chart-card { background:var(--card); border:1px solid var(--border); border-radius:var(--radius-lg); padding:18px 20px 20px; box-shadow:var(--shadow-sm); opacity:0; transform:translateY(12px); animation:dashIn .5s cubic-bezier(.4,0,.2,1) forwards; }
+.chart-card--wide { grid-column:span 2; }
+@media (max-width:920px){ .chart-card--wide { grid-column:span 1; } }
+.chart-head { display:flex; align-items:center; justify-content:space-between; margin-bottom:14px; gap:12px; }
+.chart-head h3 { font-size:14px; font-weight:700; color:var(--text); margin:0; }
+.chart-kpi { font-size:13px; font-weight:800; color:var(--primary); font-variant-numeric:tabular-nums; }
+.chart-body--donut { display:flex; align-items:center; gap:18px; flex-wrap:wrap; }
+
+.area-svg { width:100%; height:auto; display:block; overflow:visible; }
+.area-line { fill:none; stroke:var(--primary); stroke-width:2.4; stroke-linecap:round; stroke-linejoin:round; }
+.area-dot { fill:#fff; stroke:var(--primary); stroke-width:2; cursor:pointer; transition:r .15s; }
+.area-dot:hover { r:5; }
+.area-x { font-size:9px; fill:var(--muted); }
+
+.donut-seg { transition:stroke-dasharray .95s cubic-bezier(.55,.1,.25,1); }
+.donut-total { font-size:22px; font-weight:800; fill:var(--text); }
+.donut-sub { font-size:8.5px; fill:var(--muted); text-transform:uppercase; letter-spacing:.1em; }
+.legend { display:flex; flex-direction:column; gap:9px; flex:1; min-width:130px; }
+.legend__row { display:flex; align-items:center; gap:8px; font-size:12.5px; }
+.legend__dot { width:11px; height:11px; border-radius:3px; flex-shrink:0; }
+.legend__label { color:var(--text); flex:1; }
+.legend__val { color:var(--muted); font-weight:600; font-variant-numeric:tabular-nums; }
+
+.barlist { display:flex; flex-direction:column; gap:13px; }
+.barrow__top { display:flex; justify-content:space-between; font-size:12.5px; margin-bottom:6px; }
+.barrow__label { color:var(--text); font-weight:500; }
+.barrow__val { color:var(--muted); font-weight:700; font-variant-numeric:tabular-nums; }
+.barrow__track { height:9px; background:var(--bg); border-radius:6px; overflow:hidden; }
+.barrow__fill { height:100%; border-radius:6px; width:0; transition:width .95s cubic-bezier(.55,.1,.25,1); }
+
+.act { display:flex; align-items:center; gap:12px; padding:11px 0; border-bottom:1px solid var(--border); }
+.act:last-child { border-bottom:none; }
+.act__ic { width:34px; height:34px; border-radius:10px; display:grid; place-items:center; flex-shrink:0; }
+.act__txt { font-size:13px; color:var(--text); }
+.act__val { margin-left:auto; font-weight:800; font-size:14px; font-variant-numeric:tabular-nums; }
 </style>
 </head>
 <body>
 <div class="app">
   <aside class="sidebar">
     <div class="sb-brand">
-      <div class="sb-logo">I</div>
-      <span class="sb-name">IMSO</span><span class="sb-tag">Admin</span>
+      <div class="sb-logo">{% if site.logo %}<img src="{{ site.logo.url }}" alt="{{ site.site_name|default:'IMSO' }}">{% else %}<img src="{% static 'website/assets/9f2647f0-409d-40a1-969b-7969601ef459.png' %}" alt="IMSO">{% endif %}</div>
+      <span class="sb-name">{{ site.site_name|default:'IMSO' }}</span><span class="sb-tag">Admin</span>
     </div>
     <nav class="sb-nav" id="sideNav">
       <div class="sb-section">Aperçu</div>
@@ -282,32 +332,27 @@ textarea { resize: vertical; min-height: 80px; }
     <div class="content">
       <!-- Dashboard -->
       <div class="section active" id="section-dashboard">
-        <div class="metric-grid" id="metricGrid"></div>
-        <div class="grid-2">
-          <div class="card">
-            <div class="card-head"><div class="card-title">Activité récente (7 jours)</div></div>
-            <div style="padding:0 22px 18px">
-              <table class="table">
-                <thead><tr><th>Indicateur</th><th>Nombre</th><th>Montant</th></tr></thead>
-                <tbody>
-                  <tr><td>Nouvelles réservations</td><td><strong>{{ summary.recent_bookings }}</strong></td><td>—</td></tr>
-                  <tr><td>Nouveaux paiements</td><td><strong>{{ summary.recent_payments_count }}</strong></td><td><strong>{{ summary.recent_payments_sum|floatformat:0 }}</strong> HTG</td></tr>
-                </tbody>
-              </table>
-            </div>
+        <div class="stat-grid" id="statGrid"></div>
+        <div class="chart-grid">
+          <div class="chart-card chart-card--wide" style="animation-delay:60ms">
+            <div class="chart-head"><h3>Revenus — 6 derniers mois</h3><span class="chart-kpi" id="revTotal"></span></div>
+            <div class="chart-body" id="revChart"></div>
           </div>
-          <div class="card">
-            <div class="card-head"><div class="card-title">État du système</div></div>
-            <div style="padding:12px 22px 22px">
-              <table class="table">
-                <thead><tr><th>Service</th><th>Statut</th></tr></thead>
-                <tbody>
-                  <tr><td>Base de données</td><td><span class="pill green">Connectée</span></td></tr>
-                  <tr><td>Cache</td><td><span class="pill green">Actif</span></td></tr>
-                  <tr><td>Version Django</td><td><span class="pill blue">{{ django_version }}</span></td></tr>
-                </tbody>
-              </table>
-            </div>
+          <div class="chart-card" style="animation-delay:120ms">
+            <div class="chart-head"><h3>Paiements par statut</h3></div>
+            <div class="chart-body chart-body--donut" id="payDonut"></div>
+          </div>
+          <div class="chart-card" style="animation-delay:180ms">
+            <div class="chart-head"><h3>Membres par statut</h3></div>
+            <div class="chart-body" id="memBars"></div>
+          </div>
+          <div class="chart-card" style="animation-delay:240ms">
+            <div class="chart-head"><h3>Cours par catégorie</h3></div>
+            <div class="chart-body chart-body--donut" id="catDonut"></div>
+          </div>
+          <div class="chart-card" style="animation-delay:300ms">
+            <div class="chart-head"><h3>Activité récente (7 jours)</h3></div>
+            <div class="chart-body" id="recentActivity"></div>
           </div>
         </div>
       </div>
@@ -388,32 +433,138 @@ function navigateTo(section, resetPage = true) {
   const titles = { dashboard:'Tableau de bord', members:'Membres', geis:'GEIs', courses:'Cours', payments:'Paiements', bookings:'Réservations', enrollments:'Inscriptions', contacts:'Contacts', testimonials:'Témoignages', providers:'Fournisseurs', products:'Produits', orders:'Commandes', blog:'Blog', settings:'Paramètres', admins:'Administrateurs', export:'Export CSV' };
   document.getElementById('pageTitle').textContent = titles[section] || section;
   document.getElementById('headerActions').innerHTML = '';
-  if (section === 'dashboard') loadMetrics();
+  if (section === 'dashboard') { loadMetrics(); loadCharts(); }
   else if (section === 'export') renderExport();
   else if (section === 'settings') renderSettings();
   else loadTable(section);
 }
 
-// Dashboard metrics
+function fmt(n) { return Number(n).toLocaleString('fr-FR'); }
+
+// Teinte claire d'une couleur hex (pour les fonds d'icônes).
+function hexA(hex, a) {
+  hex = String(hex).replace('#', '');
+  if (hex.length === 3) hex = hex.split('').map(c => c + c).join('');
+  const n = parseInt(hex, 16);
+  return `rgba(${(n >> 16) & 255},${(n >> 8) & 255},${n & 255},${a})`;
+}
+
+// Animation "count-up" d'un nombre.
+function countUp(el, target, format) {
+  const dur = 950, start = performance.now();
+  function tick(now) {
+    const t = Math.min(1, (now - start) / dur);
+    const e = 1 - Math.pow(1 - t, 3);
+    el.textContent = format(Math.round(target * e));
+    if (t < 1) requestAnimationFrame(tick);
+  }
+  requestAnimationFrame(tick);
+}
+
+const STAT_ICONS = {
+  members: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2"/><circle cx="9" cy="7" r="4"/><path d="M23 21v-2a4 4 0 0 0-3-3.87"/></svg>',
+  revenue: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="1" y="4" width="22" height="16" rx="2"/><line x1="1" y1="10" x2="23" y2="10"/></svg>',
+  savings: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="10"/><path d="M12 6v6l4 2"/></svg>',
+  courses: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M4 19.5A2.5 2.5 0 0 1 6.5 17H20"/><path d="M6.5 2H20v20H6.5A2.5 2.5 0 0 1 4 19.5v-15A2.5 2.5 0 0 1 6.5 2z"/></svg>',
+  bookings: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="3" y="4" width="18" height="18" rx="2"/><line x1="16" y1="2" x2="16" y2="6"/><line x1="8" y1="2" x2="8" y2="6"/><line x1="3" y1="10" x2="21" y2="10"/></svg>',
+  contacts: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M4 4h16c1.1 0 2 .9 2 2v12c0 1.1-.9 2-2 2H4c-1.1 0-2-.9-2-2V6c0-1.1.9-2 2-2z"/><polyline points="22,6 12,13 2,6"/></svg>',
+};
+
+// Cartes statistiques animées + activité récente.
 function loadMetrics() {
   api('/dashboard/api/summary/').then(s => {
     document.getElementById('pageSubtitle').textContent = (s.active_members || 0) + ' membre(s) actif(s) · ' + (s.active_courses || 0) + ' cours actif(s)';
-    const grid = document.getElementById('metricGrid');
     const items = [
-      { label:'Membres actifs', value:s.active_members || 0, helper:'Total: ' + (s.total_members || 0), color:'var(--primary)' },
-      { label:'GEIs actifs', value:s.active_gei || 0, helper:'', color:'var(--success)' },
-      { label:'Cours actifs', value:s.active_courses || 0, helper:'Total: ' + (s.total_courses || 0), color:'var(--accent)' },
-      { label:'Épargne mensuelle', value:fmt(s.savings_htg || 0), helper:'HTG', color:'var(--primary)' },
-      { label:'Revenus totaux', value:fmt(s.total_revenue_htg || 0), helper:'HTG (payés)', color:'var(--success)' },
-      { label:'Contacts en attente', value:s.pending_contacts || 0, helper:'', color:'var(--danger)' },
-      { label:'Réservations en attente', value:s.pending_bookings || 0, helper:'', color:'var(--warning)' },
-      { label:'Inscriptions en attente', value:s.pending_enrollments || 0, helper:'', color:'var(--warning)' },
+      { k:'members', label:'Membres actifs', value:s.active_members || 0, color:'#2D6A4F', fmt:fmt },
+      { k:'revenue', label:'Revenus (payés)', value:s.total_revenue_htg || 0, color:'#10B981', fmt:v => fmt(v) + ' HTG' },
+      { k:'savings', label:'Épargne mensuelle', value:s.savings_htg || 0, color:'#2563EB', fmt:v => fmt(v) + ' HTG' },
+      { k:'courses', label:'Cours actifs', value:s.active_courses || 0, color:'#F4A261', fmt:fmt },
+      { k:'bookings', label:'Réservations en attente', value:s.pending_bookings || 0, color:'#F59E0B', fmt:fmt },
+      { k:'contacts', label:'Contacts en attente', value:s.pending_contacts || 0, color:'#EF4444', fmt:fmt },
     ];
-    grid.innerHTML = items.map(i => `<div class="metric"><div class="metric-label">${i.label}</div><div class="metric-value" style="color:${i.color}">${i.value}</div>${i.helper ? '<div class="metric-helper">' + i.helper + '</div>' : ''}</div>`).join('');
+    const grid = document.getElementById('statGrid');
+    grid.innerHTML = items.map((it, i) => `<div class="stat" style="--stat-c:${it.color};animation-delay:${i * 55}ms"><div class="stat__top"><span class="stat__icon" style="background:${hexA(it.color, 0.14)};color:${it.color}">${STAT_ICONS[it.k] || ''}</span></div><div class="stat__value">0</div><div class="stat__label">${esc(it.label)}</div></div>`).join('');
+    grid.querySelectorAll('.stat__value').forEach((el, i) => countUp(el, items[i].value, items[i].fmt));
+    renderRecent(s);
   }).catch(e => toast(e.message, 'error'));
 }
 
-function fmt(n) { return Number(n).toLocaleString('fr-FR'); }
+function renderRecent(s) {
+  const host = document.getElementById('recentActivity');
+  if (!host) return;
+  const items = [
+    { c:'#2563EB', t:'Nouvelles réservations', v:s.recent_bookings || 0 },
+    { c:'#10B981', t:'Nouveaux paiements', v:s.recent_payments_count || 0 },
+    { c:'#F59E0B', t:'Montant reçu (7j)', v:fmt(s.recent_payments_sum || 0) + ' HTG' },
+    { c:'#8E44AD', t:'Inscriptions en attente', v:s.pending_enrollments || 0 },
+  ];
+  host.innerHTML = items.map(i => `<div class="act"><span class="act__ic" style="background:${hexA(i.c, 0.14)};color:${i.c}"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="9"/><path d="M12 8v4l3 2"/></svg></span><span class="act__txt">${i.t}</span><span class="act__val" style="color:${i.c}">${i.v}</span></div>`).join('');
+}
+
+// ============= GRAPHIQUES =============
+const PAY_STATUS = { paid:{l:'Payé',c:'#16A34A'}, pending:{l:'En attente',c:'#F59E0B'}, failed:{l:'Échoué',c:'#EF4444'}, cancelled:{l:'Annulé',c:'#94A3B8'}, refunded:{l:'Remboursé',c:'#2563EB'} };
+const MEM_STATUS = { active:{l:'Actif',c:'#16A34A'}, prospect:{l:'Prospect',c:'#2563EB'}, paused:{l:'En pause',c:'#F59E0B'}, alumni:{l:'Ancien',c:'#94A3B8'} };
+const CAT_PALETTE = ['#2D6A4F','#2563EB','#F59E0B','#EF4444','#8E44AD','#16A085','#E67E22'];
+
+function loadCharts() {
+  api('/dashboard/api/charts/').then(d => {
+    renderRevenue(d.revenue || []);
+    renderDonut('payDonut', (d.payments_by_status || []).filter(r => r.value > 0).map(r => ({ label:(PAY_STATUS[r.key]||{}).l||r.key, color:(PAY_STATUS[r.key]||{}).c||'#94A3B8', value:r.value })));
+    renderDonut('catDonut', (d.categories || []).map((r, i) => ({ label:r.name, color:CAT_PALETTE[i % CAT_PALETTE.length], value:r.value })));
+    renderBars('memBars', (d.members_by_status || []).filter(r => r.value > 0).map(r => ({ label:(MEM_STATUS[r.key]||{}).l||r.key, color:(MEM_STATUS[r.key]||{}).c||'#94A3B8', value:r.value })));
+  }).catch(() => {});
+}
+
+function _empty(host) { host.innerHTML = '<div style="color:var(--muted);padding:22px 0;font-size:13px">Aucune donnée pour l\'instant.</div>'; }
+
+function renderRevenue(data) {
+  const host = document.getElementById('revChart');
+  if (!data.length || data.every(d => !d.v)) { document.getElementById('revTotal').textContent = ''; _empty(host); return; }
+  const W = 560, H = 160, P = 26, n = data.length;
+  const max = Math.max(...data.map(d => d.v), 1);
+  const X = i => P + i * ((W - 2 * P) / (n - 1 || 1));
+  const Y = v => H - P - (v / max) * (H - 2 * P);
+  const pts = data.map((d, i) => [X(i), Y(d.v)]);
+  const line = pts.map((p, i) => (i ? 'L' : 'M') + p[0].toFixed(1) + ' ' + p[1].toFixed(1)).join(' ');
+  const area = line + ` L ${X(n - 1).toFixed(1)} ${H - P} L ${X(0).toFixed(1)} ${H - P} Z`;
+  document.getElementById('revTotal').textContent = fmt(data.reduce((a, d) => a + d.v, 0)) + ' HTG';
+  let grid = '';
+  for (let i = 0; i <= 3; i++) { const gy = P + i * ((H - 2 * P) / 3); grid += `<line x1="${P}" y1="${gy.toFixed(1)}" x2="${W - P}" y2="${gy.toFixed(1)}" stroke="var(--border)" stroke-width="1"/>`; }
+  const dots = pts.map((p, i) => `<circle class="area-dot" cx="${p[0].toFixed(1)}" cy="${p[1].toFixed(1)}" r="3.5"><title>${esc(data[i].m)}: ${fmt(data[i].v)} HTG</title></circle>`).join('');
+  const xl = data.map((d, i) => `<text class="area-x" x="${X(i).toFixed(1)}" y="${H - 7}" text-anchor="middle">${esc(d.m)}</text>`).join('');
+  host.innerHTML = `<svg class="area-svg" viewBox="0 0 ${W} ${H}"><defs><linearGradient id="revGrad" x1="0" y1="0" x2="0" y2="1"><stop offset="0" stop-color="var(--primary)" stop-opacity="0.20"/><stop offset="1" stop-color="var(--primary)" stop-opacity="0"/></linearGradient></defs>${grid}<path d="${area}" fill="url(#revGrad)"/><path class="area-line" d="${line}"/>${dots}${xl}</svg>`;
+  const lineEl = host.querySelector('.area-line');
+  const L = lineEl.getTotalLength();
+  lineEl.style.strokeDasharray = L; lineEl.style.strokeDashoffset = L;
+  lineEl.getBoundingClientRect();
+  lineEl.style.transition = 'stroke-dashoffset 1.05s ease';
+  lineEl.style.strokeDashoffset = '0';
+}
+
+function renderDonut(hostId, segments) {
+  const host = document.getElementById(hostId);
+  const total = segments.reduce((a, s) => a + s.value, 0);
+  if (!total) { _empty(host); return; }
+  const size = 136, cx = 68, cy = 68, r = 52, sw = 15, C = 2 * Math.PI * r;
+  let off = 0, segs = '';
+  segments.forEach(s => {
+    const frac = s.value / total, len = Math.max(0, frac * C - 2);
+    segs += `<circle class="donut-seg" cx="${cx}" cy="${cy}" r="${r}" fill="none" stroke="${s.color}" stroke-width="${sw}" stroke-dasharray="0 ${C.toFixed(1)}" data-dash="${len.toFixed(1)} ${(C - len).toFixed(1)}" stroke-dashoffset="${(-off).toFixed(1)}" transform="rotate(-90 ${cx} ${cy})"><title>${esc(s.label)}: ${s.value}</title></circle>`;
+    off += frac * C;
+  });
+  const svg = `<svg viewBox="0 0 ${size} ${size}" width="${size}" height="${size}" style="flex-shrink:0"><circle cx="${cx}" cy="${cy}" r="${r}" fill="none" stroke="var(--bg)" stroke-width="${sw}"/>${segs}<text class="donut-total" x="${cx}" y="${cy - 1}" text-anchor="middle">${total}</text><text class="donut-sub" x="${cx}" y="${cy + 15}" text-anchor="middle">total</text></svg>`;
+  const legend = '<div class="legend">' + segments.map(s => `<div class="legend__row"><span class="legend__dot" style="background:${s.color}"></span><span class="legend__label">${esc(s.label)}</span><span class="legend__val">${s.value} · ${Math.round(s.value / total * 100)}%</span></div>`).join('') + '</div>';
+  host.innerHTML = svg + legend;
+  requestAnimationFrame(() => requestAnimationFrame(() => host.querySelectorAll('.donut-seg').forEach(el => el.style.strokeDasharray = el.getAttribute('data-dash'))));
+}
+
+function renderBars(hostId, items) {
+  const host = document.getElementById(hostId);
+  if (!items.length) { _empty(host); return; }
+  const max = Math.max(...items.map(i => i.value), 1);
+  host.innerHTML = '<div class="barlist">' + items.map(i => `<div class="barrow"><div class="barrow__top"><span class="barrow__label">${esc(i.label)}</span><span class="barrow__val">${i.value}</span></div><div class="barrow__track"><div class="barrow__fill" data-w="${Math.round(i.value / max * 100)}" style="background:${i.color}"></div></div></div>`).join('') + '</div>';
+  requestAnimationFrame(() => requestAnimationFrame(() => host.querySelectorAll('.barrow__fill').forEach(el => el.style.width = el.getAttribute('data-w') + '%')));
+}
 
 // ============= SECTION CONFIG =============
 const SECTIONS = {
@@ -1043,10 +1194,7 @@ function renderExport() {
 
 // Init
 document.addEventListener('DOMContentLoaded', () => {
-  // Load dashboard metrics
-  loadMetrics();
-
-  // Check URL hash for navigation
+  // Check URL hash for navigation (navigateTo charge métriques + graphiques)
   const hash = window.location.hash.slice(1);
   if (hash && document.getElementById('section-' + hash)) navigateTo(hash, true);
   else navigateTo('dashboard', true);
