@@ -13,6 +13,7 @@ media/
 # Environment
 .env
 .env.local
+.env.*
 
 # Vercel
 .vercel/
@@ -39,3 +40,4 @@ desktop.ini
 /assets/
 
 .vercel
+.env*

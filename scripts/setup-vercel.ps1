@@ -41,6 +41,7 @@ $variables = @(
     @{ Name = "DJANGO_SECRET_KEY"; Default = ""; Required = $true; Prompt = "Clé secrète Django (obligatoire)" }
     @{ Name = "ADMIN_PASSWORD"; Default = ""; Required = $true; Prompt = "Mot de passe admin (obligatoire)" }
     @{ Name = "PAYMENT_CONFIRM_KEY"; Default = ""; Required = $true; Prompt = "Clé de confirmation paiement (obligatoire)" }
+    @{ Name = "FIELD_ENCRYPTION_KEY"; Default = ""; Required = $true; Prompt = "Clé de chiffrement des secrets (obligatoire)" }
     @{ Name = "ADMIN_USERNAME"; Default = "mirv"; Required = $false; Prompt = "Nom d'utilisateur admin" }
     @{ Name = "ADMIN_EMAIL"; Default = "admin@imsohaiti.com"; Required = $false; Prompt = "Email admin" }
     @{ Name = "DATABASE_URL"; Default = "sqlite:///db.sqlite3"; Required = $false; Prompt = "URL de base de données" }
@@ -57,7 +58,7 @@ $variables = @(
     @{ Name = "SENTRY_DSN"; Default = ""; Required = $false; Prompt = "Sentry DSN (optionnel)" }
     @{ Name = "SENTRY_TRACES_SAMPLE_RATE"; Default = "0.1"; Required = $false; Prompt = "Sentry traces sample rate" }
     @{ Name = "DJANGO_ENV"; Default = "production"; Required = $false; Prompt = "Environnement Django" }
-    @{ Name = "WEBHOOK_SECRET"; Default = ""; Required = $false; Prompt = "Secret webhook (optionnel)" }
+    @{ Name = "WEBHOOK_SECRET"; Default = ""; Required = $true; Prompt = "Secret webhook (obligatoire, sinon webhooks 503)" }
     @{ Name = "ADMIN_API_TOKEN"; Default = ""; Required = $false; Prompt = "Token API admin (optionnel)" }
     @{ Name = "DJANGO_EMAIL_BACKEND"; Default = "django.core.mail.backends.console.EmailBackend"; Required = $false; Prompt = "Backend email" }
     @{ Name = "DJANGO_EMAIL_HOST"; Default = ""; Required = $false; Prompt = "Hôte SMTP (optionnel)" }
