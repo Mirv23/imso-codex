@@ -55,6 +55,15 @@ class RateLimitedLoginView(LoginView):
 class DashboardView(StaffRequiredMixin, TemplateView):
     template_name = "adminpanel/simple_dashboard.html"
 
+    def dispatch(self, request, *args, **kwargs):
+        response = super().dispatch(request, *args, **kwargs)
+        # Le panel admin ne doit jamais etre servi depuis le cache navigateur :
+        # sinon une ancienne version (mise en cache disque avant un deploiement)
+        # continue de s'afficher. On force un rechargement a chaque visite.
+        response["Cache-Control"] = "no-store, no-cache, must-revalidate, max-age=0"
+        response["Pragma"] = "no-cache"
+        return response
+
     def get_context_data(self, **kwargs: Any) -> dict[str, Any]:
         context = super().get_context_data(**kwargs)
         context["summary"] = get_dashboard_summary()
