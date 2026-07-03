@@ -804,6 +804,95 @@ def chapter_reorder(request: HttpRequest, course_pk: int) -> JsonResponse:
     return _ok()
 
 
+# ── Upload vidéo direct (navigateur -> Supabase, hors serveur) ────────────
+
+def _storage_enabled() -> bool:
+    return bool(os.environ.get("SUPABASE_S3_ACCESS_KEY") and os.environ.get("SUPABASE_S3_SECRET_KEY"))
+
+
+def _s3_client_and_bucket():
+    import boto3
+    from botocore.client import Config
+    endpoint = os.environ.get("SUPABASE_S3_ENDPOINT") or (
+        f"https://{os.environ.get('SUPABASE_PROJECT_REF', '')}.supabase.co/storage/v1/s3"
+    )
+    client = boto3.client(
+        "s3",
+        endpoint_url=endpoint,
+        aws_access_key_id=os.environ["SUPABASE_S3_ACCESS_KEY"],
+        aws_secret_access_key=os.environ["SUPABASE_S3_SECRET_KEY"],
+        region_name=os.environ.get("SUPABASE_S3_REGION", "us-west-2"),
+        config=Config(signature_version="s3v4", s3={"addressing_style": "path"}),
+    )
+    return client, os.environ.get("SUPABASE_STORAGE_BUCKET", "media")
+
+
+_ALLOWED_VIDEO_EXT = {"mp4", "webm", "mov", "m4v", "ogv", "ogg"}
+
+
+@staff_required
+@require_http_methods(["POST"])
+def chapter_video_upload_url(request: HttpRequest, pk: int) -> JsonResponse:
+    """Génère une URL présignée pour envoyer la vidéo DIRECTEMENT au stockage.
+
+    Le fichier ne transite jamais par le serveur (contourne la limite Vercel).
+    """
+    if not Chapter.objects.filter(pk=pk).exists():
+        return _error("Chapter not found", 404)
+    if not _storage_enabled():
+        return _error("Le stockage de fichiers n'est pas encore configuré.", 400)
+    data = _json_body(request)
+    filename = str(data.get("filename") or "video.mp4")
+    content_type = str(data.get("content_type") or "").strip() or "video/mp4"
+    if not content_type.startswith("video/"):
+        return _error("Le fichier doit être une vidéo.", 400)
+    ext = filename.rsplit(".", 1)[-1].lower() if "." in filename else "mp4"
+    if ext not in _ALLOWED_VIDEO_EXT:
+        return _error("Format vidéo non supporté (mp4, webm, mov…).", 400)
+    key = f"courses/videos/chapter_{pk}.{ext}"
+    client, bucket = _s3_client_and_bucket()
+    url = client.generate_presigned_url(
+        "put_object",
+        Params={"Bucket": bucket, "Key": key, "ContentType": content_type},
+        ExpiresIn=3600,
+    )
+    return JsonResponse({"url": url, "key": key, "content_type": content_type})
+
+
+@staff_required
+@require_http_methods(["POST"])
+def chapter_video_confirm(request: HttpRequest, pk: int) -> JsonResponse:
+    """Associe la vidéo (déjà envoyée au stockage) au chapitre."""
+    try:
+        ch = Chapter.objects.get(pk=pk)
+    except Chapter.DoesNotExist:
+        return _error("Chapter not found", 404)
+    key = str(_json_body(request).get("key") or "").strip()
+    if not key or not key.startswith("courses/videos/"):
+        return _error("Clé de fichier invalide.", 400)
+    ch.video.name = key
+    ch.save(update_fields=["video"])
+    logger.info("Chapter %d video set by %s", pk, request.user.username)
+    return JsonResponse(_serialize_chapter(ch))
+
+
+@staff_required
+@require_http_methods(["POST"])
+def chapter_video_remove(request: HttpRequest, pk: int) -> JsonResponse:
+    try:
+        ch = Chapter.objects.get(pk=pk)
+    except Chapter.DoesNotExist:
+        return _error("Chapter not found", 404)
+    if ch.video:
+        try:
+            ch.video.delete(save=False)
+        except Exception:
+            pass
+        ch.video = ""
+        ch.save(update_fields=["video"])
+    return JsonResponse(_serialize_chapter(ch))
+
+
 # ── Bookings ─────────────────────────────────────────────
 
 def _serialize_booking(b: VenueBooking) -> dict[str, Any]:
@@ -1692,6 +1781,7 @@ _UPLOAD_TARGETS = {
     "blog": (BlogPost, "cover_image"),
     "testimonial": (Testimonial, "photo"),
     "site": (SiteSetting, "logo"),
+    "course": (Course, "banner"),
 }
 _MAX_UPLOAD_BYTES = 5 * 1024 * 1024
 
