@@ -330,10 +330,10 @@ def member_create(request: HttpRequest) -> JsonResponse:
         last_name=data["last_name"],
         email=data.get("email", ""),
         phone=data["phone"],
-        gei_id=data.get("gei_id") or data.get("gei"),
+        gei_id=data.get("gei_id") or data.get("gei") or None,
         status=data.get("status", Member.Status.PROSPECT),
-        joined_at=data.get("joined_at"),
-        monthly_saving_htg=data.get("monthly_saving_htg", 0),
+        joined_at=data.get("joined_at") or None,  # '' -> None (colonne date)
+        monthly_saving_htg=data.get("monthly_saving_htg") or 0,
     )
     logger.info("Member %d created by user %s (%s %s)", m.pk, request.user.username, m.first_name, m.last_name)
     return JsonResponse(_serialize_member(m), status=201)
@@ -390,11 +390,16 @@ def member_detail(request: HttpRequest, pk: int) -> JsonResponse:
         data = _json_body(request)
         for field in ("first_name", "last_name", "email", "phone", "status", "joined_at", "monthly_saving_htg"):
             if field in data:
-                setattr(m, field, data[field])
+                val = data[field]
+                if field == "joined_at" and not val:
+                    val = None  # '' -> None (colonne date)
+                elif field == "monthly_saving_htg" and val in ("", None):
+                    val = 0
+                setattr(m, field, val)
         if "gei_id" in data:
-            m.gei_id = data["gei_id"]
+            m.gei_id = data["gei_id"] or None
         elif "gei" in data:
-            m.gei_id = data["gei"]
+            m.gei_id = data["gei"] or None
         m.save()
         logger.info("Member %d updated by user %s", pk, request.user.username)
         return JsonResponse(_serialize_member(m))

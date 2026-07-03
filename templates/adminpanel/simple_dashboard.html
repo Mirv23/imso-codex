@@ -423,9 +423,25 @@ const CSRF = (() => {
 
 function api(url, opts = {}) {
   opts.headers = opts.headers || {};
-  if (opts.body) { opts.headers['Content-Type'] = 'application/json'; opts.headers['X-CSRFToken'] = CSRF; }
+  const method = (opts.method || 'GET').toUpperCase();
+  // Le jeton CSRF est requis sur TOUTE méthode mutante (POST/PUT/PATCH/DELETE),
+  // y compris DELETE qui n'a pas de body — sinon Django renvoie 403.
+  if (!['GET', 'HEAD', 'OPTIONS'].includes(method)) opts.headers['X-CSRFToken'] = CSRF;
+  if (opts.body) opts.headers['Content-Type'] = 'application/json';
   opts.credentials = 'same-origin';
-  return fetch(url, opts).then(r => { if (!r.ok) return r.json().then(e => { throw new Error(e.error || 'Erreur serveur') }); return r.json() });
+  return fetch(url, opts).then(r => {
+    if (r.status === 204) return {};
+    return r.text().then(txt => {
+      let payload = null;
+      try { payload = txt ? JSON.parse(txt) : {}; } catch (_) { payload = null; }
+      if (!r.ok) {
+        // Réponse d'erreur non-JSON (ex. page 403/500 HTML) -> message lisible.
+        const msg = (payload && payload.error) || (r.status === 403 ? 'Action refusée (session expirée ?). Rechargez la page.' : 'Erreur serveur (' + r.status + ')');
+        throw new Error(msg);
+      }
+      return payload || {};
+    });
+  });
 }
 
 function toast(msg, type = 'info') {
@@ -1134,7 +1150,9 @@ function saveModal() {
   form.querySelectorAll('input, select, textarea').forEach(inp => {
     if (inp.type === 'file') return; // géré séparément (upload)
     if (inp.type === 'checkbox') data[inp.name] = inp.checked;
-    else if (inp.type === 'number') data[inp.name] = parseInt(inp.value) || 0;
+    else if (inp.type === 'number') data[inp.name] = inp.value === '' ? 0 : (parseInt(inp.value) || 0);
+    // Une date/heure laissée vide doit être envoyée comme null (jamais '' -> erreur SQL).
+    else if ((inp.type === 'date' || inp.type === 'datetime-local') && inp.value === '') data[inp.name] = null;
     else data[inp.name] = inp.value;
   });
 
