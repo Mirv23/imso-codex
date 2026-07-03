@@ -375,7 +375,14 @@ def member_list(request: HttpRequest) -> JsonResponse:
     status = request.GET.get("status")
     if status:
         qs = qs.filter(status=status)
-    qs = qs.order_by("-created_at")
+    sort_map = {
+        "recent": ("-created_at",),
+        "oldest": ("created_at",),
+        "name": ("last_name", "first_name"),
+        "savings": ("-monthly_saving_htg",),
+        "savings_asc": ("monthly_saving_htg",),
+    }
+    qs = qs.order_by(*sort_map.get(request.GET.get("sort"), ("-created_at",)))
     return _paginated_response(qs, request, _serialize_member)
 
 

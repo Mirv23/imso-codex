@@ -251,6 +251,54 @@ textarea { resize: vertical; min-height: 80px; }
 .act__ic { width:34px; height:34px; border-radius:10px; display:grid; place-items:center; flex-shrink:0; transition:transform .16s ease; }
 .act__txt { font-size:13px; color:var(--text); }
 .act__val { margin-left:auto; font-weight:800; font-size:14px; font-variant-numeric:tabular-nums; }
+
+/* ===== Section Membres — refonte premium ===== */
+.mstats { display:grid; grid-template-columns:repeat(auto-fit,minmax(180px,1fr)); gap:14px; margin-bottom:18px; }
+.mstat { background:var(--card); border:1px solid var(--border); border-radius:var(--radius-lg); padding:15px 17px; box-shadow:var(--shadow-sm); position:relative; overflow:hidden; opacity:0; transform:translateY(10px); animation:dashIn .45s cubic-bezier(.4,0,.2,1) forwards; }
+.mstat::after { content:''; position:absolute; right:-14px; top:-14px; width:56px; height:56px; border-radius:50%; background:var(--mc,var(--primary)); opacity:.09; }
+.mstat__v { font-size:24px; font-weight:800; letter-spacing:-.02em; color:var(--text); font-variant-numeric:tabular-nums; line-height:1; }
+.mstat__l { font-size:12px; color:var(--muted); margin-top:6px; font-weight:500; }
+.mstat__v small { font-size:12px; font-weight:600; color:var(--muted); }
+
+.mtoolbar { display:flex; flex-wrap:wrap; gap:10px; align-items:center; margin-bottom:16px; }
+.msearch { position:relative; flex:1; min-width:200px; }
+.msearch svg { position:absolute; left:12px; top:50%; transform:translateY(-50%); color:var(--muted); pointer-events:none; }
+.msearch input { width:100%; padding:10px 14px 10px 38px; border:1px solid var(--border); border-radius:10px; background:var(--card); color:var(--text); font-size:13.5px; transition:border-color .18s, box-shadow .18s; }
+.msearch input:focus { outline:none; border-color:var(--primary); box-shadow:0 0 0 3px var(--primary-a12,rgba(45,106,79,.12)); }
+.mselect { padding:10px 12px; border:1px solid var(--border); border-radius:10px; background:var(--card); color:var(--text); font-size:13px; cursor:pointer; transition:border-color .18s; }
+.mselect:focus { outline:none; border-color:var(--primary); }
+.mchips { display:flex; flex-wrap:wrap; gap:7px; margin-bottom:16px; }
+.mchip { display:inline-flex; align-items:center; gap:7px; padding:7px 13px; border-radius:999px; border:1px solid var(--border); background:var(--card); color:var(--muted); font-size:12.5px; font-weight:600; cursor:pointer; transition:all .18s ease; }
+.mchip:hover { border-color:var(--primary); color:var(--text); transform:translateY(-1px); }
+.mchip.active { background:var(--primary); border-color:var(--primary); color:#fff; box-shadow:var(--shadow-sm); }
+.mchip__n { display:inline-grid; place-items:center; min-width:20px; height:20px; padding:0 6px; border-radius:999px; background:var(--bg); color:var(--muted); font-size:11px; font-weight:700; }
+.mchip.active .mchip__n { background:rgba(255,255,255,.25); color:#fff; }
+
+.mlist { display:flex; flex-direction:column; gap:10px; }
+.mcard { display:flex; align-items:center; gap:14px; background:var(--card); border:1px solid var(--border); border-radius:14px; padding:13px 16px; box-shadow:var(--shadow-sm); opacity:0; transform:translateY(10px); animation:dashIn .4s cubic-bezier(.4,0,.2,1) forwards; transition:transform .2s ease, box-shadow .2s ease, border-color .2s ease; }
+.mcard:hover { transform:translateY(-2px); box-shadow:var(--shadow-lg); border-color:var(--primary); }
+.mcard__av { width:46px; height:46px; border-radius:14px; display:grid; place-items:center; font-weight:800; font-size:15px; flex-shrink:0; letter-spacing:.02em; }
+.mcard__main { min-width:0; flex:1 1 190px; }
+.mcard__name { display:flex; align-items:center; gap:8px; font-weight:700; font-size:14.5px; color:var(--text); }
+.mcard__name span.nm { overflow:hidden; text-overflow:ellipsis; white-space:nowrap; }
+.mcard__meta { font-size:12px; color:var(--muted); margin-top:3px; overflow:hidden; text-overflow:ellipsis; white-space:nowrap; }
+.mcard__gei { flex:0 0 auto; }
+.mcard__gei .pill { background:var(--bg); color:var(--text); border:1px solid var(--border); }
+.mcard__sav { flex:0 0 auto; text-align:right; min-width:96px; }
+.mcard__sav b { font-size:14.5px; color:var(--text); font-variant-numeric:tabular-nums; }
+.mcard__sav small { display:block; font-size:10.5px; color:var(--muted); margin-top:1px; }
+.mcard__act { display:flex; gap:6px; flex-shrink:0; opacity:.35; transition:opacity .18s ease; }
+.mcard:hover .mcard__act { opacity:1; }
+.membtn { width:34px; height:34px; border-radius:9px; border:1px solid var(--border); background:var(--card); color:var(--muted); display:grid; place-items:center; cursor:pointer; transition:all .16s ease; }
+.membtn:hover { color:var(--primary); border-color:var(--primary); background:var(--bg); }
+.membtn.danger:hover { color:var(--danger); border-color:var(--danger); }
+@media (max-width:720px){ .mcard__gei, .mcard__sav { display:none; } }
+
+.mempty { text-align:center; padding:54px 20px; color:var(--muted); }
+.mempty svg { width:46px; height:46px; opacity:.4; margin-bottom:12px; }
+.mempty h4 { font-size:15px; color:var(--text); margin:0 0 4px; }
+.mpager { display:flex; align-items:center; justify-content:space-between; margin-top:18px; font-size:13px; color:var(--muted); }
+.mpager__nav { display:flex; align-items:center; gap:8px; }
 </style>
 </head>
 <body>
@@ -472,6 +520,7 @@ function navigateTo(section, resetPage = true) {
   if (section === 'dashboard') { loadMetrics(); loadCharts(); }
   else if (section === 'export') renderExport();
   else if (section === 'settings') renderSettings();
+  else if (section === 'members') { if (resetPage) memberFilters.search = ''; loadMembers(); }
   else loadTable(section);
 }
 
@@ -1057,6 +1106,109 @@ function renderTable(sectionKey, data) {
   document.getElementById('card-' + sectionKey).innerHTML = html;
 }
 
+// Rafraîchit une section après création/édition/suppression (route la bonne vue).
+function refreshSection(sectionKey) {
+  if (sectionKey === 'members') loadMembers();
+  else loadTable(sectionKey);
+}
+
+// ============= SECTION MEMBRES (vue premium) =============
+const memberFilters = { search: '', status: '', gei: '', sort: 'recent' };
+const AVATAR_COLORS = ['#2D6A4F','#2563EB','#8E44AD','#E67E22','#16A085','#C0392B','#D35400','#2980B9','#B7791F','#4C51BF'];
+function avatarColor(s) { let h = 0; s = s || '?'; for (let i = 0; i < s.length; i++) h = (h * 31 + s.charCodeAt(i)) >>> 0; return AVATAR_COLORS[h % AVATAR_COLORS.length]; }
+function memberInitials(f, l) { const a = (f || '').trim(), b = (l || '').trim(); return (((a[0] || '') + (b[0] || '')) || '?').toUpperCase(); }
+
+let _memberSearchTimer, _memberSearchFocus = false;
+function memberSearchInput(val) { memberFilters.search = val; _memberSearchFocus = true; clearTimeout(_memberSearchTimer); _memberSearchTimer = setTimeout(() => loadMembers(1), 260); }
+function setMemberStatus(s) { memberFilters.status = s; loadMembers(1); }
+function setMemberGei(v) { memberFilters.gei = v; loadMembers(1); }
+function setMemberSort(v) { memberFilters.sort = v; loadMembers(1); }
+
+function loadMembers(page) {
+  page = page || currentSection.page || 1;
+  currentSection.page = page;
+  currentSection.name = 'members';
+  const actions = document.getElementById('headerActions');
+  actions.innerHTML = '';
+  const btn = document.createElement('button');
+  btn.className = 'btn btn-primary';
+  btn.innerHTML = '<svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/></svg> Nouveau membre';
+  btn.onclick = () => openModal('members', null);
+  actions.appendChild(btn);
+
+  const params = new URLSearchParams({ page, per_page: 12, sort: memberFilters.sort });
+  if (memberFilters.search) params.set('search', memberFilters.search);
+  if (memberFilters.status) params.set('status', memberFilters.status);
+  if (memberFilters.gei) params.set('gei', memberFilters.gei);
+
+  const host = document.getElementById('card-members');
+  Promise.all([
+    api('/dashboard/api/members/?' + params.toString()),
+    api('/dashboard/api/charts/'),
+    api('/dashboard/api/summary/'),
+    api('/dashboard/api/geis/?per_page=100'),
+  ]).then(([list, charts, summary, geis]) => {
+    renderMembers(list, charts, summary, (geis.items || []));
+  }).catch(e => { host.innerHTML = '<div class="card"><div style="padding:24px;color:var(--danger)">' + esc(e.message) + '</div></div>'; });
+}
+
+function renderMembers(list, charts, summary, geis) {
+  const host = document.getElementById('card-members');
+  const items = list.items || [];
+  _rowCache['members'] = {};
+  items.forEach(r => { _rowCache['members'][r.id] = r; });
+  const total = list.total || 0, page = list.page || 1, totalPages = list.total_pages || 1;
+  const byStatus = {}; (charts.members_by_status || []).forEach(r => byStatus[r.key] = r.value);
+  const totalAll = summary.total_members || 0;
+
+  const stats = [
+    { l:'Total membres', v: fmt(totalAll), c:'#2D6A4F' },
+    { l:'Membres actifs', v: fmt(summary.active_members || 0), c:'#16A34A' },
+    { l:'Prospects', v: fmt(byStatus.prospect || 0), c:'#2563EB' },
+    { l:'Épargne mensuelle', v: fmt(summary.savings_htg || 0) + ' <small>HTG</small>', c:'#F59E0B' },
+  ];
+  let h = '<div class="mstats">' + stats.map((s, i) => `<div class="mstat" style="--mc:${s.c};animation-delay:${i*50}ms"><div class="mstat__v">${s.v}</div><div class="mstat__l">${esc(s.l)}</div></div>`).join('') + '</div>';
+
+  h += '<div class="mtoolbar">';
+  h += '<div class="msearch"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="11" cy="11" r="8"/><line x1="21" y1="21" x2="16.65" y2="16.65"/></svg><input id="memberSearch" type="text" placeholder="Rechercher un membre (nom, email)…" value="' + esc(memberFilters.search) + '" oninput="memberSearchInput(this.value)"></div>';
+  h += '<select class="mselect" onchange="setMemberGei(this.value)"><option value="">Tous les GEI</option>' + geis.map(g => `<option value="${g.id}" ${String(memberFilters.gei)===String(g.id)?'selected':''}>${esc(g.name)}</option>`).join('') + '</select>';
+  const sorts = [['recent','Plus récents'],['name','Nom (A-Z)'],['savings','Épargne ↓'],['savings_asc','Épargne ↑'],['oldest','Plus anciens']];
+  h += '<select class="mselect" onchange="setMemberSort(this.value)">' + sorts.map(s => `<option value="${s[0]}" ${memberFilters.sort===s[0]?'selected':''}>${s[1]}</option>`).join('') + '</select>';
+  h += '</div>';
+
+  const chips = [['','Tous',totalAll],['active','Actifs',byStatus.active||0],['prospect','Prospects',byStatus.prospect||0],['paused','En pause',byStatus.paused||0],['alumni','Anciens',byStatus.alumni||0]];
+  h += '<div class="mchips">' + chips.map(c => `<div class="mchip ${memberFilters.status===c[0]?'active':''}" onclick="setMemberStatus('${c[0]}')">${c[1]}<span class="mchip__n">${c[2]}</span></div>`).join('') + '</div>';
+
+  if (!items.length) {
+    h += '<div class="mempty"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6"><path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2"/><circle cx="9" cy="7" r="4"/><path d="M23 21v-2a4 4 0 0 0-3-3.87"/></svg><h4>Aucun membre trouvé</h4><div>' + ((memberFilters.search || memberFilters.status || memberFilters.gei) ? 'Essayez d\'ajuster vos filtres.' : 'Ajoutez votre premier membre avec le bouton « Nouveau membre ».') + '</div></div>';
+  } else {
+    h += '<div class="mlist">' + items.map((m, i) => {
+      const name = ((m.first_name || '') + ' ' + (m.last_name || '')).trim();
+      const col = avatarColor(name || String(m.id));
+      const gei = m.gei__name ? `<div class="mcard__gei"><span class="pill pill-sm">${esc(m.gei__name)}</span></div>` : '<div class="mcard__gei"></div>';
+      const contact = [m.email, m.phone].filter(Boolean).map(esc).join(' · ') || '—';
+      return `<div class="mcard" style="animation-delay:${Math.min(i*40,320)}ms"><div class="mcard__av" style="background:${hexA(col,0.15)};color:${col}">${memberInitials(m.first_name,m.last_name)}</div><div class="mcard__main"><div class="mcard__name"><span class="nm">${esc(name||'—')}</span>${statusBadge(m.status)}</div><div class="mcard__meta">${contact}</div></div>${gei}<div class="mcard__sav"><b>${fmt(m.monthly_saving_htg||0)}</b> <small>HTG / mois</small></div><div class="mcard__act"><button class="membtn" title="Modifier" onclick="editRow('members',${m.id})"><svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M11 4H4a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-7"/><path d="M18.5 2.5a2.121 2.121 0 0 1 3 3L12 15l-4 1 1-4 9.5-9.5z"/></svg></button><button class="membtn danger" title="Supprimer" onclick="confirmDelete('members',${m.id})"><svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="3 6 5 6 21 6"/><path d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6m3 0V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2"/></svg></button></div></div>`;
+    }).join('') + '</div>';
+  }
+
+  h += '<div class="mpager"><span>' + total + ' membre' + (total > 1 ? 's' : '') + '</span>';
+  if (totalPages > 1) {
+    h += '<div class="mpager__nav">';
+    h += '<button class="btn btn-sm" ' + (page <= 1 ? 'disabled' : '') + ' onclick="loadMembers(' + (page - 1) + ')">‹ Précédent</button>';
+    h += '<span style="font-weight:700;color:var(--text)">' + page + ' / ' + totalPages + '</span>';
+    h += '<button class="btn btn-sm" ' + (page >= totalPages ? 'disabled' : '') + ' onclick="loadMembers(' + (page + 1) + ')">Suivant ›</button>';
+    h += '</div>';
+  }
+  h += '</div>';
+
+  host.innerHTML = h;
+  if (_memberSearchFocus) {
+    const si = document.getElementById('memberSearch');
+    if (si) { si.focus(); const v = si.value; si.value = ''; si.value = v; }
+    _memberSearchFocus = false;
+  }
+}
+
 function searchTable(sectionKey, val) {
   loadTable(sectionKey, 1, val);
 }
@@ -1164,7 +1316,7 @@ function saveModal() {
     : api(cfg.createEndpoint, { method: 'POST', body: JSON.stringify(data) });
 
   req.then(saved => uploadPendingImage(cfg, (saved && saved.id) || (modalRecord && modalRecord.id)))
-    .then(() => { toast(isEdit ? 'Modifié avec succès' : 'Créé avec succès', 'success'); closeModal(); loadTable(modalSection); })
+    .then(() => { toast(isEdit ? 'Modifié avec succès' : 'Créé avec succès', 'success'); closeModal(); refreshSection(modalSection); })
     .catch(e => toast(e.message, 'error'));
 }
 
@@ -1267,7 +1419,7 @@ function confirmDelete(sectionKey, id) {
   // Override save button
   document.getElementById('modalSaveBtn').onclick = () => {
     api(cfg.detailUrl({ id }), { method: 'DELETE' })
-      .then(() => { toast('Supprimé avec succès', 'success'); closeModal(); loadTable(modalSection); })
+      .then(() => { toast('Supprimé avec succès', 'success'); closeModal(); refreshSection(modalSection); })
       .catch(e => toast(e.message, 'error'));
   };
 }
