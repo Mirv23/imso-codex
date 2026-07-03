@@ -722,14 +722,14 @@ const SECTIONS = {
     ],
     formTitle: r => r ? 'Modifier le membre' : 'Nouveau membre',
     formFields: r => [
-      { name:'first_name', label:'Prénom', type:'text', value: r?.first_name || '', required: true },
-      { name:'last_name', label:'Nom', type:'text', value: r?.last_name || '', required: true },
-      { name:'email', label:'Email', type:'email', value: r?.email || '' },
-      { name:'phone', label:'Téléphone', type:'text', value: r?.phone || '', required: true },
+      { name:'first_name', label:'Prénom', type:'text', value: r?.first_name || '', required: true, maxLength: 80 },
+      { name:'last_name', label:'Nom', type:'text', value: r?.last_name || '', required: true, maxLength: 80 },
+      { name:'email', label:'Email', type:'email', value: r?.email || '', maxLength: 254 },
+      { name:'phone', label:'Téléphone', type:'text', value: r?.phone || '', required: true, maxLength: 40 },
       { name:'gei_id', label:'GEI', type:'gei-select', value: r?.gei__name ? { id: r.id, name: r.gei__name, city: r.gei__city } : null },
       { name:'status', label:'Statut', type:'select', options:[{v:'prospect',l:'Prospect'},{v:'active',l:'Actif'},{v:'paused',l:'En pause'},{v:'alumni',l:'Ancien'}], value: r?.status || 'prospect' },
       { name:'joined_at', label:'Date d\'adhésion', type:'date', value: r?.joined_at ? r.joined_at.slice(0,10) : '' },
-      { name:'monthly_saving_htg', label:'Épargne mensuelle (HTG)', type:'number', value: r?.monthly_saving_htg || 0 },
+      { name:'monthly_saving_htg', label:'Épargne mensuelle (HTG)', type:'number', value: r?.monthly_saving_htg || 0, min: 0 },
     ],
     serializeForm: d => d,
     detailUrl: r => '/dashboard/api/members/' + r.id + '/',
@@ -1252,7 +1252,8 @@ function openModal(sectionKey, record) {
       body += '<input type="file" name="' + f.name + '" accept="image/*" data-image="1" style="flex:1">';
       body += '</div><div style="font-size:11px;color:var(--muted);margin-top:4px">JPG/PNG, max 5 Mo.' + (f.value ? ' Laisser vide pour garder l\'image actuelle.' : '') + '</div>';
     } else {
-      body += '<input type="' + f.type + '" name="' + f.name + '" value="' + esc(String(f.value ?? '')) + '" ' + (f.required ? 'required' : '') + '>';
+      const extra = (f.maxLength ? ' maxlength="' + f.maxLength + '"' : '') + (f.min !== undefined ? ' min="' + f.min + '"' : '');
+      body += '<input type="' + f.type + '" name="' + f.name + '" value="' + esc(String(f.value ?? '')) + '"' + extra + ' ' + (f.required ? 'required' : '') + '>';
     }
     body += '</div>';
   });

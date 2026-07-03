@@ -10,6 +10,8 @@ from typing import Any, Callable, Generator
 from django.contrib.auth import get_user_model
 from django.contrib.auth.views import LoginView
 from django.core.cache import cache
+from django.core.exceptions import ValidationError
+from django.core.validators import validate_email
 from django.db.models import Count, Sum, Q
 from django.db.models.query import QuerySet
 from django.http import HttpRequest, HttpResponse, JsonResponse, StreamingHttpResponse
@@ -319,23 +321,91 @@ def _deletion_block_reason(instance: Any) -> str | None:
     return None
 
 
+_MEMBER_MAXLEN = {"first_name": 80, "last_name": 80, "phone": 40, "email": 254}
+_MEMBER_LABELS = {"first_name": "Le prénom", "last_name": "Le nom", "phone": "Le téléphone"}
+
+
+def _clean_member_data(data: dict, *, partial: bool) -> tuple[dict[str, Any] | None, str | None]:
+    """Valide et normalise le payload d'un membre. Retourne (cleaned, erreur).
+
+    Empêche les 500 (longueurs, types, FK inexistante, valeurs négatives) et les
+    données incohérentes (statut hors choix, email invalide, champ requis vide).
+    `partial=True` (édition PUT) ne valide que les champs réellement fournis.
+    """
+    cleaned: dict[str, Any] = {}
+
+    # Champs texte requis (prénom, nom, téléphone)
+    for f in ("first_name", "last_name", "phone"):
+        if f in data or not partial:
+            val = str(data.get(f) or "").strip()
+            if not val:
+                return None, f"{_MEMBER_LABELS[f]} est obligatoire."
+            if len(val) > _MEMBER_MAXLEN[f]:
+                return None, f"{_MEMBER_LABELS[f]} ne peut pas dépasser {_MEMBER_MAXLEN[f]} caractères."
+            cleaned[f] = val
+
+    # Email (optionnel mais validé si fourni)
+    if "email" in data:
+        email = str(data.get("email") or "").strip()
+        if email:
+            if len(email) > _MEMBER_MAXLEN["email"]:
+                return None, "L'adresse email est trop longue."
+            try:
+                validate_email(email)
+            except ValidationError:
+                return None, "L'adresse email n'est pas valide."
+        cleaned["email"] = email
+
+    # Statut (doit appartenir aux choix)
+    if "status" in data:
+        status = data.get("status") or Member.Status.PROSPECT
+        if status not in Member.Status.values:
+            return None, "Statut invalide."
+        cleaned["status"] = status
+    elif not partial:
+        cleaned["status"] = Member.Status.PROSPECT
+
+    # Date d'adhésion ('' -> None)
+    if "joined_at" in data:
+        cleaned["joined_at"] = data.get("joined_at") or None
+
+    # Épargne mensuelle (entier >= 0)
+    if "monthly_saving_htg" in data:
+        raw = data.get("monthly_saving_htg")
+        try:
+            saving = int(raw) if raw not in (None, "") else 0
+        except (ValueError, TypeError):
+            return None, "L'épargne mensuelle doit être un nombre."
+        if saving < 0:
+            return None, "L'épargne mensuelle ne peut pas être négative."
+        cleaned["monthly_saving_htg"] = saving
+    elif not partial:
+        cleaned["monthly_saving_htg"] = 0
+
+    # GEI (FK optionnelle, doit exister si fournie)
+    if "gei_id" in data or "gei" in data:
+        gid = data.get("gei_id") or data.get("gei") or None
+        if gid:
+            try:
+                gid = int(gid)
+            except (ValueError, TypeError):
+                return None, "GEI invalide."
+            if not GEI.objects.filter(pk=gid).exists():
+                return None, "Le GEI sélectionné n'existe pas."
+        cleaned["gei_id"] = gid
+    elif not partial:
+        cleaned["gei_id"] = None
+
+    return cleaned, None
+
+
 @staff_required
 @require_http_methods(["POST"])
 def member_create(request: HttpRequest) -> JsonResponse:
-    data = _json_body(request)
-    for f in ("first_name", "last_name", "phone"):
-        if f not in data:
-            return _error(f"Missing field: {f}")
-    m = Member.objects.create(
-        first_name=data["first_name"],
-        last_name=data["last_name"],
-        email=data.get("email", ""),
-        phone=data["phone"],
-        gei_id=data.get("gei_id") or data.get("gei") or None,
-        status=data.get("status", Member.Status.PROSPECT),
-        joined_at=data.get("joined_at") or None,  # '' -> None (colonne date)
-        monthly_saving_htg=data.get("monthly_saving_htg") or 0,
-    )
+    cleaned, err = _clean_member_data(_json_body(request), partial=False)
+    if err:
+        return _error(err)
+    m = Member.objects.create(**cleaned)
     logger.info("Member %d created by user %s (%s %s)", m.pk, request.user.username, m.first_name, m.last_name)
     return JsonResponse(_serialize_member(m), status=201)
 
@@ -395,19 +465,11 @@ def member_detail(request: HttpRequest, pk: int) -> JsonResponse:
     if request.method == "GET":
         return JsonResponse(_serialize_member(m))
     elif request.method == "PUT":
-        data = _json_body(request)
-        for field in ("first_name", "last_name", "email", "phone", "status", "joined_at", "monthly_saving_htg"):
-            if field in data:
-                val = data[field]
-                if field == "joined_at" and not val:
-                    val = None  # '' -> None (colonne date)
-                elif field == "monthly_saving_htg" and val in ("", None):
-                    val = 0
-                setattr(m, field, val)
-        if "gei_id" in data:
-            m.gei_id = data["gei_id"] or None
-        elif "gei" in data:
-            m.gei_id = data["gei"] or None
+        cleaned, err = _clean_member_data(_json_body(request), partial=True)
+        if err:
+            return _error(err)
+        for field, val in cleaned.items():
+            setattr(m, field, val)
         m.save()
         logger.info("Member %d updated by user %s", pk, request.user.username)
         return JsonResponse(_serialize_member(m))
