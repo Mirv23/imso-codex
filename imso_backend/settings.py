@@ -130,15 +130,45 @@ STATIC_URL = "/static/"
 STATIC_ROOT = BASE_DIR / "staticfiles"
 STATICFILES_DIRS = [BASE_DIR / "static"]
 WHITENOISE_USE_FINDERS = True
-STORAGES = {
-    # Stockage des fichiers uploadés (images produits/blog/logo, captures paiement).
-    # En prod Vercel (FS éphémère), remplacer par un stockage objet via
-    # DJANGO_FILE_STORAGE (ex. S3 / Supabase Storage) — cf. plan Phase 0.
-    "default": {
+# ── Stockage des fichiers uploadés (images produits/blog/logo, captures paiement) ──
+# En prod Vercel, le système de fichiers est éphémère (tout upload disparaît au
+# redéploiement). On stocke donc sur Supabase Storage via son API S3-compatible
+# (django-storages + boto3). Si les variables Supabase ne sont pas définies (dev
+# local), on retombe automatiquement sur le disque local via DJANGO_FILE_STORAGE.
+_supabase_ref = os.environ.get("SUPABASE_PROJECT_REF", "").strip()
+_supabase_s3_key = os.environ.get("SUPABASE_S3_ACCESS_KEY", "").strip()
+_supabase_s3_secret = os.environ.get("SUPABASE_S3_SECRET_KEY", "").strip()
+
+if _supabase_ref and _supabase_s3_key and _supabase_s3_secret:
+    _bucket = os.environ.get("SUPABASE_STORAGE_BUCKET", "media").strip()
+    _default_storage = {
+        "BACKEND": "storages.backends.s3.S3Storage",
+        "OPTIONS": {
+            "bucket_name": _bucket,
+            "region_name": os.environ.get("SUPABASE_S3_REGION", "us-west-2").strip(),
+            "endpoint_url": f"https://{_supabase_ref}.supabase.co/storage/v1/s3",
+            "access_key": _supabase_s3_key,
+            "secret_key": _supabase_s3_secret,
+            "addressing_style": "path",   # Supabase impose le path-style
+            "signature_version": "s3v4",
+            # URLs publiques : https://<ref>.supabase.co/storage/v1/object/public/<bucket>/<clé>
+            # (nécessite un bucket public). querystring_auth=False -> URLs sans signature.
+            "custom_domain": f"{_supabase_ref}.supabase.co/storage/v1/object/public/{_bucket}",
+            "url_protocol": "https:",
+            "querystring_auth": False,
+            "file_overwrite": False,
+            "default_acl": None,          # Supabase ne gère pas les ACL S3
+        },
+    }
+else:
+    _default_storage = {
         "BACKEND": os.environ.get(
             "DJANGO_FILE_STORAGE", "django.core.files.storage.FileSystemStorage"
         ),
-    },
+    }
+
+STORAGES = {
+    "default": _default_storage,
     "staticfiles": {
         "BACKEND": "whitenoise.storage.CompressedStaticFilesStorage",
     },
