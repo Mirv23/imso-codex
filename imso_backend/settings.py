@@ -146,7 +146,11 @@ if _supabase_ref and _supabase_s3_key and _supabase_s3_secret:
         "OPTIONS": {
             "bucket_name": _bucket,
             "region_name": os.environ.get("SUPABASE_S3_REGION", "us-west-2").strip(),
-            "endpoint_url": f"https://{_supabase_ref}.supabase.co/storage/v1/s3",
+            # Endpoint S3 exact (Supabase utilise l'hôte .storage.supabase.co) ;
+            # repli sur la forme construite si la variable n'est pas fournie.
+            "endpoint_url": os.environ.get(
+                "SUPABASE_S3_ENDPOINT", f"https://{_supabase_ref}.supabase.co/storage/v1/s3"
+            ).strip(),
             "access_key": _supabase_s3_key,
             "secret_key": _supabase_s3_secret,
             "addressing_style": "path",   # Supabase impose le path-style
