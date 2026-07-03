@@ -204,31 +204,51 @@ textarea { resize: vertical; min-height: 80px; }
 .chart-kpi { font-size:13px; font-weight:800; color:var(--primary); font-variant-numeric:tabular-nums; }
 .chart-body--donut { display:flex; align-items:center; gap:18px; flex-wrap:wrap; }
 
+.rev-wrap { position:relative; }
 .area-svg { width:100%; height:auto; display:block; overflow:visible; }
 .area-line { fill:none; stroke:var(--primary); stroke-width:2.4; stroke-linecap:round; stroke-linejoin:round; }
-.area-dot { fill:#fff; stroke:var(--primary); stroke-width:2; cursor:pointer; transition:r .15s; }
-.area-dot:hover { r:5; }
+.area-dot { fill:#fff; stroke:var(--primary); stroke-width:2; transition:r .15s; }
 .area-x { font-size:9px; fill:var(--muted); }
+.rev-hit { fill:transparent; cursor:crosshair; }
+.rev-cross { stroke:var(--primary); stroke-width:1.2; stroke-dasharray:4 4; opacity:0; transition:opacity .15s; pointer-events:none; }
+.rev-focus { fill:var(--primary); stroke:#fff; stroke-width:2.5; opacity:0; transition:opacity .15s; pointer-events:none; }
+.rev-tip { position:absolute; z-index:6; pointer-events:none; opacity:0; transform:translate(-50%,-122%); transition:opacity .12s ease, left .09s ease, top .09s ease; background:var(--text); color:var(--card); padding:8px 12px; border-radius:10px; white-space:nowrap; box-shadow:var(--shadow-lg); }
+.rev-tip::after { content:''; position:absolute; left:50%; top:100%; transform:translateX(-50%); border:6px solid transparent; border-top-color:var(--text); }
+.rev-tip__m { font-weight:700; opacity:.65; font-size:10px; text-transform:uppercase; letter-spacing:.06em; }
+.rev-tip__v { font-weight:800; font-size:15px; font-variant-numeric:tabular-nums; margin-top:2px; }
+.rev-tip__d { font-size:11px; margin-top:4px; opacity:.9; font-weight:600; }
 
-.donut-seg { transition:stroke-dasharray .95s cubic-bezier(.55,.1,.25,1); }
+.donut-seg { transition:stroke-dasharray .95s cubic-bezier(.55,.1,.25,1), stroke-width .2s ease, opacity .2s ease; cursor:pointer; }
+.chart-body--donut.is-hovering .donut-seg { opacity:.28; }
+.chart-body--donut.is-hovering .donut-seg.is-active { opacity:1; stroke-width:18; }
+.donut-total, .donut-sub { transition:opacity .15s ease; }
 .donut-total { font-size:22px; font-weight:800; fill:var(--text); }
 .donut-sub { font-size:8.5px; fill:var(--muted); text-transform:uppercase; letter-spacing:.1em; }
-.legend { display:flex; flex-direction:column; gap:9px; flex:1; min-width:130px; }
-.legend__row { display:flex; align-items:center; gap:8px; font-size:12.5px; }
-.legend__dot { width:11px; height:11px; border-radius:3px; flex-shrink:0; }
+.legend { display:flex; flex-direction:column; gap:5px; flex:1; min-width:130px; }
+.legend__row { display:flex; align-items:center; gap:8px; font-size:12.5px; cursor:pointer; padding:4px 6px; border-radius:7px; transition:background .15s ease; }
+.legend__row:hover, .legend__row.is-active { background:var(--bg); }
+.legend__row.is-active .legend__label { font-weight:700; }
+.legend__dot { width:11px; height:11px; border-radius:3px; flex-shrink:0; transition:transform .15s ease; }
+.legend__row.is-active .legend__dot { transform:scale(1.25); }
 .legend__label { color:var(--text); flex:1; }
 .legend__val { color:var(--muted); font-weight:600; font-variant-numeric:tabular-nums; }
 
 .barlist { display:flex; flex-direction:column; gap:13px; }
+.barrow { transition:transform .18s ease; }
+.barrow:hover { transform:translateX(3px); }
 .barrow__top { display:flex; justify-content:space-between; font-size:12.5px; margin-bottom:6px; }
 .barrow__label { color:var(--text); font-weight:500; }
-.barrow__val { color:var(--muted); font-weight:700; font-variant-numeric:tabular-nums; }
+.barrow__val { color:var(--muted); font-weight:700; font-variant-numeric:tabular-nums; transition:color .18s ease; }
+.barrow:hover .barrow__val { color:var(--text); }
 .barrow__track { height:9px; background:var(--bg); border-radius:6px; overflow:hidden; }
-.barrow__fill { height:100%; border-radius:6px; width:0; transition:width .95s cubic-bezier(.55,.1,.25,1); }
+.barrow__fill { height:100%; border-radius:6px; width:0; transition:width .95s cubic-bezier(.55,.1,.25,1), filter .18s ease; }
+.barrow:hover .barrow__fill { filter:brightness(1.1) saturate(1.1); }
 
-.act { display:flex; align-items:center; gap:12px; padding:11px 0; border-bottom:1px solid var(--border); }
+.act { display:flex; align-items:center; gap:12px; padding:11px 8px; margin:0 -8px; border-radius:9px; border-bottom:1px solid var(--border); transition:background .16s ease; }
 .act:last-child { border-bottom:none; }
-.act__ic { width:34px; height:34px; border-radius:10px; display:grid; place-items:center; flex-shrink:0; }
+.act:hover { background:var(--bg); }
+.act:hover .act__ic { transform:scale(1.08); }
+.act__ic { width:34px; height:34px; border-radius:10px; display:grid; place-items:center; flex-shrink:0; transition:transform .16s ease; }
 .act__txt { font-size:13px; color:var(--text); }
 .act__val { margin-left:auto; font-weight:800; font-size:14px; font-variant-numeric:tabular-nums; }
 </style>
@@ -520,7 +540,7 @@ function _empty(host) { host.innerHTML = '<div style="color:var(--muted);padding
 function renderRevenue(data) {
   const host = document.getElementById('revChart');
   if (!data.length || data.every(d => !d.v)) { document.getElementById('revTotal').textContent = ''; _empty(host); return; }
-  const W = 560, H = 160, P = 26, n = data.length;
+  const W = 560, H = 176, P = 26, n = data.length;
   const max = Math.max(...data.map(d => d.v), 1);
   const X = i => P + i * ((W - 2 * P) / (n - 1 || 1));
   const Y = v => H - P - (v / max) * (H - 2 * P);
@@ -530,32 +550,87 @@ function renderRevenue(data) {
   document.getElementById('revTotal').textContent = fmt(data.reduce((a, d) => a + d.v, 0)) + ' HTG';
   let grid = '';
   for (let i = 0; i <= 3; i++) { const gy = P + i * ((H - 2 * P) / 3); grid += `<line x1="${P}" y1="${gy.toFixed(1)}" x2="${W - P}" y2="${gy.toFixed(1)}" stroke="var(--border)" stroke-width="1"/>`; }
-  const dots = pts.map((p, i) => `<circle class="area-dot" cx="${p[0].toFixed(1)}" cy="${p[1].toFixed(1)}" r="3.5"><title>${esc(data[i].m)}: ${fmt(data[i].v)} HTG</title></circle>`).join('');
+  const dots = pts.map((p) => `<circle class="area-dot" cx="${p[0].toFixed(1)}" cy="${p[1].toFixed(1)}" r="3.2"/>`).join('');
   const xl = data.map((d, i) => `<text class="area-x" x="${X(i).toFixed(1)}" y="${H - 7}" text-anchor="middle">${esc(d.m)}</text>`).join('');
-  host.innerHTML = `<svg class="area-svg" viewBox="0 0 ${W} ${H}"><defs><linearGradient id="revGrad" x1="0" y1="0" x2="0" y2="1"><stop offset="0" stop-color="var(--primary)" stop-opacity="0.20"/><stop offset="1" stop-color="var(--primary)" stop-opacity="0"/></linearGradient></defs>${grid}<path d="${area}" fill="url(#revGrad)"/><path class="area-line" d="${line}"/>${dots}${xl}</svg>`;
+  host.innerHTML = `<div class="rev-wrap"><svg class="area-svg" viewBox="0 0 ${W} ${H}"><defs><linearGradient id="revGrad" x1="0" y1="0" x2="0" y2="1"><stop offset="0" stop-color="var(--primary)" stop-opacity="0.22"/><stop offset="1" stop-color="var(--primary)" stop-opacity="0"/></linearGradient></defs>${grid}<path d="${area}" fill="url(#revGrad)"/><path class="area-line" d="${line}"/><line class="rev-cross" x1="0" y1="${P}" x2="0" y2="${H - P}"/>${dots}<circle class="rev-focus" r="5.5" cx="0" cy="0"/>${xl}<rect class="rev-hit" x="${P}" y="0" width="${(W - 2 * P).toFixed(1)}" height="${H}"/></svg><div class="rev-tip"></div></div>`;
+  // Animation de tracé de la ligne
   const lineEl = host.querySelector('.area-line');
   const L = lineEl.getTotalLength();
   lineEl.style.strokeDasharray = L; lineEl.style.strokeDashoffset = L;
   lineEl.getBoundingClientRect();
   lineEl.style.transition = 'stroke-dashoffset 1.05s ease';
   lineEl.style.strokeDashoffset = '0';
+  // Interactivité : repère + infobulle qui suivent la souris
+  const svg = host.querySelector('.area-svg');
+  const cross = host.querySelector('.rev-cross');
+  const focus = host.querySelector('.rev-focus');
+  const tip = host.querySelector('.rev-tip');
+  const dotEls = host.querySelectorAll('.area-dot');
+  const step = (W - 2 * P) / (n - 1 || 1);
+  let cur = -1;
+  function showAt(i) {
+    const p = pts[i], d = data[i];
+    cross.setAttribute('x1', p[0].toFixed(1)); cross.setAttribute('x2', p[0].toFixed(1)); cross.style.opacity = 1;
+    focus.setAttribute('cx', p[0].toFixed(1)); focus.setAttribute('cy', p[1].toFixed(1)); focus.style.opacity = 1;
+    if (i !== cur) { dotEls.forEach((el, k) => el.setAttribute('r', k === i ? 0 : 3.2)); cur = i; }
+    const rect = svg.getBoundingClientRect();
+    tip.style.left = (p[0] / W * rect.width) + 'px';
+    tip.style.top = (p[1] / H * rect.height) + 'px';
+    let delta = '';
+    if (i > 0) {
+      const prev = data[i - 1].v;
+      if (prev > 0) { const pc = Math.round((d.v - prev) / prev * 100); delta = `<div class="rev-tip__d">${pc >= 0 ? '▲ +' + pc : '▼ ' + pc}% vs ${esc(data[i - 1].m)}</div>`; }
+      else if (d.v > 0) { delta = `<div class="rev-tip__d">▲ nouveau</div>`; }
+    }
+    tip.innerHTML = `<div class="rev-tip__m">${esc(d.m)}</div><div class="rev-tip__v">${fmt(d.v)} HTG</div>${delta}`;
+    tip.style.opacity = 1;
+  }
+  function hide() { cross.style.opacity = 0; focus.style.opacity = 0; tip.style.opacity = 0; dotEls.forEach(el => el.setAttribute('r', 3.2)); cur = -1; }
+  svg.addEventListener('pointermove', e => {
+    const rect = svg.getBoundingClientRect();
+    let i = Math.round(((e.clientX - rect.left) / rect.width * W - P) / step);
+    showAt(Math.max(0, Math.min(n - 1, i)));
+  });
+  svg.addEventListener('pointerleave', hide);
 }
 
 function renderDonut(hostId, segments) {
   const host = document.getElementById(hostId);
   const total = segments.reduce((a, s) => a + s.value, 0);
   if (!total) { _empty(host); return; }
-  const size = 136, cx = 68, cy = 68, r = 52, sw = 15, C = 2 * Math.PI * r;
+  const size = 140, cx = 70, cy = 70, r = 52, sw = 15, C = 2 * Math.PI * r;
   let off = 0, segs = '';
-  segments.forEach(s => {
+  segments.forEach((s, idx) => {
     const frac = s.value / total, len = Math.max(0, frac * C - 2);
-    segs += `<circle class="donut-seg" cx="${cx}" cy="${cy}" r="${r}" fill="none" stroke="${s.color}" stroke-width="${sw}" stroke-dasharray="0 ${C.toFixed(1)}" data-dash="${len.toFixed(1)} ${(C - len).toFixed(1)}" stroke-dashoffset="${(-off).toFixed(1)}" transform="rotate(-90 ${cx} ${cy})"><title>${esc(s.label)}: ${s.value}</title></circle>`;
+    segs += `<circle class="donut-seg" data-idx="${idx}" cx="${cx}" cy="${cy}" r="${r}" fill="none" stroke="${s.color}" stroke-width="${sw}" stroke-dasharray="0 ${C.toFixed(1)}" data-dash="${len.toFixed(1)} ${(C - len).toFixed(1)}" stroke-dashoffset="${(-off).toFixed(1)}" transform="rotate(-90 ${cx} ${cy})"/>`;
     off += frac * C;
   });
   const svg = `<svg viewBox="0 0 ${size} ${size}" width="${size}" height="${size}" style="flex-shrink:0"><circle cx="${cx}" cy="${cy}" r="${r}" fill="none" stroke="var(--bg)" stroke-width="${sw}"/>${segs}<text class="donut-total" x="${cx}" y="${cy - 1}" text-anchor="middle">${total}</text><text class="donut-sub" x="${cx}" y="${cy + 15}" text-anchor="middle">total</text></svg>`;
-  const legend = '<div class="legend">' + segments.map(s => `<div class="legend__row"><span class="legend__dot" style="background:${s.color}"></span><span class="legend__label">${esc(s.label)}</span><span class="legend__val">${s.value} · ${Math.round(s.value / total * 100)}%</span></div>`).join('') + '</div>';
+  const legend = '<div class="legend">' + segments.map((s, idx) => `<div class="legend__row" data-idx="${idx}"><span class="legend__dot" style="background:${s.color}"></span><span class="legend__label">${esc(s.label)}</span><span class="legend__val">${s.value} · ${Math.round(s.value / total * 100)}%</span></div>`).join('') + '</div>';
   host.innerHTML = svg + legend;
-  requestAnimationFrame(() => requestAnimationFrame(() => host.querySelectorAll('.donut-seg').forEach(el => el.style.strokeDasharray = el.getAttribute('data-dash'))));
+  const segEls = host.querySelectorAll('.donut-seg');
+  const rows = host.querySelectorAll('.legend__row');
+  const totalEl = host.querySelector('.donut-total');
+  const subEl = host.querySelector('.donut-sub');
+  function activate(idx) {
+    host.classList.add('is-hovering');
+    segEls.forEach(el => el.classList.toggle('is-active', +el.dataset.idx === idx));
+    rows.forEach(el => el.classList.toggle('is-active', +el.dataset.idx === idx));
+    const s = segments[idx];
+    totalEl.textContent = s.value;
+    subEl.textContent = s.label.length > 11 ? s.label.slice(0, 10) + '…' : s.label;
+  }
+  function reset() {
+    host.classList.remove('is-hovering');
+    segEls.forEach(el => el.classList.remove('is-active'));
+    rows.forEach(el => el.classList.remove('is-active'));
+    totalEl.textContent = total; subEl.textContent = 'total';
+  }
+  [...segEls, ...rows].forEach(el => {
+    el.addEventListener('pointerenter', () => activate(+el.dataset.idx));
+    el.addEventListener('pointerleave', reset);
+  });
+  requestAnimationFrame(() => requestAnimationFrame(() => segEls.forEach(el => el.style.strokeDasharray = el.getAttribute('data-dash'))));
 }
 
 function renderBars(hostId, items) {
