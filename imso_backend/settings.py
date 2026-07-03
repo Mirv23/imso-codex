@@ -94,13 +94,25 @@ WSGI_APPLICATION = "imso_backend.wsgi.app"
 # connexion apres chaque requete (conn_max_age=0) : le pooler Supabase gere lui-meme
 # la mutualisation. conn_health_checks valide la connexion avant reutilisation si
 # jamais conn_max_age est repasse a une valeur > 0 via l'environnement.
-DATABASES = {
-    "default": dj_database_url.config(
-        default=f"sqlite:///{BASE_DIR / 'db.sqlite3'}",
-        conn_max_age=int(os.environ.get("DJANGO_CONN_MAX_AGE", "0")),
-        conn_health_checks=os.environ.get("DJANGO_CONN_HEALTH_CHECKS", "True").lower() == "true",
-    )
-}
+_db_config = dj_database_url.config(
+    default=f"sqlite:///{BASE_DIR / 'db.sqlite3'}",
+    conn_max_age=int(os.environ.get("DJANGO_CONN_MAX_AGE", "0")),
+    conn_health_checks=os.environ.get("DJANGO_CONN_HEALTH_CHECKS", "True").lower() == "true",
+)
+# En serverless (Vercel), on cible le Transaction pooler de Supabase (port 6543),
+# qui multiplexe de nombreux clients sur peu de connexions Postgres. Le Session
+# pooler (5432) tient une connexion par client : sous concurrence il sature sa
+# limite et renvoie des "OperationalError: connection failed" (500) intermittents.
+# On surcharge donc uniquement le PORT via l'environnement (memes hote/identifiants).
+# En mode transaction, les prepared statements cote serveur ne survivent pas entre
+# transactions -> on les desactive (psycopg3: prepare_threshold=None).
+if _db_config.get("ENGINE") == "django.db.backends.postgresql":
+    _pooler_port = os.environ.get("DJANGO_DB_POOLER_PORT")
+    if _pooler_port:
+        _db_config["PORT"] = _pooler_port
+    _db_config.setdefault("OPTIONS", {})["prepare_threshold"] = None
+
+DATABASES = {"default": _db_config}
 
 AUTH_PASSWORD_VALIDATORS = [
     {"NAME": "django.contrib.auth.password_validation.UserAttributeSimilarityValidator"},
