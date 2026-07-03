@@ -87,10 +87,18 @@ TEMPLATES = [
 
 WSGI_APPLICATION = "imso_backend.wsgi.app"
 
+# En environnement serverless (Vercel), chaque instance lambda "chaude" retient
+# une connexion Postgres pendant conn_max_age secondes. Avec plusieurs lambdas en
+# parallele, cela sature la limite de connexions du pooler Supabase et provoque des
+# erreurs "OperationalError: connection failed" intermittentes. On ferme donc la
+# connexion apres chaque requete (conn_max_age=0) : le pooler Supabase gere lui-meme
+# la mutualisation. conn_health_checks valide la connexion avant reutilisation si
+# jamais conn_max_age est repasse a une valeur > 0 via l'environnement.
 DATABASES = {
     "default": dj_database_url.config(
         default=f"sqlite:///{BASE_DIR / 'db.sqlite3'}",
-        conn_max_age=600,
+        conn_max_age=int(os.environ.get("DJANGO_CONN_MAX_AGE", "0")),
+        conn_health_checks=os.environ.get("DJANGO_CONN_HEALTH_CHECKS", "True").lower() == "true",
     )
 }
 
