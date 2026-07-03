@@ -3,6 +3,7 @@ from __future__ import annotations
 import csv
 import json
 import logging
+import os
 from datetime import timedelta
 from typing import Any, Callable, Generator
 
@@ -891,12 +892,20 @@ def dashboard_summary(request: HttpRequest) -> JsonResponse:
     return JsonResponse(get_dashboard_summary(request))
 
 
+# Par defaut (0), le resume est recalcule a chaque appel : synchronisation
+# parfaite. On ne le met en cache que si un cache PARTAGE (Redis) est configure
+# et que DASHBOARD_SUMMARY_CACHE_TTL > 0. Raison : sur Vercel, le cache par
+# defaut (LocMemCache) est propre a chaque instance lambda -> compteurs figes et
+# desynchronises pendant plusieurs minutes. Les comptages sont peu couteux.
+_SUMMARY_TTL = int(os.environ.get("DASHBOARD_SUMMARY_CACHE_TTL", "0"))
+
+
 def get_dashboard_summary(request: HttpRequest | None = None) -> dict[str, Any]:
-    if request and request.GET.get("refresh"):
-        cache.delete("dashboard_summary")
-    cached = cache.get("dashboard_summary")
-    if cached is not None:
-        return cached
+    force_refresh = bool(request and request.GET.get("refresh"))
+    if _SUMMARY_TTL and not force_refresh:
+        cached = cache.get("dashboard_summary")
+        if cached is not None:
+            return cached
     savings = Member.objects.aggregate(total=Sum("monthly_saving_htg"))["total"] or 0
     seven_days_ago = timezone.now() - timedelta(days=7)
     recent_bookings = VenueBooking.objects.filter(created_at__gte=seven_days_ago).count()
@@ -920,7 +929,8 @@ def get_dashboard_summary(request: HttpRequest | None = None) -> dict[str, Any]:
         "recent_payments_count": recent_payments_count,
         "recent_payments_sum": recent_payments_sum,
     }
-    cache.set("dashboard_summary", result, 300)
+    if _SUMMARY_TTL:
+        cache.set("dashboard_summary", result, _SUMMARY_TTL)
     return result
 
 
