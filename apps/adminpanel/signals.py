@@ -5,10 +5,52 @@ from typing import Any
 from django.conf import settings
 from django.core.mail import send_mail
 from django.db import transaction
-from django.db.models.signals import post_save, pre_save
+from django.db.models.signals import post_delete, post_save, pre_save
 from django.dispatch import receiver
 
-from .models import ContactRequest, Enrollment, Order, Payment, VenueBooking, AdminNotification
+from .models import (
+    AdminNotification,
+    BlogPost,
+    Chapter,
+    ContactRequest,
+    Course,
+    Enrollment,
+    Order,
+    Payment,
+    Product,
+    Testimonial,
+    VenueBooking,
+)
+
+
+# ── Nettoyage automatique des fichiers du stockage ───────────────────────
+# Quand un objet portant un fichier média est supprimé, on efface aussi le
+# fichier du stockage (Supabase) pour éviter les fichiers orphelins. Vaut aussi
+# pour les suppressions en cascade (ex. supprimer un cours efface les vidéos de
+# ses chapitres).
+_MEDIA_FIELDS = {
+    Chapter: ["video"],
+    Course: ["banner"],
+    Product: ["image"],
+    BlogPost: ["cover_image"],
+    Testimonial: ["photo"],
+}
+
+
+def _cleanup_media(sender: type, instance: Any, **kwargs: Any) -> None:
+    for field_name in _MEDIA_FIELDS.get(sender, []):
+        f = getattr(instance, field_name, None)
+        if f:
+            try:
+                f.delete(save=False)
+            except Exception:
+                pass
+
+
+for _model in _MEDIA_FIELDS:
+    post_delete.connect(
+        _cleanup_media, sender=_model, dispatch_uid=f"media_cleanup_{_model.__name__}"
+    )
 
 
 def _notify_admin_by_email(subject: str, message: str) -> None:

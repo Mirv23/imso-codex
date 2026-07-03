@@ -11,6 +11,7 @@ from django.contrib.auth import get_user_model
 from django.contrib.auth.views import LoginView
 from django.core.cache import cache
 from django.core.exceptions import ValidationError
+from django.core.files.storage import default_storage
 from django.core.validators import validate_email
 from django.db.models import Count, Max, Sum, Q
 from django.db.models.query import QuerySet
@@ -870,8 +871,15 @@ def chapter_video_confirm(request: HttpRequest, pk: int) -> JsonResponse:
     key = str(_json_body(request).get("key") or "").strip()
     if not key or not key.startswith("courses/videos/"):
         return _error("Clé de fichier invalide.", 400)
+    old_name = ch.video.name if ch.video else ""
     ch.video.name = key
     ch.save(update_fields=["video"])
+    # Efface l'ancienne vidéo si remplacée par un autre fichier (ex. format différent).
+    if old_name and old_name != key:
+        try:
+            default_storage.delete(old_name)
+        except Exception:
+            pass
     logger.info("Chapter %d video set by %s", pk, request.user.username)
     return JsonResponse(_serialize_chapter(ch))
 
@@ -1809,8 +1817,17 @@ def upload_image(request: HttpRequest, target: str, pk: int) -> JsonResponse:
     if not content_type.startswith("image/"):
         return _error("Le fichier doit être une image", 400)
 
+    old = getattr(obj, field)
+    old_name = old.name if old else ""
     setattr(obj, field, f)
     obj.save()
+    # Efface l'ancienne image si elle a été remplacée (évite les orphelins).
+    new_name = getattr(obj, field).name
+    if old_name and old_name != new_name:
+        try:
+            default_storage.delete(old_name)
+        except Exception:
+            pass
     logger.info("Image uploaded (%s #%s, field %s) by user %s", target, getattr(obj, "pk", "-"), field, request.user.username)
     return JsonResponse({"ok": True, "url": getattr(obj, field).url})
 
