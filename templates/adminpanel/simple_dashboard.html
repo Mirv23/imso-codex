@@ -1227,7 +1227,13 @@ function openModal(sectionKey, record) {
   if (!cfg) return;
 
   document.getElementById('modalTitle').textContent = cfg.formTitle(record);
-  document.getElementById('modalSaveBtn').textContent = record ? 'Enregistrer' : 'Créer';
+  // Réinitialise complètement le bouton d'action : confirmDelete() le détourne
+  // vers la suppression (onclick + style). Sans ce reset, ouvrir « Modifier »
+  // après une tentative de suppression relançait la suppression au clic « Enregistrer ».
+  const _saveBtn = document.getElementById('modalSaveBtn');
+  _saveBtn.textContent = record ? 'Enregistrer' : 'Créer';
+  _saveBtn.className = 'btn btn-primary';
+  _saveBtn.onclick = saveModal;
 
   let body = '';
   const fields = cfg.formFields(record);

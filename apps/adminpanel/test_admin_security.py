@@ -75,16 +75,19 @@ class TestCsvExportSecrets:
 
 @pytest.mark.django_db
 class TestDeletionGuards:
-    def test_delete_member_with_enrollment_blocked(self):
+    def test_delete_member_with_enrollment_cascades(self):
+        # Un membre est supprimable quel que soit son statut / ses inscriptions
+        # (demande explicite). Les inscriptions sont supprimées en cascade.
         gei = GEI.objects.create(name="GEI A", city="PAP")
         member = Member.objects.create(first_name="Jean", last_name="Pierre", phone="509", gei=gei)
         course = Course.objects.create(title="Compta", category="Gestion", instructor="X", city="PAP")
-        Enrollment.objects.create(member=member, course=course)
+        enrollment = Enrollment.objects.create(member=member, course=course)
         client = Client()
         _staff(client)
         response = client.delete(reverse("adminpanel:member-detail", args=[member.pk]))
-        assert response.status_code == 409
-        assert Member.objects.filter(pk=member.pk).exists()
+        assert response.status_code == 200
+        assert not Member.objects.filter(pk=member.pk).exists()
+        assert not Enrollment.objects.filter(pk=enrollment.pk).exists()
 
     def test_delete_member_without_links_ok(self):
         member = Member.objects.create(first_name="Marie", last_name="Jean", phone="509")

@@ -306,10 +306,10 @@ def _deletion_block_reason(instance: Any) -> str | None:
     ses inscriptions ; un GEI/cours/fournisseur supprimé casse des liens. On
     conseille plutôt de désactiver (statut) que de supprimer.
     """
-    if isinstance(instance, Member):
-        if instance.enrollments.exists():
-            return "Ce membre possède des inscriptions. Passez son statut à « Ancien » plutôt que de le supprimer."
-    elif isinstance(instance, GEI):
+    # Les membres sont supprimables sans restriction (demande explicite) : la
+    # suppression supprime en cascade leurs inscriptions ; les paiements liés sont
+    # conservés (leur lien vers l'inscription passe simplement à NULL).
+    if isinstance(instance, GEI):
         if instance.members.exists():
             return "Des membres sont rattachés à ce GEI. Désactivez-le plutôt que de le supprimer."
     elif isinstance(instance, Course):
