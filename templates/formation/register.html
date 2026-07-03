@@ -1,0 +1,46 @@
+{% extends "formation/base.html" %}
+{% block title %}Inscription — {{ site.site_name|default:"IMSO" }} Formation{% endblock %}
+{% block head %}<style>
+.authwrap{max-width:460px;margin:40px auto}
+.authwrap h1{font-size:24px;font-weight:800;letter-spacing:-.02em;text-align:center}
+.authwrap .sub{color:var(--muted);text-align:center;margin:6px 0 22px;font-size:14px}
+.authcard{padding:26px 26px 28px}
+.fg{margin-bottom:15px}
+.fg label{display:block;font-size:13px;font-weight:700;margin-bottom:6px;color:#38493f}
+.fg input,.fg select{width:100%;padding:11px 13px;border:1px solid var(--line);border-radius:10px;font-size:14.5px;background:#fff;color:var(--ink);transition:.15s}
+.fg input:focus,.fg select:focus{outline:none;border-color:var(--primary);box-shadow:0 0 0 3px rgba(45,106,79,.12)}
+.fg .err{color:#b4322c;font-size:12.5px;margin-top:5px;font-weight:600}
+.roles{display:grid;grid-template-columns:1fr 1fr;gap:10px}
+.roles label{border:1.5px solid var(--line);border-radius:11px;padding:12px;cursor:pointer;text-align:center;font-weight:700;font-size:14px;transition:.15s;display:block;margin:0}
+.roles input{display:none}
+.roles input:checked+span{color:var(--primary)}
+.roles label:has(input:checked){border-color:var(--primary);background:#f0f7f3}
+.authcard .btn{width:100%;justify-content:center;margin-top:6px}
+.authalt{text-align:center;margin-top:16px;font-size:13.5px;color:var(--muted)}
+.authalt a{color:var(--primary);font-weight:700}
+</style>{% endblock %}
+{% block content %}
+<div class="authwrap">
+  <h1>Créer un compte</h1>
+  <p class="sub">Rejoignez la plateforme de formation IMSO</p>
+  <div class="card authcard">
+    <form method="post" novalidate>{% csrf_token %}
+      {% if form.non_field_errors %}<div class="fmsg__i error" style="margin-bottom:14px">{{ form.non_field_errors|join:" " }}</div>{% endif %}
+      <div class="fg">
+        <label>Je m'inscris en tant que</label>
+        <div class="roles">
+          <label><input type="radio" name="role" value="student" {% if form.role.value == "teacher" %}{% else %}checked{% endif %}><span>🎓 Étudiant</span></label>
+          <label><input type="radio" name="role" value="teacher" {% if form.role.value == "teacher" %}checked{% endif %}><span>👨‍🏫 Professeur</span></label>
+        </div>
+        {% if form.role.errors %}<div class="err">{{ form.role.errors|join:" " }}</div>{% endif %}
+      </div>
+      <div class="fg"><label>Nom complet</label>{{ form.full_name }}{% if form.full_name.errors %}<div class="err">{{ form.full_name.errors|join:" " }}</div>{% endif %}</div>
+      <div class="fg"><label>Adresse email</label>{{ form.email }}{% if form.email.errors %}<div class="err">{{ form.email.errors|join:" " }}</div>{% endif %}</div>
+      <div class="fg"><label>Téléphone (facultatif)</label>{{ form.phone }}{% if form.phone.errors %}<div class="err">{{ form.phone.errors|join:" " }}</div>{% endif %}</div>
+      <div class="fg"><label>Mot de passe</label>{{ form.password }}{% if form.password.errors %}<div class="err">{{ form.password.errors|join:" " }}</div>{% endif %}</div>
+      <button class="btn btn--p btn--lg" type="submit">Créer mon compte</button>
+    </form>
+    <div class="authalt">Déjà inscrit ? <a href="/formation/connexion/">Se connecter</a></div>
+  </div>
+</div>
+{% endblock %}

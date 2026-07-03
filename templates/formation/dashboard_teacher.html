@@ -1,0 +1,41 @@
+{% extends "formation/base.html" %}
+{% block title %}Espace professeur — {{ site.site_name|default:"IMSO" }} Formation{% endblock %}
+{% block nav_space %}active{% endblock %}
+{% block head %}<style>
+.dash-h{padding:34px 0 18px}
+.tgrid{display:grid;grid-template-columns:repeat(auto-fill,minmax(280px,1fr));gap:18px}
+.tc{padding:18px}
+.tc__t{font-weight:800;font-size:16px;letter-spacing:-.01em}
+.tc__cat{color:var(--muted);font-size:12.5px;margin-top:3px}
+.tc__stats{display:flex;gap:20px;margin-top:14px;padding-top:14px;border-top:1px solid var(--line)}
+.tc__stat b{font-size:20px;font-weight:800;display:block;line-height:1}
+.tc__stat span{font-size:11.5px;color:var(--muted)}
+</style>{% endblock %}
+{% block content %}
+<div class="dash-h">
+  <h1 class="h1">Espace professeur</h1>
+  <p class="lead">Bonjour {{ user.first_name|default:user.username }}. Voici les cours qui vous sont attribués.</p>
+</div>
+{% if courses %}
+<div class="tgrid">
+  {% for c in courses %}
+  <div class="card tc">
+    <div class="tc__t">{{ c.title }}</div>
+    <div class="tc__cat">{{ c.category }}{% if not c.is_active %} · <span class="tag tag--gray">Inactif</span>{% endif %}</div>
+    <div class="tc__stats">
+      <div class="tc__stat"><b>{{ c.student_count }}</b><span>étudiant{{ c.student_count|pluralize }}</span></div>
+      <div class="tc__stat"><b>{{ c.chapter_count }}</b><span>chapitre{{ c.chapter_count|pluralize }}</span></div>
+    </div>
+    <a class="btn btn--o btn--sm" href="/formation/cours/{{ c.pk }}/" style="width:100%;justify-content:center;margin-top:14px">Voir la page du cours</a>
+  </div>
+  {% endfor %}
+</div>
+<p class="lead" style="margin-top:20px;font-size:13.5px">Pour ajouter du contenu (chapitres, vidéos) à vos cours, contactez l'administration — la gestion du contenu se fait depuis le panneau d'administration.</p>
+{% else %}
+<div class="card empty">
+  <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6"><path d="M22 10v6M2 10l10-5 10 5-10 5z"/><path d="M6 12v5c3 3 9 3 12 0v-5"/></svg>
+  <h3>Aucun cours ne vous est encore attribué</h3>
+  <p>L'administration vous assignera vos cours prochainement.</p>
+</div>
+{% endif %}
+{% endblock %}

@@ -37,9 +37,11 @@ from .models import (
     GEI,
     Member,
     Order,
+    CourseEnrollment,
     Payment,
     PaymentProvider,
     Product,
+    Profile,
     SiteSetting,
     Testimonial,
     VenueBooking,
@@ -545,6 +547,8 @@ def _serialize_course(c: Course, enroll_count: int | None = None) -> dict[str, A
         "description": c.description,
         "level": c.level,
         "banner": c.banner.url if c.banner else "",
+        "teacher": c.teacher_id,
+        "teacher_name": (c.teacher.get_full_name() or c.teacher.username) if c.teacher else "",
         "enrollment_count": enroll_count,
         "chapter_count": chap,
         "created_at": c.created_at.isoformat(),
@@ -565,7 +569,7 @@ def _serialize_chapter(ch: Chapter) -> dict[str, Any]:
 
 
 def _filtered_courses(request: HttpRequest) -> QuerySet:
-    qs = Course.objects.annotate(
+    qs = Course.objects.select_related("teacher").annotate(
         enrollment_count=Count("enrollments", distinct=True),
         chapter_count=Count("chapters", distinct=True),
     ).all()
@@ -698,6 +702,17 @@ def _clean_course_data(data: dict, *, partial: bool, exclude_pk: int | None = No
         cleaned["description"] = str(data.get("description") or "")
     elif not partial:
         cleaned["description"] = ""
+    if "teacher" in data or "teacher_id" in data:
+        tid = data.get("teacher") if "teacher" in data else data.get("teacher_id")
+        tid = tid or None
+        if tid:
+            try:
+                tid = int(tid)
+            except (ValueError, TypeError):
+                return None, "Professeur invalide."
+            if not Profile.objects.filter(user_id=tid, role=Profile.Role.TEACHER).exists():
+                return None, "Ce professeur n'existe pas."
+        cleaned["teacher_id"] = tid
     if "public_slug" in data or not partial:
         slug = str(data.get("public_slug") or "").strip()
         if len(slug) > _COURSE_MAXLEN["public_slug"]:
@@ -899,6 +914,121 @@ def chapter_video_remove(request: HttpRequest, pk: int) -> JsonResponse:
         ch.video = ""
         ch.save(update_fields=["video"])
     return JsonResponse(_serialize_chapter(ch))
+
+
+# ── Plateforme de formation : utilisateurs & inscriptions (synchro admin) ──
+
+def _serialize_profile(p: Profile) -> dict[str, Any]:
+    u = p.user
+    return {
+        "id": p.pk,
+        "name": u.get_full_name() or u.username,
+        "email": u.email,
+        "role": p.role,
+        "phone": p.phone,
+        "is_approved": p.is_approved,
+        "enrollments": u.course_enrollments.count(),
+        "created_at": p.created_at.isoformat(),
+    }
+
+
+@staff_required
+def learner_list(request: HttpRequest) -> JsonResponse:
+    qs = Profile.objects.select_related("user").all()
+    role = request.GET.get("role")
+    if role:
+        qs = qs.filter(role=role)
+    search = request.GET.get("search")
+    if search:
+        qs = qs.filter(
+            Q(user__username__icontains=search)
+            | Q(user__first_name__icontains=search)
+            | Q(user__last_name__icontains=search)
+            | Q(user__email__icontains=search)
+        )
+    return _paginated_response(qs.order_by("-created_at"), request, _serialize_profile)
+
+
+@staff_required
+@require_http_methods(["GET", "PUT", "DELETE"])
+def learner_detail(request: HttpRequest, pk: int) -> JsonResponse:
+    try:
+        p = Profile.objects.select_related("user").get(pk=pk)
+    except Profile.DoesNotExist:
+        return _error("Utilisateur introuvable", 404)
+    if request.method == "GET":
+        return JsonResponse(_serialize_profile(p))
+    if request.method == "PUT":
+        data = _json_body(request)
+        if "is_approved" in data:
+            p.is_approved = bool(data["is_approved"])
+        if "phone" in data:
+            p.phone = str(data.get("phone") or "")
+        p.save()
+        logger.info("Profile %d updated by %s", pk, request.user.username)
+        return JsonResponse(_serialize_profile(p))
+    user = p.user  # DELETE : supprime le compte (cascade profil + inscriptions)
+    if user.is_superuser:
+        return _error("Impossible de supprimer un super-administrateur.", 409)
+    user.delete()
+    return _ok()
+
+
+@staff_required
+def teacher_options(request: HttpRequest) -> JsonResponse:
+    teachers = Profile.objects.filter(
+        role=Profile.Role.TEACHER, is_approved=True
+    ).select_related("user")
+    return JsonResponse({
+        "items": [
+            {"id": p.user_id, "name": p.user.get_full_name() or p.user.username}
+            for p in teachers
+        ]
+    })
+
+
+def _serialize_course_enrollment(e: CourseEnrollment) -> dict[str, Any]:
+    return {
+        "id": e.pk,
+        "student_name": e.student.get_full_name() or e.student.username,
+        "student_email": e.student.email,
+        "course_title": e.course.title,
+        "price_htg": e.course.price_htg,
+        "status": e.status,
+        "created_at": e.created_at.isoformat(),
+    }
+
+
+@staff_required
+def course_enrollment_list(request: HttpRequest) -> JsonResponse:
+    qs = CourseEnrollment.objects.select_related("student", "course").all()
+    status = request.GET.get("status")
+    if status:
+        qs = qs.filter(status=status)
+    search = request.GET.get("search")
+    if search:
+        qs = qs.filter(Q(student__username__icontains=search) | Q(course__title__icontains=search))
+    return _paginated_response(qs.order_by("-created_at"), request, _serialize_course_enrollment)
+
+
+@staff_required
+@require_http_methods(["GET", "PUT", "DELETE"])
+def course_enrollment_detail(request: HttpRequest, pk: int) -> JsonResponse:
+    try:
+        e = CourseEnrollment.objects.select_related("student", "course").get(pk=pk)
+    except CourseEnrollment.DoesNotExist:
+        return _error("Inscription introuvable", 404)
+    if request.method == "GET":
+        return JsonResponse(_serialize_course_enrollment(e))
+    if request.method == "PUT":
+        st = _json_body(request).get("status")
+        if st in (CourseEnrollment.Status.ACTIVE, CourseEnrollment.Status.PENDING_PAYMENT):
+            e.status = st
+            e.save(update_fields=["status", "updated_at"])
+            logger.info("CourseEnrollment %d -> %s by %s", pk, st, request.user.username)
+        return JsonResponse(_serialize_course_enrollment(e))
+    e.delete()
+    return _ok()
 
 
 # ── Bookings ─────────────────────────────────────────────

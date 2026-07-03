@@ -1,0 +1,10 @@
+{% extends "formation/base.html" %}
+{% block title %}Compte en attente — {{ site.site_name|default:"IMSO" }} Formation{% endblock %}
+{% block content %}
+<div class="card empty" style="max-width:520px;margin:50px auto">
+  <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6"><circle cx="12" cy="12" r="9"/><path d="M12 7v5l3 2"/></svg>
+  <h3>Votre compte professeur est en attente de validation</h3>
+  <p>Un administrateur doit approuver votre compte avant que vous puissiez accéder à votre espace professeur. Vous recevrez l'accès dès la validation.</p>
+  <a class="btn btn--o" href="/formation/" style="margin-top:16px">Parcourir le catalogue</a>
+</div>
+{% endblock %}

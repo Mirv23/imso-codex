@@ -47,6 +47,7 @@ INSTALLED_APPS = [
     "rest_framework",
     "apps.core",
     "apps.adminpanel",
+    "apps.formation",
     "drf_spectacular",
 ]
 

@@ -1,0 +1,30 @@
+{% extends "formation/base.html" %}
+{% block title %}Connexion — {{ site.site_name|default:"IMSO" }} Formation{% endblock %}
+{% block head %}<style>
+.authwrap{max-width:420px;margin:52px auto}
+.authwrap h1{font-size:24px;font-weight:800;letter-spacing:-.02em;text-align:center}
+.authwrap .sub{color:var(--muted);text-align:center;margin:6px 0 22px;font-size:14px}
+.authcard{padding:26px}
+.fg{margin-bottom:15px}
+.fg label{display:block;font-size:13px;font-weight:700;margin-bottom:6px;color:#38493f}
+.fg input{width:100%;padding:11px 13px;border:1px solid var(--line);border-radius:10px;font-size:14.5px;background:#fff;color:var(--ink)}
+.fg input:focus{outline:none;border-color:var(--primary);box-shadow:0 0 0 3px rgba(45,106,79,.12)}
+.authcard .btn{width:100%;justify-content:center;margin-top:6px}
+.authalt{text-align:center;margin-top:16px;font-size:13.5px;color:var(--muted)}
+.authalt a{color:var(--primary);font-weight:700}
+</style>{% endblock %}
+{% block content %}
+<div class="authwrap">
+  <h1>Connexion</h1>
+  <p class="sub">Accédez à vos formations</p>
+  <div class="card authcard">
+    <form method="post" novalidate>{% csrf_token %}
+      {% if form.non_field_errors %}<div class="fmsg__i error" style="margin-bottom:14px">Email ou mot de passe incorrect.</div>{% endif %}
+      <div class="fg"><label>Adresse email</label><input type="text" name="username" value="{{ form.username.value|default:'' }}" autocomplete="username" required></div>
+      <div class="fg"><label>Mot de passe</label><input type="password" name="password" autocomplete="current-password" required></div>
+      <button class="btn btn--p btn--lg" type="submit">Se connecter</button>
+    </form>
+    <div class="authalt">Pas encore de compte ? <a href="/formation/inscription/">Créer un compte</a></div>
+  </div>
+</div>
+{% endblock %}

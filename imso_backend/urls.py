@@ -12,6 +12,7 @@ urlpatterns = [
     path("", include("apps.core.urls")),
     path("django-admin/", admin.site.urls),
     path("dashboard/", include("apps.adminpanel.urls")),
+    path("formation/", include("apps.formation.urls")),
     path("login/", RateLimitedLoginView.as_view(), name="login"),
     path("logout/", LogoutView.as_view(), name="logout"),
     path("api/schema/", SpectacularAPIView.as_view(), name="schema"),

@@ -135,6 +135,11 @@ class Course(TimestampedModel):
     # Média (persistant uniquement avec un stockage objet type Supabase Storage)
     banner = models.FileField(upload_to="courses/banners/", blank=True)
     level = models.CharField(max_length=20, choices=Level.choices, blank=True)
+    # Professeur (compte utilisateur) responsable du cours sur la plateforme.
+    teacher = models.ForeignKey(
+        settings.AUTH_USER_MODEL, on_delete=models.SET_NULL,
+        null=True, blank=True, related_name="courses_taught",
+    )
 
     class Meta:
         ordering = ["category", "title"]
@@ -159,6 +164,50 @@ class Chapter(TimestampedModel):
 
     def __str__(self) -> str:
         return f"{self.course_id} · {self.position}. {self.title}"
+
+
+class Profile(TimestampedModel):
+    """Profil d'un utilisateur de la plateforme de formation (étudiant ou prof)."""
+    class Role(models.TextChoices):
+        STUDENT = "student", "Étudiant"
+        TEACHER = "teacher", "Professeur"
+
+    user = models.OneToOneField(
+        settings.AUTH_USER_MODEL, on_delete=models.CASCADE, related_name="profile"
+    )
+    role = models.CharField(max_length=10, choices=Role.choices, default=Role.STUDENT)
+    phone = models.CharField(max_length=40, blank=True)
+    bio = models.TextField(blank=True)
+    # Les profs restent en attente jusqu'à l'approbation d'un admin ; étudiants OK d'emblée.
+    is_approved = models.BooleanField(default=True)
+
+    class Meta:
+        ordering = ["-created_at"]
+
+    def __str__(self) -> str:
+        return f"{self.user.username} ({self.role})"
+
+
+class CourseEnrollment(TimestampedModel):
+    """Inscription d'un étudiant (compte utilisateur) à un cours de la plateforme."""
+    class Status(models.TextChoices):
+        PENDING_PAYMENT = "pending_payment", "Paiement en attente"
+        ACTIVE = "active", "Actif"
+
+    student = models.ForeignKey(
+        settings.AUTH_USER_MODEL, on_delete=models.CASCADE, related_name="course_enrollments"
+    )
+    course = models.ForeignKey(Course, on_delete=models.CASCADE, related_name="student_enrollments")
+    status = models.CharField(max_length=20, choices=Status.choices, default=Status.ACTIVE)
+
+    class Meta:
+        ordering = ["-created_at"]
+        constraints = [
+            models.UniqueConstraint(fields=["student", "course"], name="unique_student_course")
+        ]
+
+    def __str__(self) -> str:
+        return f"{self.student_id} -> {self.course_id} ({self.status})"
 
 
 class Enrollment(TimestampedModel):

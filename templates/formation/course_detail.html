@@ -1,0 +1,94 @@
+{% extends "formation/base.html" %}
+{% block title %}{{ course.title }} — {{ site.site_name|default:"IMSO" }} Formation{% endblock %}
+{% block head %}<style>
+.cd-top{background:linear-gradient(135deg,var(--primary),var(--primary-d));color:#fff;border-radius:var(--radius);overflow:hidden;position:relative;margin-top:22px}
+.cd-top__img{position:absolute;inset:0;width:100%;height:100%;object-fit:cover;opacity:.28}
+.cd-top__in{position:relative;padding:30px 30px 26px}
+.cd-cat{display:inline-block;background:rgba(255,255,255,.2);padding:4px 12px;border-radius:999px;font-size:12px;font-weight:700;margin-bottom:12px}
+.cd-title{font-size:30px;font-weight:800;letter-spacing:-.02em;line-height:1.15}
+.cd-meta{display:flex;flex-wrap:wrap;gap:16px;margin-top:14px;font-size:13.5px;opacity:.95}
+.cd-meta span{display:inline-flex;align-items:center;gap:6px}
+.cd-meta svg{width:15px;height:15px}
+.cd-grid{display:grid;grid-template-columns:1fr;gap:22px;margin-top:22px}
+@media(min-width:900px){.cd-grid{grid-template-columns:1fr 320px;align-items:start}}
+.cd-desc{white-space:pre-line;color:#38493f;font-size:15px}
+.cd-sec-t{font-size:18px;font-weight:800;margin:26px 0 12px}
+.chap{display:flex;flex-direction:column;gap:10px}
+.chap__i{border:1px solid var(--line);border-radius:12px;overflow:hidden;background:#fff}
+.chap__h{display:flex;align-items:center;gap:13px;padding:13px 15px}
+.chap__n{width:28px;height:28px;border-radius:8px;background:var(--primary);color:#fff;font-weight:800;font-size:13px;display:grid;place-items:center;flex-shrink:0}
+.chap__t{font-weight:700;font-size:14.5px;flex:1}
+.chap__d{color:var(--muted);font-size:12px}
+.chap__lock{color:var(--muted)}.chap__lock svg{width:16px;height:16px}
+.chap video{width:100%;display:block;background:#000;max-height:420px}
+.chap__desc{padding:0 15px 14px;color:var(--muted);font-size:13px}
+.side{position:sticky;top:84px}
+.side .price{font-size:28px}
+.pay-box{margin-top:14px;padding:14px;background:var(--bg);border-radius:12px;font-size:13.5px;color:#38493f}
+.pay-box b{color:var(--ink)}
+.side .btn{width:100%;justify-content:center;margin-top:14px}
+.lockmsg{padding:14px;border-radius:12px;background:#fef3e2;color:#8a5212;font-size:13.5px;font-weight:600}
+</style>{% endblock %}
+{% block content %}
+<div class="cd-top">
+  {% if course.banner %}<img class="cd-top__img" src="{{ course.banner.url }}" alt="">{% endif %}
+  <div class="cd-top__in">
+    <span class="cd-cat">{{ course.category }}</span>
+    <div class="cd-title">{{ course.title }}</div>
+    <div class="cd-meta">
+      <span><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="8" r="4"/><path d="M4 21v-1a6 6 0 0 1 12 0v1"/></svg>{% if course.teacher %}{{ course.teacher.get_full_name|default:course.teacher.username }}{% else %}{{ course.instructor }}{% endif %}</span>
+      <span><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><line x1="8" y1="6" x2="21" y2="6"/><line x1="8" y1="12" x2="21" y2="12"/><line x1="8" y1="18" x2="21" y2="18"/><line x1="3" y1="6" x2="3.01" y2="6"/><line x1="3" y1="12" x2="3.01" y2="12"/><line x1="3" y1="18" x2="3.01" y2="18"/></svg>{{ chapters|length }} chapitre{{ chapters|length|pluralize }}</span>
+      {% if total_minutes %}<span><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="9"/><path d="M12 7v5l3 2"/></svg>{{ total_minutes }} min</span>{% endif %}
+      {% if course.level %}<span>{{ course.get_level_display }}</span>{% endif %}
+    </div>
+  </div>
+</div>
+
+<div class="cd-grid">
+  <div>
+    {% if course.description %}<div class="cd-desc">{{ course.description }}</div>{% endif %}
+    <div class="cd-sec-t">Contenu du cours</div>
+    {% if chapters %}
+    <div class="chap">
+      {% for ch in chapters %}
+      <div class="chap__i">
+        <div class="chap__h">
+          <div class="chap__n">{{ forloop.counter }}</div>
+          <div class="chap__t">{{ ch.title }}</div>
+          {% if ch.duration_minutes %}<div class="chap__d">{{ ch.duration_minutes }} min</div>{% endif %}
+          {% if not has_access %}<span class="chap__lock"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="3" y="11" width="18" height="11" rx="2"/><path d="M7 11V7a5 5 0 0 1 10 0v4"/></svg></span>{% endif %}
+        </div>
+        {% if has_access and ch.video %}<video controls preload="metadata" src="{{ ch.video.url }}"></video>{% endif %}
+        {% if ch.description %}<div class="chap__desc">{{ ch.description }}</div>{% endif %}
+      </div>
+      {% endfor %}
+    </div>
+    {% else %}
+    <p class="lead">Le contenu de ce cours arrive bientôt.</p>
+    {% endif %}
+  </div>
+
+  <aside>
+    <div class="card side" style="padding:20px">
+      {% if course.price_htg %}<div class="price">{{ course.price_htg }} HTG</div>{% else %}<div class="price free" style="color:#1a7a44">Gratuit</div>{% endif %}
+
+      {% if has_access %}
+        <div class="tag tag--green" style="margin-top:10px">✓ Vous avez accès à ce cours</div>
+        {% if is_owner and not enrollment %}<p class="lead" style="font-size:13px;margin-top:10px">Vous êtes le professeur de ce cours.</p>{% endif %}
+      {% elif enrollment and enrollment.status == "pending_payment" %}
+        <div class="lockmsg" style="margin-top:12px">⏳ Paiement en attente de confirmation</div>
+        <div class="pay-box">
+          Pour débloquer l'accès, payez <b>{{ course.price_htg }} HTG</b>{% if settings.contact_whatsapp %} via WhatsApp au <b>{{ settings.contact_whatsapp }}</b>{% elif settings.contact_phone %} au <b>{{ settings.contact_phone }}</b>{% endif %}. L'accès sera activé dès la confirmation par notre équipe.
+        </div>
+      {% elif user.is_authenticated %}
+        <form method="post" action="/formation/cours/{{ course.pk }}/inscription/">{% csrf_token %}
+          <button class="btn btn--p btn--lg" type="submit">{% if course.price_htg %}S'inscrire à ce cours{% else %}S'inscrire gratuitement{% endif %}</button>
+        </form>
+      {% else %}
+        <a class="btn btn--p btn--lg" href="/formation/connexion/?next=/formation/cours/{{ course.pk }}/">Se connecter pour s'inscrire</a>
+        <p class="lead" style="font-size:13px;margin-top:10px;text-align:center">Pas de compte ? <a href="/formation/inscription/" style="color:var(--primary);font-weight:700">Inscrivez-vous</a></p>
+      {% endif %}
+    </div>
+  </aside>
+</div>
+{% endblock %}
