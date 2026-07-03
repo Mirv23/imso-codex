@@ -429,8 +429,8 @@ def _serialize_member(m: Member) -> dict[str, Any]:
     }
 
 
-@staff_required
-def member_list(request: HttpRequest) -> JsonResponse:
+def _filtered_members(request: HttpRequest) -> QuerySet:
+    """Queryset des membres avec recherche/filtres/tri appliqués (partagé)."""
     qs = Member.objects.select_related("gei").all()
     search = request.GET.get("search")
     if search:
@@ -440,7 +440,7 @@ def member_list(request: HttpRequest) -> JsonResponse:
             | Q(email__icontains=search)
         )
     gei = request.GET.get("gei")
-    if gei:
+    if gei and str(gei).isdigit():
         qs = qs.filter(gei_id=gei)
     status = request.GET.get("status")
     if status:
@@ -452,8 +452,47 @@ def member_list(request: HttpRequest) -> JsonResponse:
         "savings": ("-monthly_saving_htg",),
         "savings_asc": ("monthly_saving_htg",),
     }
-    qs = qs.order_by(*sort_map.get(request.GET.get("sort"), ("-created_at",)))
-    return _paginated_response(qs, request, _serialize_member)
+    return qs.order_by(*sort_map.get(request.GET.get("sort"), ("-created_at",)))
+
+
+@staff_required
+def member_list(request: HttpRequest) -> JsonResponse:
+    return _paginated_response(_filtered_members(request), request, _serialize_member)
+
+
+@staff_required
+def member_overview(request: HttpRequest) -> JsonResponse:
+    """Vue Membres en UN seul appel : liste paginée + stats globales + GEIs.
+
+    Évite les 4 requêtes réseau séparées (liste, graphiques, résumé, GEIs) qui
+    ralentissaient l'affichage de la section, surtout au démarrage à froid Vercel.
+    """
+    qs = _filtered_members(request)
+    page, per_page, offset = _get_page_params(request)
+    total = qs.count()
+    items = [_serialize_member(m) for m in qs[offset: offset + per_page]]
+    status_counts = {
+        row["status"]: row["c"]
+        for row in Member.objects.values("status").annotate(c=Count("id"))
+    }
+    return JsonResponse({
+        "items": items,
+        "total": total,
+        "page": page,
+        "per_page": per_page,
+        "total_pages": (total + per_page - 1) // per_page if total else 0,
+        "stats": {
+            "total": sum(status_counts.values()),
+            "active": status_counts.get("active", 0),
+            "prospect": status_counts.get("prospect", 0),
+            "paused": status_counts.get("paused", 0),
+            "alumni": status_counts.get("alumni", 0),
+            "savings": Member.objects.aggregate(s=Sum("monthly_saving_htg"))["s"] or 0,
+        },
+        "geis": list(
+            GEI.objects.filter(is_active=True).values("id", "name", "city").order_by("city", "name")
+        ),
+    })
 
 
 @staff_required
