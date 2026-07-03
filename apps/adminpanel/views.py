@@ -543,8 +543,7 @@ def _serialize_course(c: Course, enroll_count: int | None = None) -> dict[str, A
     }
 
 
-@staff_required
-def course_list(request: HttpRequest) -> JsonResponse:
+def _filtered_courses(request: HttpRequest) -> QuerySet:
     qs = Course.objects.annotate(enrollment_count=Count("enrollments")).all()
     search = request.GET.get("search")
     if search:
@@ -557,10 +556,47 @@ def course_list(request: HttpRequest) -> JsonResponse:
     if category:
         qs = qs.filter(category=category)
     active = request.GET.get("active")
-    if active is not None:
-        qs = qs.filter(is_active=active.lower() in ("1", "true"))
-    qs = qs.order_by("-created_at")
-    return _paginated_response(qs, request, _serialize_course)
+    if active in ("1", "0", "true", "false"):
+        qs = qs.filter(is_active=active in ("1", "true"))
+    sort_map = {
+        "recent": ("-created_at",),
+        "title": ("title",),
+        "price": ("-price_htg",),
+        "price_asc": ("price_htg",),
+        "enrollments": ("-enrollment_count",),
+    }
+    return qs.order_by(*sort_map.get(request.GET.get("sort"), ("-created_at",)))
+
+
+@staff_required
+def course_list(request: HttpRequest) -> JsonResponse:
+    return _paginated_response(_filtered_courses(request), request, _serialize_course)
+
+
+@staff_required
+def course_overview(request: HttpRequest) -> JsonResponse:
+    """Vue Cours en un seul appel : liste paginée + stats + catégories."""
+    qs = _filtered_courses(request)
+    page, per_page, offset = _get_page_params(request)
+    total = qs.count()
+    items = [_serialize_course(c) for c in qs[offset: offset + per_page]]
+    all_courses = Course.objects.all()
+    return JsonResponse({
+        "items": items,
+        "total": total,
+        "page": page,
+        "per_page": per_page,
+        "total_pages": (total + per_page - 1) // per_page if total else 0,
+        "stats": {
+            "total": all_courses.count(),
+            "active": all_courses.filter(is_active=True).count(),
+            "inactive": all_courses.filter(is_active=False).count(),
+            "enrollments": Enrollment.objects.count(),
+        },
+        "categories": sorted(
+            {c for c in all_courses.values_list("category", flat=True) if c}
+        ),
+    })
 
 
 @ensure_csrf_cookie
@@ -574,42 +610,86 @@ def course_detail(request: HttpRequest, pk: int) -> JsonResponse:
     if request.method == "GET":
         return JsonResponse(_serialize_course(c))
     elif request.method == "PUT":
-        data = _json_body(request)
-        for fld in ("title", "category", "instructor", "city", "price_htg",
-                     "capacity", "is_active", "public_slug", "description"):
-            if fld in data:
-                setattr(c, fld, data[fld])
+        cleaned, err = _clean_course_data(_json_body(request), partial=True, exclude_pk=pk)
+        if err:
+            return _error(err)
+        for fld, val in cleaned.items():
+            setattr(c, fld, val)
         c.save()
         logger.info("Course %d updated by user %s", pk, request.user.username)
         return JsonResponse(_serialize_course(c))
     elif request.method == "DELETE":
-        reason = _deletion_block_reason(c)
-        if reason:
-            return _error(reason, 409)
+        # Suppression libre : les inscriptions liées sont conservées (leur lien
+        # vers le cours passe à NULL). Aucune donnée détruite en cascade.
         logger.info("Course %d deleted by user %s", pk, request.user.username)
         c.delete()
         return _ok()
 
 
+_COURSE_MAXLEN = {"title": 180, "category": 80, "instructor": 120, "city": 120, "public_slug": 200}
+_COURSE_LABELS = {"title": "Le titre", "category": "La catégorie", "instructor": "Le formateur", "city": "La ville"}
+
+
+def _clean_course_data(data: dict, *, partial: bool, exclude_pk: int | None = None):
+    """Valide/normalise un cours. Retourne (cleaned, erreur).
+
+    Empêche les 500 : longueurs, prix/capacité non-numériques ou négatifs, et
+    surtout la collision de slug (public_slug="" est unique -> le 2e cours sans
+    slug plantait). Un slug vide devient NULL (plusieurs NULL autorisés).
+    """
+    cleaned: dict[str, Any] = {}
+    for f in ("title", "category", "instructor"):
+        if f in data or not partial:
+            val = str(data.get(f) or "").strip()
+            if not val:
+                return None, f"{_COURSE_LABELS[f]} est obligatoire."
+            if len(val) > _COURSE_MAXLEN[f]:
+                return None, f"{_COURSE_LABELS[f]} ne peut pas dépasser {_COURSE_MAXLEN[f]} caractères."
+            cleaned[f] = val
+    if "city" in data or not partial:
+        city = str(data.get("city") or "").strip()
+        if len(city) > _COURSE_MAXLEN["city"]:
+            return None, "La ville ne peut pas dépasser 120 caractères."
+        cleaned["city"] = city
+    for f, label in (("price_htg", "Le prix"), ("capacity", "La capacité")):
+        if f in data or not partial:
+            raw = data.get(f)
+            try:
+                n = int(raw) if raw not in (None, "") else 0
+            except (ValueError, TypeError):
+                return None, f"{label} doit être un nombre."
+            if n < 0:
+                return None, f"{label} ne peut pas être négatif."
+            cleaned[f] = n
+    if "is_active" in data:
+        cleaned["is_active"] = bool(data.get("is_active"))
+    elif not partial:
+        cleaned["is_active"] = True
+    if "description" in data:
+        cleaned["description"] = str(data.get("description") or "")
+    elif not partial:
+        cleaned["description"] = ""
+    if "public_slug" in data or not partial:
+        slug = str(data.get("public_slug") or "").strip()
+        if len(slug) > _COURSE_MAXLEN["public_slug"]:
+            return None, "Le slug public est trop long."
+        if slug:
+            dup = Course.objects.filter(public_slug=slug)
+            if exclude_pk:
+                dup = dup.exclude(pk=exclude_pk)
+            if dup.exists():
+                return None, "Ce slug public est déjà utilisé par un autre cours."
+        cleaned["public_slug"] = slug or None
+    return cleaned, None
+
+
 @staff_required
 @require_http_methods(["POST"])
 def course_create(request: HttpRequest) -> JsonResponse:
-    data = _json_body(request)
-    required = ("title", "category", "instructor", "city", "price_htg", "capacity")
-    for f in required:
-        if f not in data:
-            return _error(f"Missing field: {f}")
-    c = Course.objects.create(
-        title=data["title"],
-        category=data["category"],
-        instructor=data["instructor"],
-        city=data.get("city", ""),
-        price_htg=data.get("price_htg", 0),
-        capacity=data.get("capacity", 0),
-        is_active=data.get("is_active", True),
-        public_slug=data.get("public_slug", ""),
-        description=data.get("description", ""),
-    )
+    cleaned, err = _clean_course_data(_json_body(request), partial=False)
+    if err:
+        return _error(err)
+    c = Course.objects.create(**cleaned)
     logger.info("Course %d created by user %s (%s)", c.pk, request.user.username, c.title)
     return JsonResponse(_serialize_course(c), status=201)
 
@@ -811,17 +891,49 @@ def _serialize_gei(g: GEI, member_count: int | None = None) -> dict[str, Any]:
     }
 
 
-@staff_required
-def gei_list(request: HttpRequest) -> JsonResponse:
+def _filtered_geis(request: HttpRequest) -> QuerySet:
     qs = GEI.objects.annotate(member_count=Count("members")).all()
     search = request.GET.get("search")
     if search:
         qs = qs.filter(Q(name__icontains=search) | Q(city__icontains=search))
     active = request.GET.get("active")
-    if active is not None:
-        qs = qs.filter(is_active=active.lower() in ("1", "true"))
-    qs = qs.order_by("city", "name")
-    return _paginated_response(qs, request, _serialize_gei)
+    if active in ("1", "0", "true", "false"):
+        qs = qs.filter(is_active=active in ("1", "true"))
+    sort_map = {
+        "city": ("city", "name"),
+        "name": ("name",),
+        "members": ("-member_count",),
+        "recent": ("-created_at",),
+    }
+    return qs.order_by(*sort_map.get(request.GET.get("sort"), ("city", "name")))
+
+
+@staff_required
+def gei_list(request: HttpRequest) -> JsonResponse:
+    return _paginated_response(_filtered_geis(request), request, _serialize_gei)
+
+
+@staff_required
+def gei_overview(request: HttpRequest) -> JsonResponse:
+    """Vue GEIs en un seul appel : liste paginée + stats globales."""
+    qs = _filtered_geis(request)
+    page, per_page, offset = _get_page_params(request)
+    total = qs.count()
+    items = [_serialize_gei(g) for g in qs[offset: offset + per_page]]
+    all_geis = GEI.objects.all()
+    return JsonResponse({
+        "items": items,
+        "total": total,
+        "page": page,
+        "per_page": per_page,
+        "total_pages": (total + per_page - 1) // per_page if total else 0,
+        "stats": {
+            "total": all_geis.count(),
+            "active": all_geis.filter(is_active=True).count(),
+            "inactive": all_geis.filter(is_active=False).count(),
+            "members": Member.objects.filter(gei__isnull=False).count(),
+        },
+    })
 
 
 @ensure_csrf_cookie
@@ -835,35 +947,56 @@ def gei_detail(request: HttpRequest, pk: int) -> JsonResponse:
     if request.method == "GET":
         return JsonResponse(_serialize_gei(g))
     elif request.method == "PUT":
-        data = _json_body(request)
-        for fld in ("name", "city", "coordinator", "is_active"):
-            if fld in data:
-                setattr(g, fld, data[fld])
+        cleaned, err = _clean_gei_data(_json_body(request), partial=True)
+        if err:
+            return _error(err)
+        for fld, val in cleaned.items():
+            setattr(g, fld, val)
         g.save()
         logger.info("GEI %d updated by user %s", pk, request.user.username)
         return JsonResponse(_serialize_gei(g))
     elif request.method == "DELETE":
-        reason = _deletion_block_reason(g)
-        if reason:
-            return _error(reason, 409)
+        # Suppression libre : les membres rattachés sont conservés (leur lien
+        # vers le GEI passe à NULL). Aucune donnée détruite en cascade.
         logger.info("GEI %d deleted by user %s", pk, request.user.username)
         g.delete()
         return _ok()
 
 
+_GEI_MAXLEN = {"name": 120, "city": 120, "coordinator": 120}
+_GEI_LABELS = {"name": "Le nom", "city": "La ville"}
+
+
+def _clean_gei_data(data: dict, *, partial: bool):
+    """Valide/normalise un GEI. Retourne (cleaned, erreur). Empêche les 500."""
+    cleaned: dict[str, Any] = {}
+    for f in ("name", "city"):
+        if f in data or not partial:
+            val = str(data.get(f) or "").strip()
+            if not val:
+                return None, f"{_GEI_LABELS[f]} est obligatoire."
+            if len(val) > _GEI_MAXLEN[f]:
+                return None, f"{_GEI_LABELS[f]} ne peut pas dépasser {_GEI_MAXLEN[f]} caractères."
+            cleaned[f] = val
+    if "coordinator" in data or not partial:
+        coord = str(data.get("coordinator") or "").strip()
+        if len(coord) > _GEI_MAXLEN["coordinator"]:
+            return None, "Le coordinateur ne peut pas dépasser 120 caractères."
+        cleaned["coordinator"] = coord
+    if "is_active" in data:
+        cleaned["is_active"] = bool(data.get("is_active"))
+    elif not partial:
+        cleaned["is_active"] = True
+    return cleaned, None
+
+
 @staff_required
 @require_http_methods(["POST"])
 def gei_create(request: HttpRequest) -> JsonResponse:
-    data = _json_body(request)
-    for f in ("name", "city"):
-        if f not in data:
-            return _error(f"Missing field: {f}")
-    g = GEI.objects.create(
-        name=data["name"],
-        city=data["city"],
-        coordinator=data.get("coordinator", ""),
-        is_active=data.get("is_active", True),
-    )
+    cleaned, err = _clean_gei_data(_json_body(request), partial=False)
+    if err:
+        return _error(err)
+    g = GEI.objects.create(**cleaned)
     logger.info("GEI %d created by user %s (%s - %s)", g.pk, request.user.username, g.name, g.city)
     return JsonResponse(_serialize_gei(g), status=201)
 

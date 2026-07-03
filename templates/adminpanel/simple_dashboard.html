@@ -302,6 +302,14 @@ textarea { resize: vertical; min-height: 80px; }
 .mloading { display:flex; align-items:center; justify-content:center; gap:10px; padding:60px 20px; color:var(--muted); font-size:14px; }
 .mspin { width:20px; height:20px; border:2.5px solid var(--border); border-top-color:var(--primary); border-radius:50%; animation:mspin .7s linear infinite; }
 @keyframes mspin { to { transform:rotate(360deg); } }
+.mcard__av svg { width:22px; height:22px; }
+.mtag { display:inline-block; padding:2px 9px; border-radius:6px; font-size:11px; font-weight:600; background:var(--bg); color:var(--muted); }
+.mcap { flex:0 0 auto; min-width:118px; }
+.mcap__top { display:flex; justify-content:space-between; font-size:11px; color:var(--muted); margin-bottom:4px; }
+.mcap__top b { color:var(--text); font-variant-numeric:tabular-nums; }
+.mcap__track { height:7px; background:var(--bg); border-radius:5px; overflow:hidden; }
+.mcap__fill { height:100%; border-radius:5px; width:0; transition:width .8s cubic-bezier(.55,.1,.25,1); }
+@media (max-width:820px){ .mcap { display:none; } }
 </style>
 </head>
 <body>
@@ -524,6 +532,8 @@ function navigateTo(section, resetPage = true) {
   else if (section === 'export') renderExport();
   else if (section === 'settings') renderSettings();
   else if (section === 'members') { if (resetPage) memberFilters.search = ''; loadMembers(); }
+  else if (section === 'geis') { if (resetPage) geiFilters.search = ''; loadGeis(); }
+  else if (section === 'courses') { if (resetPage) courseFilters.search = ''; loadCourses(); }
   else loadTable(section);
 }
 
@@ -751,9 +761,9 @@ const SECTIONS = {
     ],
     formTitle: r => r ? 'Modifier le GEI' : 'Nouveau GEI',
     formFields: r => [
-      { name:'name', label:'Nom', type:'text', value: r?.name || '', required: true },
-      { name:'city', label:'Ville', type:'text', value: r?.city || '', required: true },
-      { name:'coordinator', label:'Coordinateur', type:'text', value: r?.coordinator || '' },
+      { name:'name', label:'Nom', type:'text', value: r?.name || '', required: true, maxLength: 120 },
+      { name:'city', label:'Ville', type:'text', value: r?.city || '', required: true, maxLength: 120 },
+      { name:'coordinator', label:'Coordinateur', type:'text', value: r?.coordinator || '', maxLength: 120 },
       { name:'is_active', label:'Actif', type:'checkbox', value: r?.is_active ?? true },
     ],
     detailUrl: r => '/dashboard/api/geis/' + r.id + '/',
@@ -773,12 +783,12 @@ const SECTIONS = {
     ],
     formTitle: r => r ? 'Modifier le cours' : 'Nouveau cours',
     formFields: r => [
-      { name:'title', label:'Titre', type:'text', value: r?.title || '', required: true },
-      { name:'category', label:'Catégorie', type:'text', value: r?.category || '', required: true },
-      { name:'instructor', label:'Formateur', type:'text', value: r?.instructor || '', required: true },
-      { name:'city', label:'Ville', type:'text', value: r?.city || '' },
-      { name:'price_htg', label:'Prix (HTG)', type:'number', value: r?.price_htg || 0 },
-      { name:'capacity', label:'Capacité', type:'number', value: r?.capacity || 0 },
+      { name:'title', label:'Titre', type:'text', value: r?.title || '', required: true, maxLength: 180 },
+      { name:'category', label:'Catégorie', type:'text', value: r?.category || '', required: true, maxLength: 80 },
+      { name:'instructor', label:'Formateur', type:'text', value: r?.instructor || '', required: true, maxLength: 120 },
+      { name:'city', label:'Ville', type:'text', value: r?.city || '', maxLength: 120 },
+      { name:'price_htg', label:'Prix (HTG)', type:'number', value: r?.price_htg || 0, min: 0 },
+      { name:'capacity', label:'Capacité', type:'number', value: r?.capacity || 0, min: 0 },
       { name:'description', label:'Description', type:'textarea', value: r?.description || '' },
       { name:'is_active', label:'Actif', type:'checkbox', value: r?.is_active ?? true },
     ],
@@ -1112,6 +1122,8 @@ function renderTable(sectionKey, data) {
 // Rafraîchit une section après création/édition/suppression (route la bonne vue).
 function refreshSection(sectionKey) {
   if (sectionKey === 'members') loadMembers();
+  else if (sectionKey === 'geis') loadGeis();
+  else if (sectionKey === 'courses') loadCourses();
   else loadTable(sectionKey);
 }
 
@@ -1211,6 +1223,146 @@ function renderMembers(d) {
     if (si) { si.focus(); const v = si.value; si.value = ''; si.value = v; }
     _memberSearchFocus = false;
   }
+}
+
+// ---- Helpers partagés pour les vues premium (GEIs, Cours) ----
+const EDIT_ICON = '<svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M11 4H4a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-7"/><path d="M18.5 2.5a2.121 2.121 0 0 1 3 3L12 15l-4 1 1-4 9.5-9.5z"/></svg>';
+const DEL_ICON = '<svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="3 6 5 6 21 6"/><path d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6m3 0V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2"/></svg>';
+const PLUS_ICON = '<svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/></svg>';
+const SEARCH_ICON = '<svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="11" cy="11" r="8"/><line x1="21" y1="21" x2="16.65" y2="16.65"/></svg>';
+
+function pagerHtml(total, noun, page, totalPages, fn, addS) {
+  const label = total + ' ' + noun + ((addS !== false && total > 1) ? 's' : '');
+  let h = '<div class="mpager"><span>' + label + '</span>';
+  if (totalPages > 1) {
+    h += '<div class="mpager__nav">';
+    h += '<button class="btn btn-sm" ' + (page <= 1 ? 'disabled' : '') + ' onclick="' + fn + '(' + (page - 1) + ')">‹ Précédent</button>';
+    h += '<span style="font-weight:700;color:var(--text)">' + page + ' / ' + totalPages + '</span>';
+    h += '<button class="btn btn-sm" ' + (page >= totalPages ? 'disabled' : '') + ' onclick="' + fn + '(' + (page + 1) + ')">Suivant ›</button>';
+    h += '</div>';
+  }
+  return h + '</div>';
+}
+
+function statsHtml(stats) {
+  return '<div class="mstats">' + stats.map((x, i) => `<div class="mstat" style="--mc:${x.c};animation-delay:${i*50}ms"><div class="mstat__v">${x.v}</div><div class="mstat__l">${esc(x.l)}</div></div>`).join('') + '</div>';
+}
+
+function _headerNewButton(label, section) {
+  const actions = document.getElementById('headerActions');
+  actions.innerHTML = '';
+  const btn = document.createElement('button');
+  btn.className = 'btn btn-primary';
+  btn.innerHTML = PLUS_ICON + ' ' + label;
+  btn.onclick = () => openModal(section, null);
+  actions.appendChild(btn);
+}
+
+// ============= SECTION GEIs (vue premium) =============
+const geiFilters = { search: '', active: '', sort: 'city' };
+let _geiSearchTimer, _geiSearchFocus = false;
+function geiSearchInput(v) { geiFilters.search = v; _geiSearchFocus = true; clearTimeout(_geiSearchTimer); _geiSearchTimer = setTimeout(() => loadGeis(1), 260); }
+function setGeiActive(v) { geiFilters.active = v; loadGeis(1); }
+function setGeiSort(v) { geiFilters.sort = v; loadGeis(1); }
+
+const GEI_ICON = '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M21 10c0 7-9 13-9 13s-9-6-9-13a9 9 0 0 1 18 0z"/><circle cx="12" cy="10" r="3"/></svg>';
+
+function loadGeis(page) {
+  page = page || currentSection.page || 1; currentSection.page = page; currentSection.name = 'geis';
+  _headerNewButton('Nouveau GEI', 'geis');
+  const params = new URLSearchParams({ page, per_page: 12, sort: geiFilters.sort });
+  if (geiFilters.search) params.set('search', geiFilters.search);
+  if (geiFilters.active !== '') params.set('active', geiFilters.active);
+  const host = document.getElementById('card-geis');
+  if (!host.querySelector('.mlist') && !host.querySelector('.mempty')) host.innerHTML = '<div class="mloading"><span class="mspin"></span> Chargement des GEIs…</div>';
+  api('/dashboard/api/geis/overview/?' + params.toString()).then(d => renderGeis(d)).catch(e => { host.innerHTML = '<div class="card"><div style="padding:24px;color:var(--danger)">' + esc(e.message) + '</div></div>'; });
+}
+
+function renderGeis(d) {
+  const host = document.getElementById('card-geis');
+  const items = d.items || []; _rowCache['geis'] = {}; items.forEach(r => _rowCache['geis'][r.id] = r);
+  const total = d.total || 0, page = d.page || 1, totalPages = d.total_pages || 1; const s = d.stats || {};
+  let h = statsHtml([
+    { l:'Total GEIs', v: fmt(s.total || 0), c:'#2D6A4F' },
+    { l:'Actifs', v: fmt(s.active || 0), c:'#16A34A' },
+    { l:'Inactifs', v: fmt(s.inactive || 0), c:'#94A3B8' },
+    { l:'Membres rattachés', v: fmt(s.members || 0), c:'#2563EB' },
+  ]);
+  h += '<div class="mtoolbar"><div class="msearch">' + SEARCH_ICON + '<input id="geiSearch" type="text" placeholder="Rechercher un GEI (nom, ville)…" value="' + esc(geiFilters.search) + '" oninput="geiSearchInput(this.value)"></div>';
+  const sorts = [['city','Ville'],['name','Nom (A-Z)'],['members','Plus de membres'],['recent','Plus récents']];
+  h += '<select class="mselect" onchange="setGeiSort(this.value)">' + sorts.map(x => `<option value="${x[0]}" ${geiFilters.sort===x[0]?'selected':''}>${x[1]}</option>`).join('') + '</select></div>';
+  const chips = [['','Tous',s.total||0],['1','Actifs',s.active||0],['0','Inactifs',s.inactive||0]];
+  h += '<div class="mchips">' + chips.map(x => `<div class="mchip ${geiFilters.active===x[0]?'active':''}" onclick="setGeiActive('${x[0]}')">${x[1]}<span class="mchip__n">${x[2]}</span></div>`).join('') + '</div>';
+  if (!items.length) {
+    h += '<div class="mempty">' + GEI_ICON.replace('<svg', '<svg width="46" height="46"') + '<h4>Aucun GEI trouvé</h4><div>' + ((geiFilters.search || geiFilters.active !== '') ? 'Ajustez vos filtres.' : 'Créez votre premier GEI avec le bouton « Nouveau GEI ».') + '</div></div>';
+  } else {
+    h += '<div class="mlist">' + items.map((g, i) => {
+      const col = avatarColor(g.name || String(g.id));
+      const badge = g.is_active ? '<span class="pill pill-sm green">Actif</span>' : '<span class="pill pill-sm gray">Inactif</span>';
+      const coord = g.coordinator ? esc(g.coordinator) : '<span style="color:var(--muted)">Sans coordinateur</span>';
+      return `<div class="mcard" data-id="${g.id}" style="animation-delay:${Math.min(i*40,320)}ms"><div class="mcard__av" style="background:${hexA(col,0.15)};color:${col}">${GEI_ICON}</div><div class="mcard__main"><div class="mcard__name"><span class="nm">${esc(g.name)}</span>${badge}</div><div class="mcard__meta">${esc(g.city)} · ${coord}</div></div><div class="mcard__sav"><b>${fmt(g.member_count||0)}</b> <small>membre(s)</small></div><div class="mcard__act"><button class="membtn" title="Modifier" onclick="editRow('geis',${g.id})">${EDIT_ICON}</button><button class="membtn danger" title="Supprimer" onclick="confirmDelete('geis',${g.id})">${DEL_ICON}</button></div></div>`;
+    }).join('') + '</div>';
+  }
+  h += pagerHtml(total, 'GEI', page, totalPages, 'loadGeis');
+  host.innerHTML = h;
+  if (_geiSearchFocus) { const si = document.getElementById('geiSearch'); if (si) { si.focus(); const v = si.value; si.value = ''; si.value = v; } _geiSearchFocus = false; }
+}
+
+// ============= SECTION COURS (vue premium) =============
+const courseFilters = { search: '', category: '', active: '', sort: 'recent' };
+let _courseSearchTimer, _courseSearchFocus = false;
+function courseSearchInput(v) { courseFilters.search = v; _courseSearchFocus = true; clearTimeout(_courseSearchTimer); _courseSearchTimer = setTimeout(() => loadCourses(1), 260); }
+function setCourseCategory(v) { courseFilters.category = v; loadCourses(1); }
+function setCourseActive(v) { courseFilters.active = v; loadCourses(1); }
+function setCourseSort(v) { courseFilters.sort = v; loadCourses(1); }
+
+const COURSE_ICON = '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M4 19.5A2.5 2.5 0 0 1 6.5 17H20"/><path d="M6.5 2H20v20H6.5A2.5 2.5 0 0 1 4 19.5v-15A2.5 2.5 0 0 1 6.5 2z"/></svg>';
+
+function loadCourses(page) {
+  page = page || currentSection.page || 1; currentSection.page = page; currentSection.name = 'courses';
+  _headerNewButton('Nouveau cours', 'courses');
+  const params = new URLSearchParams({ page, per_page: 12, sort: courseFilters.sort });
+  if (courseFilters.search) params.set('search', courseFilters.search);
+  if (courseFilters.category) params.set('category', courseFilters.category);
+  if (courseFilters.active !== '') params.set('active', courseFilters.active);
+  const host = document.getElementById('card-courses');
+  if (!host.querySelector('.mlist') && !host.querySelector('.mempty')) host.innerHTML = '<div class="mloading"><span class="mspin"></span> Chargement des cours…</div>';
+  api('/dashboard/api/courses/overview/?' + params.toString()).then(d => renderCourses(d)).catch(e => { host.innerHTML = '<div class="card"><div style="padding:24px;color:var(--danger)">' + esc(e.message) + '</div></div>'; });
+}
+
+function renderCourses(d) {
+  const host = document.getElementById('card-courses');
+  const items = d.items || []; _rowCache['courses'] = {}; items.forEach(r => _rowCache['courses'][r.id] = r);
+  const total = d.total || 0, page = d.page || 1, totalPages = d.total_pages || 1; const s = d.stats || {}; const cats = d.categories || [];
+  let h = statsHtml([
+    { l:'Total cours', v: fmt(s.total || 0), c:'#2D6A4F' },
+    { l:'Cours actifs', v: fmt(s.active || 0), c:'#16A34A' },
+    { l:'Inscriptions', v: fmt(s.enrollments || 0), c:'#F59E0B' },
+    { l:'Catégories', v: fmt(cats.length), c:'#8E44AD' },
+  ]);
+  h += '<div class="mtoolbar"><div class="msearch">' + SEARCH_ICON + '<input id="courseSearch" type="text" placeholder="Rechercher un cours (titre, formateur)…" value="' + esc(courseFilters.search) + '" oninput="courseSearchInput(this.value)"></div>';
+  h += '<select class="mselect" onchange="setCourseCategory(this.value)"><option value="">Toutes catégories</option>' + cats.map(ct => `<option value="${esc(ct)}" ${courseFilters.category===ct?'selected':''}>${esc(ct)}</option>`).join('') + '</select>';
+  const sorts = [['recent','Plus récents'],['title','Titre (A-Z)'],['price','Prix ↓'],['price_asc','Prix ↑'],['enrollments','Plus d\'inscrits']];
+  h += '<select class="mselect" onchange="setCourseSort(this.value)">' + sorts.map(x => `<option value="${x[0]}" ${courseFilters.sort===x[0]?'selected':''}>${x[1]}</option>`).join('') + '</select></div>';
+  const chips = [['','Tous',s.total||0],['1','Actifs',s.active||0],['0','Inactifs',s.inactive||0]];
+  h += '<div class="mchips">' + chips.map(x => `<div class="mchip ${courseFilters.active===x[0]?'active':''}" onclick="setCourseActive('${x[0]}')">${x[1]}<span class="mchip__n">${x[2]}</span></div>`).join('') + '</div>';
+  if (!items.length) {
+    h += '<div class="mempty">' + COURSE_ICON.replace('<svg', '<svg width="46" height="46"') + '<h4>Aucun cours trouvé</h4><div>' + ((courseFilters.search || courseFilters.category || courseFilters.active !== '') ? 'Ajustez vos filtres.' : 'Créez votre premier cours avec le bouton « Nouveau cours ».') + '</div></div>';
+  } else {
+    h += '<div class="mlist">' + items.map((c, i) => {
+      const col = avatarColor(c.title || String(c.id));
+      const badge = c.is_active ? '<span class="pill pill-sm green">Actif</span>' : '<span class="pill pill-sm gray">Inactif</span>';
+      const cap = c.capacity || 0, enr = c.enrollment_count || 0;
+      const pct = cap ? Math.min(100, Math.round(enr / cap * 100)) : 0;
+      const capColor = pct >= 100 ? '#EF4444' : (pct >= 75 ? '#F59E0B' : '#16A34A');
+      const capBlock = `<div class="mcap"><div class="mcap__top"><span>Inscrits</span><b>${enr}${cap ? '/' + cap : ''}</b></div><div class="mcap__track"><div class="mcap__fill" data-w="${pct}" style="background:${capColor}"></div></div></div>`;
+      return `<div class="mcard" data-id="${c.id}" style="animation-delay:${Math.min(i*40,320)}ms"><div class="mcard__av" style="background:${hexA(col,0.15)};color:${col}">${COURSE_ICON}</div><div class="mcard__main"><div class="mcard__name"><span class="nm">${esc(c.title)}</span>${badge}</div><div class="mcard__meta"><span class="mtag">${esc(c.category)}</span> ${esc(c.instructor)}${c.city ? ' · ' + esc(c.city) : ''}</div></div>${capBlock}<div class="mcard__sav"><b>${fmt(c.price_htg||0)}</b> <small>HTG</small></div><div class="mcard__act"><button class="membtn" title="Modifier" onclick="editRow('courses',${c.id})">${EDIT_ICON}</button><button class="membtn danger" title="Supprimer" onclick="confirmDelete('courses',${c.id})">${DEL_ICON}</button></div></div>`;
+    }).join('') + '</div>';
+  }
+  h += pagerHtml(total, 'cours', page, totalPages, 'loadCourses', false);
+  host.innerHTML = h;
+  requestAnimationFrame(() => requestAnimationFrame(() => host.querySelectorAll('.mcap__fill').forEach(el => el.style.width = (el.getAttribute('data-w') || 0) + '%')));
+  if (_courseSearchFocus) { const si = document.getElementById('courseSearch'); if (si) { si.focus(); const v = si.value; si.value = ''; si.value = v; } _courseSearchFocus = false; }
 }
 
 function searchTable(sectionKey, val) {
