@@ -12,7 +12,7 @@ from django.contrib.auth.views import LoginView
 from django.core.cache import cache
 from django.core.exceptions import ValidationError
 from django.core.validators import validate_email
-from django.db.models import Count, Sum, Q
+from django.db.models import Count, Max, Sum, Q
 from django.db.models.query import QuerySet
 from django.http import HttpRequest, HttpResponse, JsonResponse, StreamingHttpResponse
 from django.utils import timezone
@@ -28,6 +28,7 @@ from .permissions import StaffRequiredMixin, staff_required
 from .models import (
     AdminNotification,
     BlogPost,
+    Chapter,
     ContactRequest,
     Course,
     EncryptedCharField,
@@ -527,6 +528,9 @@ def member_detail(request: HttpRequest, pk: int) -> JsonResponse:
 def _serialize_course(c: Course, enroll_count: int | None = None) -> dict[str, Any]:
     if enroll_count is None:
         enroll_count = getattr(c, 'enrollment_count', c.enrollments.count())
+    chap = getattr(c, 'chapter_count', None)
+    if chap is None:
+        chap = c.chapters.count()
     return {
         "id": c.pk,
         "title": c.title,
@@ -538,13 +542,32 @@ def _serialize_course(c: Course, enroll_count: int | None = None) -> dict[str, A
         "is_active": c.is_active,
         "public_slug": c.public_slug,
         "description": c.description,
+        "level": c.level,
+        "banner": c.banner.url if c.banner else "",
         "enrollment_count": enroll_count,
+        "chapter_count": chap,
         "created_at": c.created_at.isoformat(),
     }
 
 
+def _serialize_chapter(ch: Chapter) -> dict[str, Any]:
+    return {
+        "id": ch.pk,
+        "course_id": ch.course_id,
+        "title": ch.title,
+        "position": ch.position,
+        "description": ch.description,
+        "duration_minutes": ch.duration_minutes,
+        "video": ch.video.url if ch.video else "",
+        "has_video": bool(ch.video),
+    }
+
+
 def _filtered_courses(request: HttpRequest) -> QuerySet:
-    qs = Course.objects.annotate(enrollment_count=Count("enrollments")).all()
+    qs = Course.objects.annotate(
+        enrollment_count=Count("enrollments", distinct=True),
+        chapter_count=Count("chapters", distinct=True),
+    ).all()
     search = request.GET.get("search")
     if search:
         qs = qs.filter(
@@ -665,6 +688,11 @@ def _clean_course_data(data: dict, *, partial: bool, exclude_pk: int | None = No
         cleaned["is_active"] = bool(data.get("is_active"))
     elif not partial:
         cleaned["is_active"] = True
+    if "level" in data:
+        level = str(data.get("level") or "").strip()
+        if level and level not in Course.Level.values:
+            return None, "Niveau invalide."
+        cleaned["level"] = level
     if "description" in data:
         cleaned["description"] = str(data.get("description") or "")
     elif not partial:
@@ -692,6 +720,88 @@ def course_create(request: HttpRequest) -> JsonResponse:
     c = Course.objects.create(**cleaned)
     logger.info("Course %d created by user %s (%s)", c.pk, request.user.username, c.title)
     return JsonResponse(_serialize_course(c), status=201)
+
+
+# ── Chapitres (contenu d'un cours) ───────────────────────
+
+def _clean_chapter_data(data: dict, *, partial: bool):
+    cleaned: dict[str, Any] = {}
+    if "title" in data or not partial:
+        title = str(data.get("title") or "").strip()
+        if not title:
+            return None, "Le titre du chapitre est obligatoire."
+        if len(title) > 180:
+            return None, "Le titre ne peut pas dépasser 180 caractères."
+        cleaned["title"] = title
+    if "description" in data:
+        cleaned["description"] = str(data.get("description") or "")
+    if "duration_minutes" in data:
+        raw = data.get("duration_minutes")
+        try:
+            n = int(raw) if raw not in (None, "") else 0
+        except (ValueError, TypeError):
+            return None, "La durée doit être un nombre (en minutes)."
+        if n < 0:
+            return None, "La durée ne peut pas être négative."
+        cleaned["duration_minutes"] = n
+    return cleaned, None
+
+
+@staff_required
+@require_http_methods(["GET"])
+def chapter_list(request: HttpRequest, course_pk: int) -> JsonResponse:
+    if not Course.objects.filter(pk=course_pk).exists():
+        return _error("Course not found", 404)
+    chapters = Chapter.objects.filter(course_id=course_pk)  # ordonnés par position
+    return JsonResponse({"items": [_serialize_chapter(ch) for ch in chapters]})
+
+
+@staff_required
+@require_http_methods(["POST"])
+def chapter_create(request: HttpRequest, course_pk: int) -> JsonResponse:
+    try:
+        course = Course.objects.get(pk=course_pk)
+    except Course.DoesNotExist:
+        return _error("Course not found", 404)
+    cleaned, err = _clean_chapter_data(_json_body(request), partial=False)
+    if err:
+        return _error(err)
+    last = course.chapters.aggregate(m=Max("position"))["m"]
+    cleaned["position"] = (last + 1) if last is not None else 0
+    ch = Chapter.objects.create(course=course, **cleaned)
+    logger.info("Chapter %d created on course %d by %s", ch.pk, course_pk, request.user.username)
+    return JsonResponse(_serialize_chapter(ch), status=201)
+
+
+@staff_required
+@require_http_methods(["GET", "PUT", "DELETE"])
+def chapter_detail(request: HttpRequest, pk: int) -> JsonResponse:
+    try:
+        ch = Chapter.objects.get(pk=pk)
+    except Chapter.DoesNotExist:
+        return _error("Chapter not found", 404)
+    if request.method == "GET":
+        return JsonResponse(_serialize_chapter(ch))
+    if request.method == "PUT":
+        cleaned, err = _clean_chapter_data(_json_body(request), partial=True)
+        if err:
+            return _error(err)
+        for k, v in cleaned.items():
+            setattr(ch, k, v)
+        ch.save()
+        return JsonResponse(_serialize_chapter(ch))
+    ch.delete()
+    return _ok()
+
+
+@staff_required
+@require_http_methods(["POST"])
+def chapter_reorder(request: HttpRequest, course_pk: int) -> JsonResponse:
+    """Réordonne les chapitres d'un cours à partir d'une liste d'ids."""
+    order = _json_body(request).get("order") or []
+    for idx, cid in enumerate(order):
+        Chapter.objects.filter(pk=cid, course_id=course_pk).update(position=idx)
+    return _ok()
 
 
 # ── Bookings ─────────────────────────────────────────────

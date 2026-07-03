@@ -118,6 +118,11 @@ class Member(TimestampedModel):
 
 
 class Course(TimestampedModel):
+    class Level(models.TextChoices):
+        BEGINNER = "beginner", "Débutant"
+        INTERMEDIATE = "intermediate", "Intermédiaire"
+        ADVANCED = "advanced", "Avancé"
+
     title = models.CharField(max_length=180)
     category = models.CharField(max_length=80)
     instructor = models.CharField(max_length=120)
@@ -127,12 +132,33 @@ class Course(TimestampedModel):
     is_active = models.BooleanField(default=True)
     public_slug = models.SlugField(max_length=200, blank=True, unique=True, null=True)
     description = models.TextField(blank=True)
+    # Média (persistant uniquement avec un stockage objet type Supabase Storage)
+    banner = models.FileField(upload_to="courses/banners/", blank=True)
+    level = models.CharField(max_length=20, choices=Level.choices, blank=True)
 
     class Meta:
         ordering = ["category", "title"]
 
     def __str__(self) -> str:
         return self.title
+
+
+class Chapter(TimestampedModel):
+    """Un chapitre (leçon) d'un cours, avec un titre et une vidéo optionnelle."""
+    course = models.ForeignKey(Course, on_delete=models.CASCADE, related_name="chapters")
+    title = models.CharField(max_length=180)
+    position = models.PositiveIntegerField(default=0)
+    description = models.TextField(blank=True)
+    duration_minutes = models.PositiveIntegerField(default=0)
+    # La vidéo transite en direct navigateur -> stockage objet (jamais par l'app,
+    # à cause de la limite de taille des fonctions serverless Vercel).
+    video = models.FileField(upload_to="courses/videos/", blank=True)
+
+    class Meta:
+        ordering = ["position", "id"]
+
+    def __str__(self) -> str:
+        return f"{self.course_id} · {self.position}. {self.title}"
 
 
 class Enrollment(TimestampedModel):
