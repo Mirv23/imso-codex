@@ -74,7 +74,10 @@
 
       {% if has_access %}
         <div class="tag tag--green" style="margin-top:10px">✓ Vous avez accès à ce cours</div>
-        {% if is_owner and not enrollment %}<p class="lead" style="font-size:13px;margin-top:10px">Vous êtes le professeur de ce cours.</p>{% endif %}
+        {% if is_owner %}
+          <p class="lead" style="font-size:13px;margin-top:10px">Vous êtes le professeur de ce cours.</p>
+          <a class="btn btn--p" href="/formation/cours/{{ course.pk }}/gerer/" style="width:100%;justify-content:center;margin-top:8px">Gérer le contenu</a>
+        {% endif %}
       {% elif enrollment and enrollment.status == "pending_payment" %}
         <div class="lockmsg" style="margin-top:12px">⏳ Paiement en attente de confirmation</div>
         <div class="pay-box">

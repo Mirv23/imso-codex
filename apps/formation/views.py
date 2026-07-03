@@ -1,15 +1,19 @@
 from __future__ import annotations
 
+import json
+
 from django.contrib import messages
 from django.contrib.auth import login as auth_login, logout as auth_logout
 from django.contrib.auth.decorators import login_required
 from django.contrib.auth.forms import AuthenticationForm
-from django.db.models import Count
-from django.http import HttpRequest, HttpResponse
+from django.core.files.storage import default_storage
+from django.db.models import Count, Max
+from django.http import HttpRequest, HttpResponse, JsonResponse
 from django.shortcuts import get_object_or_404, redirect, render
 from django.views.decorators.http import require_http_methods
 
-from apps.adminpanel.models import Course, CourseEnrollment, Profile, SiteSetting
+from apps.adminpanel import views as av
+from apps.adminpanel.models import Chapter, Course, CourseEnrollment, Profile, SiteSetting
 
 LOGIN_PATH = "/formation/connexion/"
 
@@ -143,3 +147,183 @@ def dashboard(request: HttpRequest) -> HttpResponse:
     return render(request, "formation/dashboard_student.html", {
         "enrollments": enrollments, "profile": profile,
     })
+
+
+# ── Espace professeur : gestion du contenu de SES cours ──────────────────
+
+def _json(request: HttpRequest) -> dict:
+    try:
+        return json.loads(request.body)
+    except (ValueError, TypeError):
+        return {}
+
+
+def _can_manage(user, course: Course) -> bool:
+    """Un prof ne gère que ses propres cours (l'admin peut tout)."""
+    return bool(course.teacher_id == user.id or user.is_staff)
+
+
+def _owned_course(request: HttpRequest, pk: int):
+    try:
+        course = Course.objects.get(pk=pk)
+    except Course.DoesNotExist:
+        return None, JsonResponse({"error": "Cours introuvable."}, status=404)
+    if not _can_manage(request.user, course):
+        return None, JsonResponse({"error": "Vous ne pouvez gérer que vos propres cours."}, status=403)
+    return course, None
+
+
+def _owned_chapter(request: HttpRequest, pk: int):
+    try:
+        ch = Chapter.objects.select_related("course").get(pk=pk)
+    except Chapter.DoesNotExist:
+        return None, JsonResponse({"error": "Chapitre introuvable."}, status=404)
+    if not _can_manage(request.user, ch.course):
+        return None, JsonResponse({"error": "Accès refusé."}, status=403)
+    return ch, None
+
+
+@login_required(login_url=LOGIN_PATH)
+def course_manage(request: HttpRequest, pk: int) -> HttpResponse:
+    course = get_object_or_404(Course, pk=pk)
+    if not _can_manage(request.user, course):
+        messages.error(request, "Vous ne pouvez gérer que les cours qui vous sont attribués.")
+        return redirect("formation:dashboard")
+    return render(request, "formation/course_manage.html", {
+        "course": course,
+        "chapters_json": json.dumps([av._serialize_chapter(c) for c in course.chapters.all()]),
+        "banner_url": course.banner.url if course.banner else "",
+        "storage_enabled": av._storage_enabled(),
+        "profile": _profile(request.user),
+    })
+
+
+@login_required(login_url=LOGIN_PATH)
+@require_http_methods(["POST"])
+def t_chapter_create(request: HttpRequest, pk: int) -> HttpResponse:
+    course, err = _owned_course(request, pk)
+    if err:
+        return err
+    cleaned, e = av._clean_chapter_data(_json(request), partial=False)
+    if e:
+        return JsonResponse({"error": e}, status=400)
+    last = course.chapters.aggregate(m=Max("position"))["m"]
+    cleaned["position"] = (last + 1) if last is not None else 0
+    ch = Chapter.objects.create(course=course, **cleaned)
+    return JsonResponse(av._serialize_chapter(ch), status=201)
+
+
+@login_required(login_url=LOGIN_PATH)
+@require_http_methods(["PUT", "DELETE"])
+def t_chapter_detail(request: HttpRequest, pk: int) -> HttpResponse:
+    ch, err = _owned_chapter(request, pk)
+    if err:
+        return err
+    if request.method == "PUT":
+        cleaned, e = av._clean_chapter_data(_json(request), partial=True)
+        if e:
+            return JsonResponse({"error": e}, status=400)
+        for k, v in cleaned.items():
+            setattr(ch, k, v)
+        ch.save()
+        return JsonResponse(av._serialize_chapter(ch))
+    ch.delete()
+    return JsonResponse({"ok": True})
+
+
+@login_required(login_url=LOGIN_PATH)
+@require_http_methods(["POST"])
+def t_chapter_reorder(request: HttpRequest, pk: int) -> HttpResponse:
+    course, err = _owned_course(request, pk)
+    if err:
+        return err
+    for idx, cid in enumerate(_json(request).get("order") or []):
+        Chapter.objects.filter(pk=cid, course_id=course.pk).update(position=idx)
+    return JsonResponse({"ok": True})
+
+
+@login_required(login_url=LOGIN_PATH)
+@require_http_methods(["POST"])
+def t_video_url(request: HttpRequest, pk: int) -> HttpResponse:
+    ch, err = _owned_chapter(request, pk)
+    if err:
+        return err
+    if not av._storage_enabled():
+        return JsonResponse({"error": "Le stockage n'est pas configuré."}, status=400)
+    data = _json(request)
+    filename = str(data.get("filename") or "video.mp4")
+    content_type = str(data.get("content_type") or "").strip() or "video/mp4"
+    if not content_type.startswith("video/"):
+        return JsonResponse({"error": "Le fichier doit être une vidéo."}, status=400)
+    ext = filename.rsplit(".", 1)[-1].lower() if "." in filename else "mp4"
+    if ext not in av._ALLOWED_VIDEO_EXT:
+        return JsonResponse({"error": "Format vidéo non supporté (mp4, webm, mov…)."}, status=400)
+    key = f"courses/videos/chapter_{pk}.{ext}"
+    client, bucket = av._s3_client_and_bucket()
+    url = client.generate_presigned_url(
+        "put_object",
+        Params={"Bucket": bucket, "Key": key, "ContentType": content_type},
+        ExpiresIn=3600,
+    )
+    return JsonResponse({"url": url, "key": key, "content_type": content_type})
+
+
+@login_required(login_url=LOGIN_PATH)
+@require_http_methods(["POST"])
+def t_video_confirm(request: HttpRequest, pk: int) -> HttpResponse:
+    ch, err = _owned_chapter(request, pk)
+    if err:
+        return err
+    key = str(_json(request).get("key") or "").strip()
+    if not key or not key.startswith("courses/videos/"):
+        return JsonResponse({"error": "Clé de fichier invalide."}, status=400)
+    old_name = ch.video.name if ch.video else ""
+    ch.video.name = key
+    ch.save(update_fields=["video"])
+    if old_name and old_name != key:
+        try:
+            default_storage.delete(old_name)
+        except Exception:
+            pass
+    return JsonResponse(av._serialize_chapter(ch))
+
+
+@login_required(login_url=LOGIN_PATH)
+@require_http_methods(["POST"])
+def t_video_remove(request: HttpRequest, pk: int) -> HttpResponse:
+    ch, err = _owned_chapter(request, pk)
+    if err:
+        return err
+    if ch.video:
+        try:
+            ch.video.delete(save=False)
+        except Exception:
+            pass
+        ch.video = ""
+        ch.save(update_fields=["video"])
+    return JsonResponse(av._serialize_chapter(ch))
+
+
+@login_required(login_url=LOGIN_PATH)
+@require_http_methods(["POST"])
+def t_banner_upload(request: HttpRequest, pk: int) -> HttpResponse:
+    course, err = _owned_course(request, pk)
+    if err:
+        return err
+    f = request.FILES.get("file")
+    if not f:
+        return JsonResponse({"error": "Aucun fichier fourni."}, status=400)
+    if f.size > av._MAX_UPLOAD_BYTES:
+        return JsonResponse({"error": "Image trop volumineuse (max 5 Mo)."}, status=400)
+    if not (getattr(f, "content_type", "") or "").startswith("image/"):
+        return JsonResponse({"error": "Le fichier doit être une image."}, status=400)
+    old_name = course.banner.name if course.banner else ""
+    course.banner = f
+    course.save(update_fields=["banner"])
+    new_name = course.banner.name
+    if old_name and old_name != new_name:
+        try:
+            default_storage.delete(old_name)
+        except Exception:
+            pass
+    return JsonResponse({"ok": True, "url": course.banner.url})

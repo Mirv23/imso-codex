@@ -26,11 +26,14 @@
       <div class="tc__stat"><b>{{ c.student_count }}</b><span>étudiant{{ c.student_count|pluralize }}</span></div>
       <div class="tc__stat"><b>{{ c.chapter_count }}</b><span>chapitre{{ c.chapter_count|pluralize }}</span></div>
     </div>
-    <a class="btn btn--o btn--sm" href="/formation/cours/{{ c.pk }}/" style="width:100%;justify-content:center;margin-top:14px">Voir la page du cours</a>
+    <div style="display:flex;gap:8px;margin-top:14px">
+      <a class="btn btn--p btn--sm" href="/formation/cours/{{ c.pk }}/gerer/" style="flex:1;justify-content:center">Gérer le contenu</a>
+      <a class="btn btn--o btn--sm" href="/formation/cours/{{ c.pk }}/" style="justify-content:center">Voir</a>
+    </div>
   </div>
   {% endfor %}
 </div>
-<p class="lead" style="margin-top:20px;font-size:13.5px">Pour ajouter du contenu (chapitres, vidéos) à vos cours, contactez l'administration — la gestion du contenu se fait depuis le panneau d'administration.</p>
+<p class="lead" style="margin-top:20px;font-size:13.5px">Cliquez sur « Gérer le contenu » pour ajouter des chapitres, des vidéos et une bannière à vos cours.</p>
 {% else %}
 <div class="card empty">
   <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6"><path d="M22 10v6M2 10l10-5 10 5-10 5z"/><path d="M6 12v5c3 3 9 3 12 0v-5"/></svg>
