@@ -1398,8 +1398,12 @@ def _serialize_provider(p: PaymentProvider) -> dict[str, Any]:
         "id": p.pk,
         "name": p.name,
         "provider_type": p.provider_type,
+        "mode": p.mode,
         "is_active": p.is_active,
+        "logo": p.logo.url if p.logo else "",
         "instructions": p.instructions,
+        "account_name": p.account_name,
+        "account_number": p.account_number,
         "checkout_url": p.checkout_url,
         "api_public_key": p.api_public_key,
         "has_secret": bool(p.api_secret_key),  # jamais la valeur, juste sa présence
@@ -1426,8 +1430,9 @@ def provider_detail(request: HttpRequest, pk: int) -> JsonResponse:
         return JsonResponse(_serialize_provider(p))
     elif request.method == "PUT":
         data = _json_body(request)
-        for fld in ("name", "provider_type", "is_active", "instructions",
-                     "checkout_url", "api_public_key", "sort_order"):
+        for fld in ("name", "provider_type", "mode", "is_active", "instructions",
+                     "account_name", "account_number", "checkout_url",
+                     "api_public_key", "sort_order"):
             if fld in data:
                 setattr(p, fld, data[fld])
         # La clé secrète n'est mise à jour que si une nouvelle valeur est fournie
@@ -1455,8 +1460,11 @@ def provider_create(request: HttpRequest) -> JsonResponse:
     p = PaymentProvider.objects.create(
         name=data["name"],
         provider_type=data.get("provider_type", PaymentProvider.ProviderType.MANUAL),
+        mode=data.get("mode", PaymentProvider.Mode.MANUAL),
         is_active=data.get("is_active", True),
         instructions=data.get("instructions", ""),
+        account_name=data.get("account_name", ""),
+        account_number=data.get("account_number", ""),
         checkout_url=data.get("checkout_url", ""),
         api_public_key=data.get("api_public_key", ""),
         api_secret_key=data.get("api_secret_key", ""),
@@ -1464,6 +1472,54 @@ def provider_create(request: HttpRequest) -> JsonResponse:
     )
     logger.info("Provider %d created by user %s (%s)", p.pk, request.user.username, p.name)
     return JsonResponse(_serialize_provider(p), status=201)
+
+
+@staff_required
+def provider_overview(request: HttpRequest) -> JsonResponse:
+    """Tous les moyens de paiement + stats (pour la vue premium)."""
+    qs = PaymentProvider.objects.all().order_by("sort_order", "name")
+    items = [_serialize_provider(p) for p in qs]
+    return JsonResponse({
+        "items": items,
+        "stats": {
+            "total": len(items),
+            "active": sum(1 for i in items if i["is_active"]),
+            "api": sum(1 for i in items if i["mode"] == "api"),
+            "manual": sum(1 for i in items if i["mode"] == "manual"),
+        },
+    })
+
+
+@staff_required
+@require_http_methods(["POST"])
+def provider_test_connection(request: HttpRequest, pk: int) -> JsonResponse:
+    """Vérifie que les identifiants API d'un moyen de paiement sont valides.
+
+    Implémenté pour Stripe (appel réel à l'API). Pour les autres fournisseurs,
+    on vérifie seulement que les identifiants sont renseignés.
+    """
+    try:
+        p = PaymentProvider.objects.get(pk=pk)
+    except PaymentProvider.DoesNotExist:
+        return _error("Provider not found", 404)
+    secret = p.api_secret_key
+    if not secret:
+        return _error("Aucune clé secrète enregistrée pour ce moyen de paiement.", 400)
+    if p.provider_type == PaymentProvider.ProviderType.STRIPE:
+        try:
+            import urllib.request
+            import base64 as _b64
+            req = urllib.request.Request("https://api.stripe.com/v1/balance")
+            token = _b64.b64encode(f"{secret}:".encode()).decode()
+            req.add_header("Authorization", f"Basic {token}")
+            with urllib.request.urlopen(req, timeout=10) as resp:
+                ok = resp.status == 200
+            return JsonResponse({"ok": ok, "message": "Connexion Stripe réussie ✓" if ok else "Réponse inattendue."})
+        except urllib.error.HTTPError as e:
+            return JsonResponse({"ok": False, "message": f"Clé Stripe invalide ({e.code})."}, status=200)
+        except Exception:
+            return JsonResponse({"ok": False, "message": "Impossible de joindre Stripe."}, status=200)
+    return JsonResponse({"ok": True, "message": "Identifiants enregistrés. (Test en direct disponible pour Stripe ; MonCash/NatCash/PayPal seront validés lors d'un paiement réel.)"})
 
 
 # ── Enrollments ──────────────────────────────────────────
@@ -1973,6 +2029,7 @@ _UPLOAD_TARGETS = {
     "testimonial": (Testimonial, "photo"),
     "site": (SiteSetting, "logo"),
     "course": (Course, "banner"),
+    "provider": (PaymentProvider, "logo"),
 }
 _MAX_UPLOAD_BYTES = 5 * 1024 * 1024
 

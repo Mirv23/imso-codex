@@ -297,15 +297,25 @@ class PaymentProvider(TimestampedModel):
         BANK = "bank", "Virement bancaire"
         CASH = "cash", "Cash"
         STRIPE = "stripe", "Stripe"
+        PAYPAL = "paypal", "PayPal"
         OTHER = "other", "Autre"
+
+    class Mode(models.TextChoices):
+        MANUAL = "manual", "Manuel (le client paie puis on confirme)"
+        API = "api", "API (paiement en ligne automatisé)"
 
     name = models.CharField(max_length=120)
     provider_type = models.CharField(max_length=30, choices=ProviderType.choices, default=ProviderType.MANUAL)
+    mode = models.CharField(max_length=10, choices=Mode.choices, default=Mode.MANUAL)
     is_active = models.BooleanField(default=True)
+    logo = models.FileField(upload_to="payment_logos/", blank=True)
     instructions = models.TextField(
         blank=True,
         help_text="Texte montre au client: numero MonCash, compte bancaire, consignes, etc.",
     )
+    # Coordonnées de paiement (mobile money / banque locale) pour les moyens manuels
+    account_name = models.CharField(max_length=120, blank=True)
+    account_number = models.CharField(max_length=80, blank=True)
     checkout_url = models.URLField(
         blank=True,
         help_text="Lien de paiement externe optionnel. Laisse vide pour un paiement manuel.",
