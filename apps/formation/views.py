@@ -180,6 +180,40 @@ def logout_view(request: HttpRequest) -> HttpResponse:
 
 
 @login_required(login_url=LOGIN_PATH)
+def kyc(request: HttpRequest) -> HttpResponse:
+    """Soumission de la vérification d'identité (KYC) par un professeur."""
+    profile = _profile(request.user)
+    if not profile or profile.role != Profile.Role.TEACHER:
+        return redirect("formation:dashboard")
+    if profile.kyc_status == Profile.KycStatus.APPROVED:
+        return redirect("formation:dashboard")
+    if request.method == "POST":
+        id_number = str(request.POST.get("id_number") or "").strip()
+        doc = request.FILES.get("id_document")
+        if not id_number:
+            messages.error(request, "Le numéro de votre pièce d'identité est obligatoire.")
+        elif not doc and not profile.id_document:
+            messages.error(request, "Veuillez joindre une photo de votre pièce d'identité.")
+        elif doc and doc.size > 5 * 1024 * 1024:
+            messages.error(request, "Le fichier est trop volumineux (max 5 Mo).")
+        elif doc and not (getattr(doc, "content_type", "") or "").startswith("image/"):
+            messages.error(request, "Le document doit être une image (photo de la pièce).")
+        else:
+            profile.id_number = id_number[:60]
+            if doc:
+                import uuid
+                ext = doc.name.rsplit(".", 1)[-1].lower() if "." in doc.name else "jpg"
+                doc.name = f"{uuid.uuid4().hex}.{ext}"  # nom illisible (confidentialité)
+                profile.id_document = doc
+            profile.kyc_status = Profile.KycStatus.SUBMITTED
+            profile.kyc_note = ""
+            profile.save()
+            messages.success(request, "Vérification soumise ! Notre équipe l'examinera prochainement.")
+            return redirect("formation:dashboard")
+    return render(request, "formation/kyc.html", {"profile": profile})
+
+
+@login_required(login_url=LOGIN_PATH)
 def dashboard(request: HttpRequest) -> HttpResponse:
     profile = _profile(request.user)
     role = profile.role if profile else Profile.Role.STUDENT

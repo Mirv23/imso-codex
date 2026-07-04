@@ -1098,30 +1098,46 @@ const SECTIONS = {
   students: {
     title: 'Étudiants',
     endpoint: '/dashboard/api/learners/?role=student',
-    canCreate: false, canEdit: false, canDelete: true,
+    createEndpoint: '/dashboard/api/learners/create/',
+    canCreate: true, canEdit: false, canDelete: true,
     columns: [
       { key:'name', label:'Nom', render: r => `<strong>${esc(r.name)}</strong>` },
       { key:'email', label:'Email', render: r => esc(r.email) || '<span style="color:var(--muted)">—</span>' },
       { key:'phone', label:'Téléphone', render: r => esc(r.phone) || '<span style="color:var(--muted)">—</span>' },
       { key:'enrollments', label:'Cours suivis', render: r => r.enrollments },
     ],
+    formTitle: r => r ? 'Étudiant' : 'Nouvel étudiant',
+    formFields: r => [
+      { name:'name', label:'Nom complet', type:'text', value: '', required: true, maxLength: 120 },
+      { name:'email', label:'Email (sert d\'identifiant)', type:'email', value: '', required: true },
+      { name:'phone', label:'Téléphone', type:'text', value: '', maxLength: 40 },
+      { name:'password', label:'Mot de passe (8 caractères min.)', type:'password', value: '', required: true },
+    ],
+    serializeForm: d => ({ ...d, role: 'student' }),
     detailUrl: r => '/dashboard/api/learners/' + r.id + '/',
   },
   teachers: {
     title: 'Professeurs',
     endpoint: '/dashboard/api/learners/?role=teacher',
-    canCreate: false, canEdit: true, canDelete: true,
+    createEndpoint: '/dashboard/api/learners/create/',
+    canCreate: true, canEdit: true, canDelete: true,
     columns: [
-      { key:'name', label:'Nom', render: r => `<strong>${esc(r.name)}</strong>` },
-      { key:'email', label:'Email', render: r => esc(r.email) || '<span style="color:var(--muted)">—</span>' },
-      { key:'phone', label:'Téléphone', render: r => esc(r.phone) || '<span style="color:var(--muted)">—</span>' },
-      { key:'is_approved', label:'Statut', render: r => r.is_approved ? '<span class="pill green">Approuvé</span>' : '<span class="pill amber">En attente</span>' },
+      { key:'name', label:'Nom', render: r => `<strong>${esc(r.name)}</strong><br><span style="font-size:11px;color:var(--muted)">${esc(r.email || '')}</span>` },
+      { key:'id', label:'Pièce d\'identité', render: r => r.id_number ? esc(r.id_number) + (r.id_document ? ' · <a href="' + esc(r.id_document) + '" target="_blank" style="color:var(--primary);font-weight:600">voir</a>' : '') : '<span style="color:var(--muted)">non fournie</span>' },
+      { key:'kyc_status', label:'Vérification KYC', render: r => { const m={not_submitted:['gray','Non soumis'],submitted:['amber','À vérifier'],approved:['green','✓ Vérifié'],rejected:['red','Rejeté']}[r.kyc_status]||['gray',r.kyc_status]; return '<span class="pill '+m[0]+'">'+m[1]+'</span>'; } },
     ],
-    formTitle: r => 'Professeur : ' + (r ? esc(r.name) : ''),
-    formFields: r => [
-      { name:'is_approved', label:'Compte approuvé (accès à l\'espace professeur)', type:'checkbox', value: r?.is_approved ?? false },
+    formTitle: r => r ? 'Professeur : ' + esc(r.name) : 'Nouveau professeur',
+    formFields: r => r ? [
+      { name:'kyc_status', label:'Statut de vérification (KYC)', type:'select', options:[{v:'not_submitted',l:'Non soumis'},{v:'submitted',l:'En attente de vérification'},{v:'approved',l:'✓ Vérifié — débloque l\'accès prof'},{v:'rejected',l:'Rejeté'}], value: r?.kyc_status || 'not_submitted' },
+      { name:'kyc_note', label:'Motif (si rejeté, visible par le prof)', type:'text', value: r?.kyc_note || '', maxLength: 200 },
       { name:'phone', label:'Téléphone', type:'text', value: r?.phone || '', maxLength: 40 },
+    ] : [
+      { name:'name', label:'Nom complet', type:'text', value: '', required: true, maxLength: 120 },
+      { name:'email', label:'Email (sert d\'identifiant)', type:'email', value: '', required: true },
+      { name:'phone', label:'Téléphone', type:'text', value: '', maxLength: 40 },
+      { name:'password', label:'Mot de passe (8 caractères min.)', type:'password', value: '', required: true },
     ],
+    serializeForm: d => (d.name !== undefined ? { ...d, role: 'teacher' } : d),
     detailUrl: r => '/dashboard/api/learners/' + r.id + '/',
   },
   formationEnrollments: {
@@ -1800,8 +1816,16 @@ function saveModal() {
     : api(cfg.createEndpoint, { method: 'POST', body: JSON.stringify(data) });
 
   const _sec = modalSection;  // closeModal() remet modalSection à null : on capture avant.
-  req.then(saved => uploadPendingImage(cfg, (saved && saved.id) || (modalRecord && modalRecord.id)))
-    .then(() => { toast(isEdit ? 'Modifié avec succès' : 'Créé avec succès', 'success'); closeModal(); refreshSection(_sec); })
+  let _savedId = null;
+  req.then(saved => { _savedId = saved && saved.id; return uploadPendingImage(cfg, _savedId || (modalRecord && modalRecord.id)); })
+    .then(() => {
+      toast(isEdit ? 'Modifié avec succès' : 'Créé avec succès', 'success');
+      closeModal();
+      refreshSection(_sec);
+      // Après avoir CRÉÉ un cours, on ouvre directement l'éditeur de contenu pour
+      // ajouter chapitres + vidéos + bannière (là où se gèrent les vidéos).
+      if (_sec === 'courses' && !isEdit && _savedId) setTimeout(() => openCourseEditor(_savedId), 150);
+    })
     .catch(e => toast(e.message, 'error'));
 }
 

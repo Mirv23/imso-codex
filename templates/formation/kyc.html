@@ -1,0 +1,39 @@
+{% extends "formation/base.html" %}
+{% block title %}Vérification d'identité — {{ site.site_name|default:"IMSO" }} Formation{% endblock %}
+{% block head %}<style>
+.kwrap{max-width:520px;margin:36px auto}
+.kwrap h1{font-size:23px;font-weight:800;letter-spacing:-.02em}
+.kwrap .sub{color:var(--muted);margin:6px 0 20px;font-size:14px}
+.kcard{padding:24px}
+.fg{margin-bottom:16px}
+.fg label{display:block;font-size:13px;font-weight:700;margin-bottom:6px;color:#38493f}
+.fg input[type=text],.fg input[type=file]{width:100%;padding:11px 13px;border:1px solid var(--line);border-radius:10px;font-size:14px;background:#fff}
+.fg input:focus{outline:none;border-color:var(--primary)}
+.hint{font-size:12px;color:var(--muted);margin-top:5px}
+.kcard .btn{width:100%;justify-content:center;margin-top:6px}
+.cur{display:flex;align-items:center;gap:10px;padding:10px 12px;background:var(--bg);border-radius:10px;font-size:13px;margin-bottom:14px}
+</style>{% endblock %}
+{% block content %}
+<div class="kwrap">
+  <h1>Vérification d'identité (KYC)</h1>
+  <p class="sub">Pour devenir professeur sur la plateforme, nous devons vérifier votre identité. Vos informations restent confidentielles.</p>
+  <div class="card kcard">
+    {% if profile.kyc_status == "rejected" and profile.kyc_note %}
+    <div class="fmsg__i error" style="margin-bottom:16px">Vérification précédente rejetée : {{ profile.kyc_note }}. Merci de resoumettre.</div>
+    {% endif %}
+    <form method="post" enctype="multipart/form-data" novalidate>{% csrf_token %}
+      <div class="fg">
+        <label>Numéro de pièce d'identité (CIN / NIF / Passeport)</label>
+        <input type="text" name="id_number" value="{{ profile.id_number }}" maxlength="60" required>
+      </div>
+      <div class="fg">
+        <label>Photo de votre pièce d'identité</label>
+        {% if profile.id_document %}<div class="cur">📎 Document déjà envoyé — joindre un nouveau fichier pour le remplacer.</div>{% endif %}
+        <input type="file" name="id_document" accept="image/*">
+        <div class="hint">Image (JPG/PNG), max 5 Mo. Photo nette et lisible.</div>
+      </div>
+      <button class="btn btn--p btn--lg" type="submit">Soumettre ma vérification</button>
+    </form>
+  </div>
+</div>
+{% endblock %}

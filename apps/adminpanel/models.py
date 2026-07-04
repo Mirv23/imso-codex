@@ -172,6 +172,12 @@ class Profile(TimestampedModel):
         STUDENT = "student", "Étudiant"
         TEACHER = "teacher", "Professeur"
 
+    class KycStatus(models.TextChoices):
+        NOT_SUBMITTED = "not_submitted", "Non soumis"
+        SUBMITTED = "submitted", "En attente de vérification"
+        APPROVED = "approved", "Vérifié"
+        REJECTED = "rejected", "Rejeté"
+
     user = models.OneToOneField(
         settings.AUTH_USER_MODEL, on_delete=models.CASCADE, related_name="profile"
     )
@@ -180,6 +186,11 @@ class Profile(TimestampedModel):
     bio = models.TextField(blank=True)
     # Les profs restent en attente jusqu'à l'approbation d'un admin ; étudiants OK d'emblée.
     is_approved = models.BooleanField(default=True)
+    # KYC (vérification d'identité des professeurs)
+    kyc_status = models.CharField(max_length=20, choices=KycStatus.choices, default=KycStatus.NOT_SUBMITTED)
+    id_number = models.CharField(max_length=60, blank=True)
+    id_document = models.FileField(upload_to="kyc/", blank=True)
+    kyc_note = models.CharField(max_length=200, blank=True)  # motif de rejet éventuel
 
     class Meta:
         ordering = ["-created_at"]

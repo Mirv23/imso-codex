@@ -1,10 +1,27 @@
 {% extends "formation/base.html" %}
-{% block title %}Compte en attente — {{ site.site_name|default:"IMSO" }} Formation{% endblock %}
+{% block title %}Compte professeur — {{ site.site_name|default:"IMSO" }} Formation{% endblock %}
 {% block content %}
-<div class="card empty" style="max-width:520px;margin:50px auto">
-  <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6"><circle cx="12" cy="12" r="9"/><path d="M12 7v5l3 2"/></svg>
-  <h3>Votre compte professeur est en attente de validation</h3>
-  <p>Un administrateur doit approuver votre compte avant que vous puissiez accéder à votre espace professeur. Vous recevrez l'accès dès la validation.</p>
-  <a class="btn btn--o" href="/formation/" style="margin-top:16px">Parcourir le catalogue</a>
+<div class="card empty" style="max-width:540px;margin:50px auto">
+  {% if profile.kyc_status == "not_submitted" %}
+    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6"><path d="M9 12l2 2 4-4"/><circle cx="12" cy="12" r="9"/></svg>
+    <h3>Vérifiez votre identité pour activer votre compte professeur</h3>
+    <p>Avant de pouvoir gérer des cours, vous devez passer notre vérification d'identité (KYC).</p>
+    <a class="btn btn--p" href="/formation/verification/" style="margin-top:16px">Commencer la vérification</a>
+  {% elif profile.kyc_status == "submitted" %}
+    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6"><circle cx="12" cy="12" r="9"/><path d="M12 7v5l3 2"/></svg>
+    <h3>Vérification en cours d'examen ⏳</h3>
+    <p>Nous avons bien reçu vos documents. Un administrateur va vérifier votre identité. Vous aurez accès à votre espace professeur dès validation.</p>
+    <a class="btn btn--o" href="/formation/verification/" style="margin-top:16px">Modifier mes documents</a>
+  {% elif profile.kyc_status == "rejected" %}
+    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" style="color:#c0392b"><circle cx="12" cy="12" r="9"/><path d="M15 9l-6 6M9 9l6 6"/></svg>
+    <h3>Vérification refusée</h3>
+    <p>{% if profile.kyc_note %}Motif : {{ profile.kyc_note }}.{% endif %} Vous pouvez corriger et resoumettre vos documents.</p>
+    <a class="btn btn--p" href="/formation/verification/" style="margin-top:16px">Resoumettre ma vérification</a>
+  {% else %}
+    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6"><circle cx="12" cy="12" r="9"/><path d="M12 7v5l3 2"/></svg>
+    <h3>Votre compte professeur est en attente de validation</h3>
+    <p>Un administrateur doit approuver votre compte avant que vous puissiez accéder à votre espace.</p>
+  {% endif %}
+  <div style="margin-top:14px"><a href="/formation/" style="color:var(--muted);font-size:13px">← Parcourir le catalogue</a></div>
 </div>
 {% endblock %}

@@ -13,6 +13,7 @@ urlpatterns = [
     path("connexion/", views.login_view, name="login"),
     path("deconnexion/", views.logout_view, name="logout"),
     path("espace/", views.dashboard, name="dashboard"),
+    path("verification/", views.kyc, name="kyc"),
     # Espace professeur — gestion du contenu de ses cours
     path("cours/<int:pk>/gerer/", views.course_manage, name="course_manage"),
     path("cours/<int:pk>/chapitres/creer/", views.t_chapter_create, name="t_chapter_create"),

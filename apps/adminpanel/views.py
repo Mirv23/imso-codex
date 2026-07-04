@@ -936,9 +936,43 @@ def _serialize_profile(p: Profile) -> dict[str, Any]:
         "role": p.role,
         "phone": p.phone,
         "is_approved": p.is_approved,
+        "kyc_status": p.kyc_status,
+        "kyc_status_label": p.get_kyc_status_display(),
+        "id_number": p.id_number,
+        "id_document": p.id_document.url if p.id_document else "",
+        "kyc_note": p.kyc_note,
         "enrollments": u.course_enrollments.count(),
         "created_at": p.created_at.isoformat(),
     }
+
+
+@staff_required
+@require_http_methods(["POST"])
+def learner_create(request: HttpRequest) -> JsonResponse:
+    from django.contrib.auth.models import User
+    data = _json_body(request)
+    name = str(data.get("name") or "").strip()
+    email = str(data.get("email") or "").strip().lower()
+    password = str(data.get("password") or "")
+    role = data.get("role") if data.get("role") in ("student", "teacher") else "student"
+    if not name or not email:
+        return _error("Le nom et l'email sont obligatoires.")
+    if len(password) < 8:
+        return _error("Le mot de passe doit contenir au moins 8 caractères.")
+    if User.objects.filter(username__iexact=email).exists() or User.objects.filter(email__iexact=email).exists():
+        return _error("Un compte existe déjà avec cet email.")
+    parts = name.split(" ", 1)
+    user = User.objects.create_user(
+        username=email, email=email, password=password,
+        first_name=parts[0], last_name=parts[1] if len(parts) > 1 else "",
+    )
+    p = Profile.objects.create(
+        user=user, role=role, phone=str(data.get("phone") or ""),
+        is_approved=(role == "student"),
+        kyc_status=Profile.KycStatus.APPROVED if role == "student" else Profile.KycStatus.NOT_SUBMITTED,
+    )
+    logger.info("Profile created (%s) by %s", role, request.user.username)
+    return JsonResponse(_serialize_profile(p), status=201)
 
 
 @staff_required
@@ -969,8 +1003,18 @@ def learner_detail(request: HttpRequest, pk: int) -> JsonResponse:
         return JsonResponse(_serialize_profile(p))
     if request.method == "PUT":
         data = _json_body(request)
-        if "is_approved" in data:
+        if "kyc_status" in data:
+            status = data.get("kyc_status")
+            if status in Profile.KycStatus.values:
+                p.kyc_status = status
+                # Le statut KYC pilote l'approbation : « Vérifié » = accès débloqué.
+                p.is_approved = (status == Profile.KycStatus.APPROVED)
+        if "is_approved" in data and "kyc_status" not in data:
             p.is_approved = bool(data["is_approved"])
+            if p.is_approved and p.kyc_status != Profile.KycStatus.APPROVED:
+                p.kyc_status = Profile.KycStatus.APPROVED
+        if "kyc_note" in data:
+            p.kyc_note = str(data.get("kyc_note") or "")[:200]
         if "phone" in data:
             p.phone = str(data.get("phone") or "")
         p.save()
