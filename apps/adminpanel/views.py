@@ -58,6 +58,15 @@ class RateLimitedLoginView(LoginView):
     template_name = "adminpanel/login.html"
     redirect_authenticated_user = True
 
+    def dispatch(self, request, *args, **kwargs):
+        # On ne saute le formulaire (redirect_authenticated_user) que si l'utilisateur
+        # est DÉJÀ administrateur. Un compte non-staff (étudiant/prof de la plateforme
+        # de formation, session partagée) doit voir le formulaire pour se reconnecter
+        # en admin — sinon on aurait une boucle /login/ -> /dashboard/ (403) -> /login/.
+        if request.user.is_authenticated and not request.user.is_staff:
+            self.redirect_authenticated_user = False
+        return super().dispatch(request, *args, **kwargs)
+
 
 class DashboardView(StaffRequiredMixin, TemplateView):
     template_name = "adminpanel/simple_dashboard.html"

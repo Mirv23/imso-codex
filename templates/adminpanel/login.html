@@ -76,6 +76,9 @@ h1 { font-size: 18px; font-weight: 600; text-align: center; margin-bottom: 24px;
     <span class="brand-text">IMSO</span>
   </div>
   <h1>Connexion</h1>
+  {% if user.is_authenticated and not user.is_staff %}
+  <div class="error" style="background:#fef3e2;color:#8a5212">Vous êtes connecté en tant que « {{ user.get_full_name|default:user.username }} » (compte non-administrateur). Connectez-vous avec un compte administrateur ci-dessous, ou <a href="/formation/deconnexion/" style="color:#8a5212;font-weight:700;text-decoration:underline">déconnectez-vous</a>.</div>
+  {% endif %}
   {% if form.errors %}
   <div class="error">Identifiant ou mot de passe incorrect.</div>
   {% endif %}

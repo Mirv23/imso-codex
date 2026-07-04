@@ -44,14 +44,16 @@ def staff_required(view_func):
 class StaffRequiredMixin(AccessMixin):
     """Rend une vue classe accessible uniquement au personnel (`is_staff`).
 
-    Anonyme → redirection login ; connecté non-staff → 403 (PermissionDenied,
-    via le comportement standard d'`AccessMixin.handle_no_permission`).
+    Anonyme OU connecté non-staff → redirection vers la connexion admin (avec
+    `next`). On redirige plutôt que renvoyer un 403 sec : la session est partagée
+    avec la plateforme de formation, donc un étudiant/prof connecté qui clique un
+    lien vers le dashboard doit pouvoir se reconnecter en administrateur.
     """
 
     def dispatch(self, request: HttpRequest, *args, **kwargs):
         user = getattr(request, "user", None)
         if not (user and user.is_authenticated and user.is_staff):
-            return self.handle_no_permission()
+            return redirect(f"{settings.LOGIN_URL}?next={request.get_full_path()}")
         return super().dispatch(request, *args, **kwargs)
 
 

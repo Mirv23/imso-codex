@@ -40,11 +40,15 @@ class TestStaffSeparation:
         response = client.get("/dashboard/api/v2/members/")
         assert response.status_code == 403
 
-    def test_non_staff_dashboard_forbidden(self):
+    def test_non_staff_dashboard_redirects_to_login(self):
+        # Un non-staff connecté (ex. étudiant/prof de la plateforme formation,
+        # session partagée) est redirigé vers la connexion admin plutôt que de
+        # recevoir un 403 sec, pour pouvoir se reconnecter en administrateur.
         client = Client()
         _regular(client)
         response = client.get(reverse("adminpanel:dashboard"))
-        assert response.status_code == 403
+        assert response.status_code == 302
+        assert "/login/" in response["Location"]
 
     def test_staff_allowed(self):
         client = Client()
