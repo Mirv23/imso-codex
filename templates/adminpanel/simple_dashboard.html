@@ -344,7 +344,8 @@ textarea { resize: vertical; min-height: 80px; }
 .ce-sec { display:flex; align-items:center; justify-content:space-between; margin-bottom:12px; }
 .ce-sec h3 { font-size:15px; font-weight:700; color:var(--text); margin:0; }
 .ce-chaps { display:flex; flex-direction:column; gap:8px; }
-.ce-chap { display:flex; align-items:center; gap:12px; padding:11px 13px; background:var(--bg); border:1px solid var(--border); border-radius:11px; transition:border-color .15s, box-shadow .15s; }
+.ce-chap { display:flex; flex-direction:column; background:var(--bg); border:1px solid var(--border); border-radius:11px; overflow:hidden; transition:border-color .15s, box-shadow .15s; }
+.ce-chap__head { display:flex; align-items:center; gap:12px; padding:11px 13px; }
 .ce-chap:hover { border-color:var(--primary); }
 .ce-chap__num { width:26px; height:26px; border-radius:8px; background:var(--primary); color:#fff; font-size:12.5px; font-weight:800; display:grid; place-items:center; flex-shrink:0; }
 .ce-chap__body { flex:1; min-width:0; }
@@ -368,10 +369,11 @@ textarea { resize: vertical; min-height: 80px; }
 .ce-banner-btn { position:absolute; bottom:12px; right:12px; display:inline-flex; align-items:center; gap:6px; background:rgba(255,255,255,.92); color:#334155; border:none; border-radius:9px; padding:6px 11px; font-size:12px; font-weight:600; cursor:pointer; transition:background .15s; }
 .ce-banner-btn:hover { background:#fff; }
 .ce-banner-btn svg { width:14px; height:14px; }
-.ce-vidarea { display:inline-flex; align-items:center; gap:8px; }
-.ce-addvid { display:inline-flex; align-items:center; gap:5px; background:transparent; border:1px dashed var(--border); color:var(--muted); border-radius:7px; padding:3px 9px; font-size:11.5px; font-weight:600; cursor:pointer; transition:all .15s; }
-.ce-addvid:hover { color:var(--primary); border-color:var(--primary); }
-.ce-addvid svg { width:12px; height:12px; }
+.ce-vidarea { display:inline-flex; align-items:center; gap:8px; flex-wrap:wrap; }
+.ce-addvid { display:inline-flex; align-items:center; gap:7px; background:var(--primary-a12,rgba(45,106,79,.1)); border:1px solid var(--primary); color:var(--primary); border-radius:9px; padding:7px 14px; font-size:13px; font-weight:700; cursor:pointer; transition:all .15s; }
+.ce-addvid:hover { background:var(--primary); color:#fff; }
+.ce-addvid svg { width:15px; height:15px; }
+.ce-chap__vidrow { padding:10px 15px 13px; border-top:1px dashed var(--border); background:rgba(0,0,0,.015); }
 .ce-vlink { background:none; border:none; color:var(--primary); font-size:11.5px; font-weight:600; cursor:pointer; padding:0; text-decoration:underline; }
 .ce-vlink.danger { color:var(--danger); }
 .ce-uploading { display:inline-flex; align-items:center; gap:8px; font-size:11.5px; color:var(--muted); font-weight:600; font-variant-numeric:tabular-nums; }
@@ -1561,12 +1563,12 @@ function renderCourseEditor(c) {
   h += `<div class="ce-sec"><h3>Contenu du cours</h3>${(_ceAdding||_ceEditingId!==null)?'':'<button class="btn btn-primary btn-sm" onclick="showChapterForm(null)">'+PLUS_ICON+' Ajouter un chapitre</button>'}</div>`;
   if (_ceAdding && _ceEditingId === null) h += chapterFormHtml(null);
   if (!chapters.length && !_ceAdding) {
-    h += '<div class="ce-empty">Aucun chapitre pour l\'instant. Cliquez sur « Ajouter un chapitre » pour structurer votre cours.</div>';
+    h += '<div class="ce-empty" style="text-align:center;padding:26px 18px"><div style="font-weight:700;color:var(--text);margin-bottom:6px">Ce cours n\'a pas encore de contenu</div><div style="font-size:13px">Les vidéos s\'ajoutent <b>par chapitre</b>. Étape 1 : cliquez sur « <b>Ajouter un chapitre</b> » ci-dessus. Étape 2 : téléversez la vidéo du chapitre.</div></div>';
   } else if (chapters.length) {
     h += '<div class="ce-chaps">';
     chapters.forEach((ch, i) => {
       if (_ceEditingId === ch.id) { h += chapterFormHtml(ch); return; }
-      h += `<div class="ce-chap"><div class="ce-chap__num">${i + 1}</div><div class="ce-chap__body"><div class="ce-chap__title">${esc(ch.title)}</div><div class="ce-chap__sub"><span>${ch.duration_minutes || 0} min</span><span class="ce-vidarea" id="ce-vid-${ch.id}">${chapterVideoHtml(ch)}</span></div></div><div class="ce-chap__act"><button class="ce-mini" title="Monter" onclick="moveChapter(${ch.id},-1)" ${i === 0 ? 'disabled' : ''}><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="18 15 12 9 6 15"/></svg></button><button class="ce-mini" title="Descendre" onclick="moveChapter(${ch.id},1)" ${i === chapters.length - 1 ? 'disabled' : ''}><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="6 9 12 15 18 9"/></svg></button><button class="ce-mini" title="Modifier" onclick="showChapterForm(${ch.id})">${EDIT_ICON}</button><button class="ce-mini danger" title="Supprimer" onclick="deleteChapter(${ch.id})">${DEL_ICON}</button></div></div>`;
+      h += `<div class="ce-chap"><div class="ce-chap__head"><div class="ce-chap__num">${i + 1}</div><div class="ce-chap__body"><div class="ce-chap__title">${esc(ch.title)}</div><div class="ce-chap__sub"><span>${ch.duration_minutes || 0} min</span></div></div><div class="ce-chap__act"><button class="ce-mini" title="Monter" onclick="moveChapter(${ch.id},-1)" ${i === 0 ? 'disabled' : ''}><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="18 15 12 9 6 15"/></svg></button><button class="ce-mini" title="Descendre" onclick="moveChapter(${ch.id},1)" ${i === chapters.length - 1 ? 'disabled' : ''}><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="6 9 12 15 18 9"/></svg></button><button class="ce-mini" title="Modifier" onclick="showChapterForm(${ch.id})">${EDIT_ICON}</button><button class="ce-mini danger" title="Supprimer" onclick="deleteChapter(${ch.id})">${DEL_ICON}</button></div></div><div class="ce-chap__vidrow"><span class="ce-vidarea" id="ce-vid-${ch.id}">${chapterVideoHtml(ch)}</span></div></div>`;
     });
     h += '</div>';
   }
@@ -1578,9 +1580,9 @@ function renderCourseEditor(c) {
 function chapterVideoHtml(ch) {
   const PLAY = '<svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polygon points="5 3 19 12 5 21 5 3"/></svg>';
   if (ch.has_video) {
-    return `<span class="ce-vid on">${PLAY} Vidéo</span> <a class="ce-vlink" href="${esc(ch.video)}" target="_blank" rel="noopener">voir</a> <button class="ce-vlink" onclick="pickChapterVideo(${ch.id})">remplacer</button> <button class="ce-vlink danger" onclick="removeChapterVideo(${ch.id})">retirer</button>`;
+    return `<span class="ce-vid on">${PLAY} Vidéo en ligne</span> <a class="ce-vlink" href="${esc(ch.video)}" target="_blank" rel="noopener">voir</a> <button class="ce-vlink" onclick="pickChapterVideo(${ch.id})">remplacer</button> <button class="ce-vlink danger" onclick="removeChapterVideo(${ch.id})">retirer</button>`;
   }
-  return `<button class="ce-addvid" onclick="pickChapterVideo(${ch.id})">${PLAY} Ajouter une vidéo</button>`;
+  return `<button class="ce-addvid" onclick="pickChapterVideo(${ch.id})"><svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M23 7l-7 5 7 5V7z"/><rect x="1" y="5" width="15" height="14" rx="2"/></svg> Téléverser la vidéo de ce chapitre</button>`;
 }
 
 function pickChapterVideo(chapterId) {
