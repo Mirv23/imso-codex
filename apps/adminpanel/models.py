@@ -210,6 +210,22 @@ class CourseEnrollment(TimestampedModel):
         return f"{self.student_id} -> {self.course_id} ({self.status})"
 
 
+class ChapterCompletion(TimestampedModel):
+    """Marque un chapitre comme terminé par un étudiant (suivi de progression)."""
+    student = models.ForeignKey(
+        settings.AUTH_USER_MODEL, on_delete=models.CASCADE, related_name="chapter_completions"
+    )
+    chapter = models.ForeignKey(Chapter, on_delete=models.CASCADE, related_name="completions")
+
+    class Meta:
+        constraints = [
+            models.UniqueConstraint(fields=["student", "chapter"], name="unique_student_chapter")
+        ]
+
+    def __str__(self) -> str:
+        return f"{self.student_id} ✓ {self.chapter_id}"
+
+
 class Enrollment(TimestampedModel):
     class Status(models.TextChoices):
         PENDING = "pending", "En attente"

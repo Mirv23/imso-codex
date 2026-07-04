@@ -10,6 +10,10 @@
 .enr__b{flex:1;min-width:0}
 .enr__t{font-weight:800;font-size:15.5px}
 .enr__s{color:var(--muted);font-size:12.5px;margin-top:2px}
+.enr__prog{display:flex;align-items:center;gap:9px;margin-top:8px}
+.enr__pbar{flex:1;max-width:260px;height:7px;background:var(--line);border-radius:5px;overflow:hidden}
+.enr__pbar span{display:block;height:100%;background:var(--primary);border-radius:5px}
+.enr__prog small{font-size:11.5px;color:var(--muted);font-weight:700;white-space:nowrap}
 </style>{% endblock %}
 {% block content %}
 <div class="dash-h">
@@ -24,6 +28,9 @@
     <div class="enr__b">
       <div class="enr__t">{{ e.course.title }}</div>
       <div class="enr__s">{{ e.course.category }}{% if e.course.teacher %} · {{ e.course.teacher.get_full_name|default:e.course.teacher.username }}{% endif %}</div>
+      {% if e.status == "active" and e.total_chapters %}
+      <div class="enr__prog"><div class="enr__pbar"><span style="width:{{ e.progress }}%"></span></div><small>{% if e.progress == 100 %}✓ Terminé{% else %}{{ e.progress }}% · {{ e.done_count }}/{{ e.total_chapters }}{% endif %}</small></div>
+      {% endif %}
     </div>
     {% if e.status == "active" %}
       <a class="btn btn--p btn--sm" href="/formation/cours/{{ e.course.pk }}/">Continuer</a>

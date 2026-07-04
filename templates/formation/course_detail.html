@@ -28,6 +28,17 @@
 .pay-box b{color:var(--ink)}
 .side .btn{width:100%;justify-content:center;margin-top:14px}
 .lockmsg{padding:14px;border-radius:12px;background:#fef3e2;color:#8a5212;font-size:13.5px;font-weight:600}
+.prog-card{display:flex;align-items:center;gap:16px;padding:16px 18px;margin-top:6px}
+.prog-ring{--p:0;width:56px;height:56px;border-radius:50%;flex-shrink:0;display:grid;place-items:center;background:conic-gradient(var(--primary) calc(var(--p)*1%),var(--line) 0)}
+.prog-ring b{width:42px;height:42px;border-radius:50%;background:#fff;display:grid;place-items:center;font-size:13px;font-weight:800;color:var(--primary)}
+.prog-info b{font-size:15px;font-weight:800}
+.prog-info div{color:var(--muted);font-size:13px}
+.chap__done{margin-left:auto;display:inline-flex;align-items:center;gap:6px;border:1px solid var(--line);background:#fff;color:var(--muted);border-radius:999px;padding:5px 12px;font-size:12.5px;font-weight:700;cursor:pointer;transition:.15s}
+.chap__done:hover{border-color:var(--primary);color:var(--primary)}
+.chap__done svg{width:15px;height:15px}
+.chap__i.done{border-color:#bfe6cf}
+.chap__i.done .chap__n{background:#16a34a}
+.chap__i.done .chap__done{background:#e9f7ef;border-color:#bfe6cf;color:#1a7a44}
 </style>{% endblock %}
 {% block content %}
 <div class="cd-top">
@@ -47,22 +58,39 @@
 <div class="cd-grid">
   <div>
     {% if course.description %}<div class="cd-desc">{{ course.description }}</div>{% endif %}
+    {% if has_access and chapters %}
+    <div class="card prog-card">
+      <div class="prog-ring" id="progRing" style="--p:{{ progress }}"><b id="progPct">{{ progress }}%</b></div>
+      <div class="prog-info"><b id="progTxt">{{ done }} / {{ total_ch }} chapitre{{ total_ch|pluralize }} terminé{{ done|pluralize }}</b><div>Continuez pour terminer le cours 🎯</div></div>
+    </div>
+    {% endif %}
     <div class="cd-sec-t">Contenu du cours</div>
     {% if chapters %}
     <div class="chap">
       {% for ch in chapters %}
-      <div class="chap__i">
+      <div class="chap__i {% if ch.id in completed_ids %}done{% endif %}" data-ch="{{ ch.id }}">
         <div class="chap__h">
           <div class="chap__n">{{ forloop.counter }}</div>
           <div class="chap__t">{{ ch.title }}</div>
           {% if ch.duration_minutes %}<div class="chap__d">{{ ch.duration_minutes }} min</div>{% endif %}
-          {% if not has_access %}<span class="chap__lock"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="3" y="11" width="18" height="11" rx="2"/><path d="M7 11V7a5 5 0 0 1 10 0v4"/></svg></span>{% endif %}
+          {% if has_access %}<button class="chap__done" onclick="toggleDone({{ ch.id }})"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><polyline points="20 6 9 17 4 12"/></svg><span>{% if ch.id in completed_ids %}Terminé{% else %}Marquer terminé{% endif %}</span></button>{% else %}<span class="chap__lock"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="3" y="11" width="18" height="11" rx="2"/><path d="M7 11V7a5 5 0 0 1 10 0v4"/></svg></span>{% endif %}
         </div>
-        {% if has_access and ch.video %}<video controls preload="metadata" src="{{ ch.video.url }}"></video>{% endif %}
+        {% if has_access and ch.video %}<video controls preload="metadata" src="{{ ch.video.url }}" data-ch="{{ ch.id }}"></video>{% endif %}
         {% if ch.description %}<div class="chap__desc">{{ ch.description }}</div>{% endif %}
       </div>
       {% endfor %}
     </div>
+    {% if has_access %}<script>
+    const CSRF="{{ csrf_token }}";
+    function _post(url){return fetch(url,{method:'POST',headers:{'X-CSRFToken':CSRF},credentials:'same-origin'}).then(r=>r.json());}
+    function applyState(id,completed,d){
+      const el=document.querySelector('.chap__i[data-ch="'+id+'"]'); if(el){el.classList.toggle('done',completed);const s=el.querySelector('.chap__done span');if(s)s.textContent=completed?'Terminé':'Marquer terminé';}
+      if(d){const r=document.getElementById('progRing');if(r)r.style.setProperty('--p',d.progress);const p=document.getElementById('progPct');if(p)p.textContent=d.progress+'%';const t=document.getElementById('progTxt');if(t)t.textContent=d.done+' / '+d.total+' chapitre'+(d.total>1?'s':'')+' terminé'+(d.done>1?'s':'');}
+    }
+    function toggleDone(id){_post('/formation/chapitres/'+id+'/terminer/').then(d=>applyState(id,d.completed,d)).catch(()=>{});}
+    // Auto : marque terminé quand la vidéo se termine (si pas déjà)
+    document.querySelectorAll('video[data-ch]').forEach(v=>{v.addEventListener('ended',()=>{const id=+v.dataset.ch;const el=document.querySelector('.chap__i[data-ch="'+id+'"]');if(el&&!el.classList.contains('done'))toggleDone(id);});});
+    </script>{% endif %}
     {% else %}
     <p class="lead">Le contenu de ce cours arrive bientôt.</p>
     {% endif %}

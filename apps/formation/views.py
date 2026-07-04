@@ -13,7 +13,14 @@ from django.shortcuts import get_object_or_404, redirect, render
 from django.views.decorators.http import require_http_methods
 
 from apps.adminpanel import views as av
-from apps.adminpanel.models import Chapter, Course, CourseEnrollment, Profile, SiteSetting
+from apps.adminpanel.models import (
+    Chapter,
+    ChapterCompletion,
+    Course,
+    CourseEnrollment,
+    Profile,
+    SiteSetting,
+)
 
 LOGIN_PATH = "/formation/connexion/"
 
@@ -55,6 +62,16 @@ def course_detail(request: HttpRequest, pk: int) -> HttpResponse:
         is_owner = course.teacher_id == request.user.id or request.user.is_staff
     has_access = bool(is_owner or (enrollment and enrollment.status == CourseEnrollment.Status.ACTIVE))
     total_minutes = sum(c.duration_minutes for c in chapters)
+    completed_ids: set[int] = set()
+    if request.user.is_authenticated and chapters:
+        completed_ids = set(
+            ChapterCompletion.objects.filter(
+                student=request.user, chapter__course=course
+            ).values_list("chapter_id", flat=True)
+        )
+    total_ch = len(chapters)
+    done = len([c for c in chapters if c.id in completed_ids])
+    progress = round(done / total_ch * 100) if total_ch else 0
     return render(request, "formation/course_detail.html", {
         "course": course,
         "chapters": chapters,
@@ -62,6 +79,10 @@ def course_detail(request: HttpRequest, pk: int) -> HttpResponse:
         "has_access": has_access,
         "is_owner": is_owner,
         "total_minutes": total_minutes,
+        "completed_ids": completed_ids,
+        "progress": progress,
+        "done": done,
+        "total_ch": total_ch,
         "settings": _payment_info(),
         "profile": _profile(request.user),
     })
@@ -86,6 +107,43 @@ def enroll(request: HttpRequest, pk: int) -> HttpResponse:
     else:
         messages.info(request, "Inscription enregistrée. Effectuez le paiement pour débloquer l'accès aux vidéos.")
     return redirect("formation:course_detail", pk=pk)
+
+
+def _student_has_access(user, course: Course) -> bool:
+    if not user.is_authenticated:
+        return False
+    if course.teacher_id == user.id or user.is_staff:
+        return True
+    return CourseEnrollment.objects.filter(
+        student=user, course=course, status=CourseEnrollment.Status.ACTIVE
+    ).exists()
+
+
+@login_required(login_url=LOGIN_PATH)
+@require_http_methods(["POST"])
+def toggle_complete(request: HttpRequest, pk: int) -> HttpResponse:
+    """Bascule l'état 'terminé' d'un chapitre pour l'étudiant connecté."""
+    try:
+        ch = Chapter.objects.select_related("course").get(pk=pk)
+    except Chapter.DoesNotExist:
+        return JsonResponse({"error": "Chapitre introuvable."}, status=404)
+    if not _student_has_access(request.user, ch.course):
+        return JsonResponse({"error": "Accès refusé."}, status=403)
+    existing = ChapterCompletion.objects.filter(student=request.user, chapter=ch).first()
+    if existing:
+        existing.delete()
+        completed = False
+    else:
+        ChapterCompletion.objects.get_or_create(student=request.user, chapter=ch)
+        completed = True
+    total = ch.course.chapters.count()
+    done = ChapterCompletion.objects.filter(student=request.user, chapter__course=ch.course).count()
+    return JsonResponse({
+        "completed": completed,
+        "done": done,
+        "total": total,
+        "progress": round(done / total * 100) if total else 0,
+    })
 
 
 def register(request: HttpRequest) -> HttpResponse:
@@ -139,11 +197,20 @@ def dashboard(request: HttpRequest) -> HttpResponse:
         return render(request, "formation/dashboard_teacher.html", {
             "courses": courses, "profile": profile,
         })
-    enrollments = (
+    enrollments = list(
         CourseEnrollment.objects.filter(student=request.user)
         .select_related("course")
+        .annotate(total_chapters=Count("course__chapters", distinct=True))
         .order_by("-created_at")
     )
+    done_map = {
+        r["chapter__course"]: r["n"]
+        for r in ChapterCompletion.objects.filter(student=request.user)
+        .values("chapter__course").annotate(n=Count("id"))
+    }
+    for e in enrollments:
+        e.done_count = done_map.get(e.course_id, 0)
+        e.progress = round(e.done_count / e.total_chapters * 100) if e.total_chapters else 0
     return render(request, "formation/dashboard_student.html", {
         "enrollments": enrollments, "profile": profile,
     })
