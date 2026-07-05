@@ -194,6 +194,8 @@ textarea { resize: vertical; min-height: 80px; }
   .sb-toggle { display: grid; }
   .sb-scrim { display: block; }
   .sb-scrim.open { opacity: 1; pointer-events: auto; }
+  /* Empeche le zoom automatique iOS au focus (police >= 16px). */
+  input, select, textarea { font-size: 16px !important; }
 }
 /* ===== Tableau de bord — refonte (cartes + graphiques animés) ===== */
 .stat-grid { display:grid; grid-template-columns:repeat(auto-fit,minmax(205px,1fr)); gap:16px; margin-bottom:20px; }
@@ -598,7 +600,7 @@ textarea { resize: vertical; min-height: 80px; }
 </div>
 
 <!-- Toast -->
-<div class="toast-container" id="toastContainer"></div>
+<div class="toast-container" id="toastContainer" role="status" aria-live="polite" aria-atomic="true"></div>
 
 <script>
 const CSRF = (() => {
@@ -1746,6 +1748,14 @@ function moveChapter(chapterId, dir) {
 
 document.getElementById('courseEditorOverlay').addEventListener('click', function (e) { if (e.target === this) closeCourseEditor(); });
 
+// Touche Echap : ferme l'overlay ouvert le plus haut (accessibilite clavier).
+document.addEventListener('keydown', function (e) {
+  if (e.key !== 'Escape') return;
+  if (document.getElementById('courseEditorOverlay').classList.contains('open')) closeCourseEditor();
+  else if (document.getElementById('modalOverlay').classList.contains('open')) closeModal();
+  else if (document.querySelector('.sidebar').classList.contains('open')) toggleSidebar(false);
+});
+
 // ============= MOYENS DE PAIEMENT (vue premium) =============
 const PM_META = {
   moncash:{c:'#E4002B',l:'MonCash'}, natcash:{c:'#1877cc',l:'NatCash'}, bank:{c:'#475569',l:'Virement bancaire'},
@@ -1888,6 +1898,8 @@ function openModal(sectionKey, record) {
   }
 
   document.getElementById('modalOverlay').classList.add('open');
+  // Focus du premier champ pour l'accessibilite clavier.
+  setTimeout(() => { const f = document.querySelector('#modalBody input:not([type=file]), #modalBody select, #modalBody textarea'); if (f) f.focus(); }, 40);
 }
 
 function closeModal() {
