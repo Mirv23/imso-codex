@@ -1114,16 +1114,23 @@ def _serialize_booking(b: VenueBooking) -> dict[str, Any]:
 
 @staff_required
 def booking_list(request: HttpRequest) -> JsonResponse:
+    from django.utils.dateparse import parse_date
     qs = VenueBooking.objects.prefetch_related("payments").all()
     status = request.GET.get("status")
     if status:
         qs = qs.filter(status=status)
-    date_from = request.GET.get("date_from")
+    date_from = parse_date(request.GET.get("date_from") or "")
     if date_from:
         qs = qs.filter(event_date__gte=date_from)
-    date_to = request.GET.get("date_to")
+    date_to = parse_date(request.GET.get("date_to") or "")
     if date_to:
         qs = qs.filter(event_date__lte=date_to)
+    search = request.GET.get("search")
+    if search:
+        qs = qs.filter(
+            Q(requester_name__icontains=search) | Q(requester_phone__icontains=search)
+            | Q(requester_email__icontains=search) | Q(event_type__icontains=search)
+        )
     qs = qs.order_by("-created_at")
     return _paginated_response(qs, request, _serialize_booking)
 
@@ -1191,6 +1198,7 @@ def _serialize_payment(p: Payment) -> dict[str, Any]:
 
 @staff_required
 def payment_list(request: HttpRequest) -> JsonResponse:
+    from django.utils.dateparse import parse_date
     qs = Payment.objects.select_related("provider").all()
     status = request.GET.get("status")
     if status:
@@ -1198,12 +1206,19 @@ def payment_list(request: HttpRequest) -> JsonResponse:
     purpose = request.GET.get("purpose")
     if purpose:
         qs = qs.filter(purpose=purpose)
-    date_from = request.GET.get("date_from")
+    # Dates : on ignore une valeur non parsable (evite un 500 sur filtre invalide).
+    date_from = parse_date(request.GET.get("date_from") or "")
     if date_from:
-        qs = qs.filter(created_at__gte=date_from)
-    date_to = request.GET.get("date_to")
+        qs = qs.filter(created_at__date__gte=date_from)
+    date_to = parse_date(request.GET.get("date_to") or "")
     if date_to:
-        qs = qs.filter(created_at__lte=date_to)
+        qs = qs.filter(created_at__date__lte=date_to)
+    search = request.GET.get("search")
+    if search:
+        qs = qs.filter(
+            Q(reference__icontains=search) | Q(payer_name__icontains=search)
+            | Q(payer_phone__icontains=search) | Q(external_reference__icontains=search)
+        )
     qs = qs.order_by("-created_at")
     return _paginated_response(qs, request, _serialize_payment)
 
@@ -1272,6 +1287,12 @@ def contact_list(request: HttpRequest) -> JsonResponse:
     processed = request.GET.get("processed")
     if processed is not None:
         qs = qs.filter(is_processed=processed.lower() in ("1", "true"))
+    search = request.GET.get("search")
+    if search:
+        qs = qs.filter(
+            Q(full_name__icontains=search) | Q(email__icontains=search)
+            | Q(phone__icontains=search) | Q(subject__icontains=search)
+        )
     qs = qs.order_by("-created_at")
     return _paginated_response(qs, request, _serialize_contact)
 
@@ -1751,25 +1772,32 @@ def notification_read_all(request: HttpRequest) -> JsonResponse:
 # ── Testimonials (v1) ─────────────────────────────────────
 
 
+def _serialize_testimonial(t: Testimonial) -> dict[str, Any]:
+    return {
+        "id": t.pk,
+        "author_name": t.author_name,
+        "author_initials": t.author_initials,
+        "location": t.location,
+        "text": t.text,
+        "photo": t.photo.url if t.photo else "",
+        "sort_order": t.sort_order,
+        "is_active": t.is_active,
+        "created_at": t.created_at.isoformat(),
+    }
+
+
 @staff_required
 @require_http_methods(["GET"])
 def testimonial_list(request: HttpRequest) -> JsonResponse:
+    # Renvoie le format pagine standard {items,total,...} attendu par le dashboard
+    # (auparavant une liste brute -> la section etait totalement cassee).
     qs = Testimonial.objects.all()
-    data = [
-        {
-            "id": t.pk,
-            "author_name": t.author_name,
-            "author_initials": t.author_initials,
-            "location": t.location,
-            "text": t.text,
-            "sort_order": t.sort_order,
-            "is_active": t.is_active,
-            "created_at": t.created_at.isoformat(),
-            "updated_at": t.updated_at.isoformat(),
-        }
-        for t in qs
-    ]
-    return JsonResponse(data, safe=False)
+    search = request.GET.get("search")
+    if search:
+        qs = qs.filter(
+            Q(author_name__icontains=search) | Q(text__icontains=search) | Q(location__icontains=search)
+        )
+    return _paginated_response(qs.order_by("sort_order", "-created_at"), request, _serialize_testimonial)
 
 
 @staff_required
@@ -1779,46 +1807,43 @@ def testimonial_detail(request: HttpRequest, pk: int) -> JsonResponse:
         t = Testimonial.objects.get(pk=pk)
     except Testimonial.DoesNotExist:
         return _error("Témoignage introuvable", 404)
-
     if request.method == "GET":
-        return JsonResponse({
-            "id": t.pk,
-            "author_name": t.author_name,
-            "author_initials": t.author_initials,
-            "location": t.location,
-            "text": t.text,
-            "photo": t.photo.url if t.photo else "",
-            "sort_order": t.sort_order,
-            "is_active": t.is_active,
-            "created_at": t.created_at.isoformat(),
-            "updated_at": t.updated_at.isoformat(),
-        })
-
+        return JsonResponse(_serialize_testimonial(t))
     if request.method == "DELETE":
         t.delete()
         return _ok()
-
-    data = json.loads(request.body.decode("utf-8"))
-    for field in ("author_name", "location", "text", "sort_order", "is_active"):
+    data = _json_body(request)
+    for field in ("author_name", "author_initials", "location", "text", "is_active"):
         if field in data:
             setattr(t, field, data[field])
+    if "sort_order" in data:
+        try:
+            t.sort_order = max(0, int(data.get("sort_order") or 0))
+        except (ValueError, TypeError):
+            return _error("L'ordre doit être un nombre.")
     t.save()
-    return _ok()
+    return JsonResponse(_serialize_testimonial(t))
 
 
 @staff_required
 @require_http_methods(["POST"])
 def testimonial_create(request: HttpRequest) -> JsonResponse:
-    data = json.loads(request.body.decode("utf-8"))
+    data = _json_body(request)
+    if not str(data.get("author_name") or "").strip():
+        return _error("Le nom de l'auteur est obligatoire.")
+    try:
+        sort_order = max(0, int(data.get("sort_order") or 0))
+    except (ValueError, TypeError):
+        return _error("L'ordre doit être un nombre.")
     t = Testimonial.objects.create(
-        author_name=data.get("author_name", ""),
+        author_name=str(data.get("author_name") or "").strip(),
         author_initials=data.get("author_initials", ""),
         location=data.get("location", ""),
         text=data.get("text", ""),
-        sort_order=data.get("sort_order", 0),
+        sort_order=sort_order,
         is_active=data.get("is_active", True),
     )
-    return JsonResponse({"ok": True, "id": t.pk}, status=201)
+    return JsonResponse(_serialize_testimonial(t), status=201)
 
 
 # ── Products (boutique) ──────────────────────────────────
@@ -2030,20 +2055,51 @@ def blog_list(request: HttpRequest) -> JsonResponse:
     return _paginated_response(qs, request, _serialize_blogpost)
 
 
+def _blog_apply_status(b: BlogPost, status: str) -> None:
+    """Cohérence des dates selon le statut (publié -> published_at auto)."""
+    b.status = status
+    if status == BlogPost.Status.PUBLISHED and not b.published_at:
+        b.published_at = timezone.now()
+
+
+def _parse_scheduled(raw):
+    """Convertit la valeur datetime-local en datetime aware. (dt, erreur)."""
+    from django.utils.dateparse import parse_datetime
+    if not raw:
+        return None, None
+    dt = parse_datetime(str(raw))
+    if dt is None:
+        return None, "Date de programmation invalide."
+    if timezone.is_naive(dt):
+        dt = timezone.make_aware(dt)
+    return dt, None
+
+
 @staff_required
 @require_http_methods(["POST"])
 def blog_create(request: HttpRequest) -> JsonResponse:
     data = _json_body(request)
-    for f in ("title", "body"):
-        if f not in data:
-            return _error(f"Missing field: {f}")
+    if not str(data.get("title") or "").strip():
+        return _error("Le titre est obligatoire.")
+    if not str(data.get("body") or "").strip():
+        return _error("Le contenu est obligatoire.")
+    status = data.get("status", BlogPost.Status.DRAFT)
+    if status not in BlogPost.Status.values:
+        return _error("Statut d'article invalide.")
+    sched, err = _parse_scheduled(data.get("scheduled_for"))
+    if err:
+        return _error(err)
+    if status == BlogPost.Status.SCHEDULED and not sched:
+        return _error("Une date de programmation est requise pour un article programmé.")
     b = BlogPost.objects.create(
         title=data["title"],
         body=data["body"],
         excerpt=data.get("excerpt", ""),
         author=data.get("author", ""),
-        status=data.get("status", BlogPost.Status.DRAFT),
+        scheduled_for=sched,
     )
+    _blog_apply_status(b, status)
+    b.save()
     logger.info("BlogPost %d created by user %s (%s)", b.pk, request.user.username, b.title)
     return JsonResponse(_serialize_blogpost(b), status=201)
 
@@ -2060,9 +2116,20 @@ def blog_detail(request: HttpRequest, pk: int) -> JsonResponse:
         return JsonResponse(_serialize_blogpost(b))
     elif request.method == "PUT":
         data = _json_body(request)
-        for fld in ("title", "body", "excerpt", "author", "status"):
+        if "status" in data and data["status"] not in BlogPost.Status.values:
+            return _error("Statut d'article invalide.")
+        for fld in ("title", "body", "excerpt", "author"):
             if fld in data:
-                setattr(b, fld, data[fld])
+                setattr(b, fld, str(data[fld] or ""))
+        if "scheduled_for" in data:
+            sched, err = _parse_scheduled(data.get("scheduled_for"))
+            if err:
+                return _error(err)
+            b.scheduled_for = sched
+        if "status" in data:
+            if data["status"] == BlogPost.Status.SCHEDULED and not b.scheduled_for:
+                return _error("Une date de programmation est requise pour un article programmé.")
+            _blog_apply_status(b, data["status"])
         b.save()
         logger.info("BlogPost %d updated by user %s (status: %s)", pk, request.user.username, b.status)
         return JsonResponse(_serialize_blogpost(b))
