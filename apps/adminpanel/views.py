@@ -931,6 +931,9 @@ def chapter_video_remove(request: HttpRequest, pk: int) -> JsonResponse:
 
 def _serialize_profile(p: Profile) -> dict[str, Any]:
     u = p.user
+    enroll = getattr(p, "enroll_count", None)
+    if enroll is None:
+        enroll = u.course_enrollments.count()
     return {
         "id": p.pk,
         "name": u.get_full_name() or u.username,
@@ -943,7 +946,7 @@ def _serialize_profile(p: Profile) -> dict[str, Any]:
         "id_number": p.id_number,
         "id_document": p.id_document.url if p.id_document else "",
         "kyc_note": p.kyc_note,
-        "enrollments": u.course_enrollments.count(),
+        "enrollments": enroll,
         "created_at": p.created_at.isoformat(),
     }
 
@@ -979,7 +982,9 @@ def learner_create(request: HttpRequest) -> JsonResponse:
 
 @staff_required
 def learner_list(request: HttpRequest) -> JsonResponse:
-    qs = Profile.objects.select_related("user").all()
+    qs = Profile.objects.select_related("user").annotate(
+        enroll_count=Count("user__course_enrollments")
+    ).all()
     role = request.GET.get("role")
     if role:
         qs = qs.filter(role=role)

@@ -112,6 +112,10 @@ class Member(TimestampedModel):
 
     class Meta:
         ordering = ["last_name", "first_name"]
+        indexes = [
+            models.Index(fields=["status"]),
+            models.Index(fields=["-created_at"]),
+        ]
 
     def __str__(self) -> str:
         return f"{self.first_name} {self.last_name}"
@@ -216,6 +220,7 @@ class CourseEnrollment(TimestampedModel):
         constraints = [
             models.UniqueConstraint(fields=["student", "course"], name="unique_student_course")
         ]
+        indexes = [models.Index(fields=["status"])]
 
     def __str__(self) -> str:
         return f"{self.student_id} -> {self.course_id} ({self.status})"
@@ -284,6 +289,7 @@ class VenueBooking(TimestampedModel):
 
     class Meta:
         ordering = ["event_date", "start_time"]
+        indexes = [models.Index(fields=["status"]), models.Index(fields=["-created_at"])]
 
     def __str__(self) -> str:
         return f"{self.event_type} - {self.event_date}"
@@ -370,6 +376,11 @@ class Payment(TimestampedModel):
 
     class Meta:
         ordering = ["-created_at"]
+        indexes = [
+            models.Index(fields=["status"]),
+            models.Index(fields=["purpose"]),
+            models.Index(fields=["-created_at"]),
+        ]
 
     def __str__(self) -> str:
         return f"{self.reference} - {self.get_status_display()}"
@@ -505,6 +516,7 @@ class Order(TimestampedModel):
 
     class Meta:
         ordering = ["-created_at"]
+        indexes = [models.Index(fields=["status"]), models.Index(fields=["-created_at"])]
 
     def save(self, *args: Any, **kwargs: Any) -> None:
         if not self.reference:
