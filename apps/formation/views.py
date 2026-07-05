@@ -339,7 +339,8 @@ def t_chapter_reorder(request: HttpRequest, pk: int) -> HttpResponse:
     if err:
         return err
     for idx, cid in enumerate(_json(request).get("order") or []):
-        Chapter.objects.filter(pk=cid, course_id=course.pk).update(position=idx)
+        if str(cid).isdigit():
+            Chapter.objects.filter(pk=int(cid), course_id=course.pk).update(position=idx)
     return JsonResponse({"ok": True})
 
 

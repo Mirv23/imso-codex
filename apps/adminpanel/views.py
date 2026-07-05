@@ -825,7 +825,8 @@ def chapter_reorder(request: HttpRequest, course_pk: int) -> JsonResponse:
     """Réordonne les chapitres d'un cours à partir d'une liste d'ids."""
     order = _json_body(request).get("order") or []
     for idx, cid in enumerate(order):
-        Chapter.objects.filter(pk=cid, course_id=course_pk).update(position=idx)
+        if str(cid).isdigit():
+            Chapter.objects.filter(pk=int(cid), course_id=course_pk).update(position=idx)
     return _ok()
 
 
@@ -1139,12 +1140,25 @@ def booking_detail(request: HttpRequest, pk: int) -> JsonResponse:
     elif request.method == "PUT":
         data = _json_body(request)
         if "status" in data:
+            if data["status"] not in VenueBooking.Status.values:
+                return _error("Statut de réservation invalide.")
             b.status = data["status"]
         for fld in ("requester_name", "requester_phone", "requester_email",
-                     "event_type", "event_date", "start_time", "end_time",
-                     "guest_count", "setup", "notes"):
+                     "event_type", "setup", "notes"):
             if fld in data:
+                setattr(b, fld, str(data[fld] or ""))
+        # Champs date/heure requis : on refuse une valeur vide (400) au lieu de
+        # provoquer un 500 (chaîne vide invalide OU contrainte NOT NULL).
+        for fld, label in (("event_date", "La date"), ("start_time", "L'heure de début"), ("end_time", "L'heure de fin")):
+            if fld in data:
+                if not data[fld]:
+                    return _error(f"{label} ne peut pas être vide.")
                 setattr(b, fld, data[fld])
+        if "guest_count" in data:
+            try:
+                b.guest_count = max(0, int(data["guest_count"] or 0))
+            except (ValueError, TypeError):
+                return _error("Le nombre d'invités doit être un nombre.")
         b.save()
         logger.info("Booking %d updated by user %s (status: %s)", pk, request.user.username, b.status)
         return JsonResponse(_serialize_booking(b))
@@ -1206,13 +1220,31 @@ def payment_detail(request: HttpRequest, pk: int) -> JsonResponse:
     elif request.method == "PUT":
         data = _json_body(request)
         if "status" in data:
+            if data["status"] not in Payment.Status.values:
+                return _error("Statut de paiement invalide.")
             p.status = data["status"]
-        for fld in ("payer_name", "payer_phone", "payer_email", "amount_htg",
+            # Renseigne/efface automatiquement la date de règlement.
+            if p.status == Payment.Status.PAID and not p.paid_at:
+                p.paid_at = timezone.now()
+            elif p.status != Payment.Status.PAID:
+                p.paid_at = None
+        if "amount_htg" in data:
+            try:
+                amount = int(data["amount_htg"])
+            except (ValueError, TypeError):
+                return _error("Le montant doit être un nombre.")
+            if amount < 0:
+                return _error("Le montant ne peut pas être négatif.")
+            p.amount_htg = amount
+        for fld in ("payer_name", "payer_phone", "payer_email",
                      "notes", "entry_mode", "external_reference"):
             if fld in data:
-                setattr(p, fld, data[fld])
+                setattr(p, fld, str(data[fld] or ""))
         if "provider_id" in data:
-            p.provider_id = data["provider_id"]
+            pid = data["provider_id"] or None
+            if pid and not PaymentProvider.objects.filter(pk=pid).exists():
+                return _error("Le moyen de paiement sélectionné n'existe pas.")
+            p.provider_id = pid
         p.save()
         logger.info("Payment %d updated by user %s (status: %s)", pk, request.user.username, p.status)
         return JsonResponse(_serialize_payment(p))
@@ -1430,6 +1462,15 @@ def provider_detail(request: HttpRequest, pk: int) -> JsonResponse:
         return JsonResponse(_serialize_provider(p))
     elif request.method == "PUT":
         data = _json_body(request)
+        if data.get("provider_type") and data["provider_type"] not in PaymentProvider.ProviderType.values:
+            return _error("Type de moyen de paiement invalide.")
+        if data.get("mode") and data["mode"] not in PaymentProvider.Mode.values:
+            return _error("Mode invalide.")
+        if "sort_order" in data:
+            try:
+                data["sort_order"] = max(0, int(data.get("sort_order") or 0))
+            except (ValueError, TypeError):
+                return _error("L'ordre doit être un nombre.")
         for fld in ("name", "provider_type", "mode", "is_active", "instructions",
                      "account_name", "account_number", "checkout_url",
                      "api_public_key", "sort_order"):
@@ -1455,10 +1496,18 @@ def provider_detail(request: HttpRequest, pk: int) -> JsonResponse:
 @require_http_methods(["POST"])
 def provider_create(request: HttpRequest) -> JsonResponse:
     data = _json_body(request)
-    if "name" not in data:
-        return _error("Missing field: name")
+    if not str(data.get("name") or "").strip():
+        return _error("Le nom est obligatoire.")
+    if data.get("provider_type") and data["provider_type"] not in PaymentProvider.ProviderType.values:
+        return _error("Type de moyen de paiement invalide.")
+    if data.get("mode") and data["mode"] not in PaymentProvider.Mode.values:
+        return _error("Mode invalide.")
+    try:
+        data["sort_order"] = max(0, int(data.get("sort_order") or 0))
+    except (ValueError, TypeError):
+        return _error("L'ordre doit être un nombre.")
     p = PaymentProvider.objects.create(
-        name=data["name"],
+        name=str(data["name"]).strip()[:120],
         provider_type=data.get("provider_type", PaymentProvider.ProviderType.MANUAL),
         mode=data.get("mode", PaymentProvider.Mode.MANUAL),
         is_active=data.get("is_active", True),
@@ -1566,6 +1615,8 @@ def enrollment_detail(request: HttpRequest, pk: int) -> JsonResponse:
     elif request.method == "PUT":
         data = _json_body(request)
         if "status" in data:
+            if data["status"] not in Enrollment.Status.values:
+                return _error("Statut d'inscription invalide.")
             e.status = data["status"]
         e.save()
         logger.info("Enrollment %d updated by user %s (status: %s)", pk, request.user.username, e.status)
@@ -1800,21 +1851,55 @@ def product_list(request: HttpRequest) -> JsonResponse:
     return _paginated_response(qs, request, _serialize_product)
 
 
+def _clean_product_data(data: dict, *, partial: bool):
+    """Valide/normalise un produit (anti-500 : prix/stock, kind hors choix, nom)."""
+    cleaned: dict[str, Any] = {}
+    if "name" in data or not partial:
+        name = str(data.get("name") or "").strip()
+        if not name:
+            return None, "Le nom du produit est obligatoire."
+        if len(name) > 180:
+            return None, "Le nom ne peut pas dépasser 180 caractères."
+        cleaned["name"] = name
+    if "kind" in data:
+        if data.get("kind") not in Product.Kind.values:
+            return None, "Type de produit invalide."
+        cleaned["kind"] = data["kind"]
+    elif not partial:
+        cleaned["kind"] = Product.Kind.KIT
+    for f, label in (("price_htg", "Le prix"), ("stock", "Le stock")):
+        if f in data or not partial:
+            raw = data.get(f)
+            try:
+                n = int(raw) if raw not in (None, "") else 0
+            except (ValueError, TypeError):
+                return None, f"{label} doit être un nombre."
+            if n < 0:
+                return None, f"{label} ne peut pas être négatif."
+            cleaned[f] = n
+    if "description" in data:
+        cleaned["description"] = str(data.get("description") or "")
+    elif not partial:
+        cleaned["description"] = ""
+    if "is_active" in data:
+        cleaned["is_active"] = bool(data.get("is_active"))
+    elif not partial:
+        cleaned["is_active"] = True
+    if "sort_order" in data:
+        try:
+            cleaned["sort_order"] = max(0, int(data.get("sort_order") or 0))
+        except (ValueError, TypeError):
+            return None, "L'ordre doit être un nombre."
+    return cleaned, None
+
+
 @staff_required
 @require_http_methods(["POST"])
 def product_create(request: HttpRequest) -> JsonResponse:
-    data = _json_body(request)
-    if "name" not in data:
-        return _error("Missing field: name")
-    p = Product.objects.create(
-        name=data["name"],
-        kind=data.get("kind", Product.Kind.KIT),
-        description=data.get("description", ""),
-        price_htg=data.get("price_htg", 0),
-        stock=data.get("stock", 0),
-        is_active=data.get("is_active", True),
-        sort_order=data.get("sort_order", 0),
-    )
+    cleaned, err = _clean_product_data(_json_body(request), partial=False)
+    if err:
+        return _error(err)
+    p = Product.objects.create(**cleaned)
     logger.info("Product %d created by user %s (%s)", p.pk, request.user.username, p.name)
     return JsonResponse(_serialize_product(p), status=201)
 
@@ -1830,10 +1915,11 @@ def product_detail(request: HttpRequest, pk: int) -> JsonResponse:
     if request.method == "GET":
         return JsonResponse(_serialize_product(p))
     elif request.method == "PUT":
-        data = _json_body(request)
-        for fld in ("name", "kind", "description", "price_htg", "stock", "is_active", "sort_order"):
-            if fld in data:
-                setattr(p, fld, data[fld])
+        cleaned, err = _clean_product_data(_json_body(request), partial=True)
+        if err:
+            return _error(err)
+        for fld, val in cleaned.items():
+            setattr(p, fld, val)
         p.save()
         logger.info("Product %d updated by user %s", pk, request.user.username)
         return JsonResponse(_serialize_product(p))
@@ -1901,10 +1987,12 @@ def order_detail(request: HttpRequest, pk: int) -> JsonResponse:
         return JsonResponse(_serialize_order(o))
     data = _json_body(request)
     if "status" in data:
+        if data["status"] not in Order.Status.values:
+            return _error("Statut de commande invalide.")
         o.status = data["status"]
     for fld in ("note", "delivery_address", "city", "customer_name", "customer_phone", "customer_email"):
         if fld in data:
-            setattr(o, fld, data[fld])
+            setattr(o, fld, str(data[fld] or ""))
     o.save()
     logger.info("Order %d updated by user %s (status: %s)", pk, request.user.username, o.status)
     return JsonResponse(_serialize_order(o))
@@ -2154,6 +2242,10 @@ def admin_user_detail(request: HttpRequest, pk: int) -> JsonResponse:
                 return _error("Vous ne pouvez pas désactiver votre propre compte.", 400)
             user.is_active = bool(data["is_active"])
         if "is_superuser" in data:
+            # Empêche de rétrograder le dernier super-administrateur (lockout).
+            if user.is_superuser and not data["is_superuser"] and \
+                    User.objects.filter(is_superuser=True, is_active=True).count() <= 1:
+                return _error("Impossible de retirer le rôle au dernier super-administrateur.", 400)
             user.is_superuser = bool(data["is_superuser"])
         if data.get("password"):
             user.set_password(data["password"])
