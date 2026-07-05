@@ -182,7 +182,19 @@ textarea { resize: vertical; min-height: 80px; }
 /* Activity grid */
 .grid-2 { display: grid; grid-template-columns: 1fr 1fr; gap: 18px; margin-top: 18px; }
 @media (max-width: 900px) { .grid-2 { grid-template-columns: 1fr; } }
-@media (max-width: 640px) { .sidebar { width: 0; overflow: hidden; } .main { margin-left: 0; } .content { padding: 16px; } .header { padding: 0 16px; } }
+.sb-toggle { display: none; width: 40px; height: 40px; border-radius: 10px; border: 1px solid var(--border); background: var(--card); place-items: center; cursor: pointer; margin-right: 12px; flex-shrink: 0; color: var(--text); }
+.sb-toggle svg { width: 20px; height: 20px; }
+.sb-scrim { display: none; position: fixed; inset: 0; background: rgba(0,0,0,.45); z-index: 25; opacity: 0; pointer-events: none; transition: opacity .25s ease; }
+@media (max-width: 640px) {
+  .sidebar { transform: translateX(-100%); transition: transform .25s ease; box-shadow: 0 0 40px rgba(0,0,0,.4); }
+  .sidebar.open { transform: none; }
+  .main { margin-left: 0; }
+  .content { padding: 16px; }
+  .header { padding: 0 12px; }
+  .sb-toggle { display: grid; }
+  .sb-scrim { display: block; }
+  .sb-scrim.open { opacity: 1; pointer-events: auto; }
+}
 /* ===== Tableau de bord — refonte (cartes + graphiques animés) ===== */
 .stat-grid { display:grid; grid-template-columns:repeat(auto-fit,minmax(205px,1fr)); gap:16px; margin-bottom:20px; }
 .stat { position:relative; background:var(--card); border:1px solid var(--border); border-radius:var(--radius-lg); padding:18px; overflow:hidden; box-shadow:var(--shadow-sm); transition:transform .25s ease, box-shadow .25s ease; opacity:0; transform:translateY(12px); animation:dashIn .5s cubic-bezier(.4,0,.2,1) forwards; }
@@ -503,8 +515,10 @@ textarea { resize: vertical; min-height: 80px; }
     </div>
   </aside>
 
+  <div class="sb-scrim" id="sbScrim" onclick="toggleSidebar(false)"></div>
   <div class="main">
     <header class="header">
+      <button class="sb-toggle" onclick="toggleSidebar()" aria-label="Ouvrir le menu"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><line x1="3" y1="6" x2="21" y2="6"/><line x1="3" y1="12" x2="21" y2="12"/><line x1="3" y1="18" x2="21" y2="18"/></svg></button>
       <div class="hd-left">
         <div class="hd-title" id="pageTitle">Tableau de bord</div>
         <div class="hd-sub" id="pageSubtitle">{{ summary.active_members }} membre(s) actif(s) · {{ summary.active_courses }} cours actif(s)</div>
@@ -592,6 +606,14 @@ const CSRF = (() => {
   return m ? m[1] : '';
 })();
 
+// Menu lateral mobile (ouverture/fermeture)
+function toggleSidebar(force) {
+  const sb = document.querySelector('.sidebar'), sc = document.getElementById('sbScrim');
+  const open = force === undefined ? !sb.classList.contains('open') : force;
+  sb.classList.toggle('open', open);
+  if (sc) sc.classList.toggle('open', open);
+}
+
 function api(url, opts = {}) {
   opts.headers = opts.headers || {};
   const method = (opts.method || 'GET').toUpperCase();
@@ -629,6 +651,7 @@ function getCSRF() { return CSRF; }
 const currentSection = { name: 'dashboard', page: 1, search: '' };
 
 function navigateTo(section, resetPage = true) {
+  toggleSidebar(false);  // referme le menu mobile apres selection
   document.querySelectorAll('.section').forEach(s => s.classList.remove('active'));
   document.querySelectorAll('.sb-item').forEach(s => s.classList.remove('active'));
   const secEl = document.getElementById('section-' + section);
@@ -723,7 +746,14 @@ function loadCharts() {
     renderDonut('payDonut', (d.payments_by_status || []).filter(r => r.value > 0).map(r => ({ label:(PAY_STATUS[r.key]||{}).l||r.key, color:(PAY_STATUS[r.key]||{}).c||'#94A3B8', value:r.value })));
     renderDonut('catDonut', (d.categories || []).map((r, i) => ({ label:r.name, color:CAT_PALETTE[i % CAT_PALETTE.length], value:r.value })));
     renderBars('memBars', (d.members_by_status || []).filter(r => r.value > 0).map(r => ({ label:(MEM_STATUS[r.key]||{}).l||r.key, color:(MEM_STATUS[r.key]||{}).c||'#94A3B8', value:r.value })));
-  }).catch(() => {});
+  }).catch(e => {
+    // Ne plus avaler l'erreur en silence : montrer un message + permettre de reessayer.
+    ['revChart', 'payDonut', 'catDonut', 'memBars', 'recentActivity'].forEach(id => {
+      const el = document.getElementById(id);
+      if (el) el.innerHTML = '<div style="color:var(--muted);padding:18px 0;font-size:13px">Impossible de charger les données. <a href="#" onclick="loadCharts();return false" style="color:var(--primary);font-weight:600">Réessayer</a></div>';
+    });
+    toast('Erreur de chargement des graphiques : ' + (e.message || ''), 'error');
+  });
 }
 
 function _empty(host) { host.innerHTML = '<div style="color:var(--muted);padding:22px 0;font-size:13px">Aucune donnée pour l\'instant.</div>'; }
@@ -1705,11 +1735,12 @@ function moveChapter(chapterId, dir) {
   const idx = _ceChapters.findIndex(x => x.id === chapterId);
   const j = idx + dir;
   if (idx < 0 || j < 0 || j >= _ceChapters.length) return;
+  const prev = _ceChapters.slice();  // sauvegarde pour annuler si le serveur echoue
   const arr = _ceChapters.slice();
   [arr[idx], arr[j]] = [arr[j], arr[idx]];
   _ceChapters = arr; _ceReload();
   api('/dashboard/api/courses/' + _ceCourseId + '/chapters/reorder/', { method:'POST', body: JSON.stringify({ order: arr.map(x => x.id) }) })
-    .catch(e => { toast(e.message, 'error'); });
+    .catch(e => { _ceChapters = prev; _ceReload(); toast('Réordonnancement annulé : ' + e.message, 'error'); });
 }
 
 document.getElementById('courseEditorOverlay').addEventListener('click', function (e) { if (e.target === this) closeCourseEditor(); });
@@ -1820,24 +1851,26 @@ function openModal(sectionKey, record) {
   });
   document.getElementById('modalBody').innerHTML = body;
 
-  // Load GEI options for gei-select fields
+  // Chargement asynchrone des listes FK (GEI, Professeur). On BLOQUE le bouton
+  // Enregistrer tant qu'elles ne sont pas chargees : sinon, enregistrer trop vite
+  // envoie une valeur vide et efface silencieusement la FK (perte de donnees).
+  const _pending = [];
   document.querySelectorAll('select[name="gei_id"]').forEach(sel => {
     if (sel.options.length <= 1) {
-      api('/dashboard/api/geis/?per_page=100').then(d => {
+      _pending.push(api('/dashboard/api/geis/?per_page=100').then(d => {
         (d.items || []).forEach(g => {
           const opt = document.createElement('option');
           opt.value = g.id;
           opt.textContent = g.name + ' (' + g.city + ')';
-          if (record && record.gei__name === g.name) opt.selected = true;
+          if (record && String(record.gei_id) === String(g.id)) opt.selected = true;
           sel.appendChild(opt);
         });
-      });
+      }));
     }
   });
-  // Load teacher options for teacher-select fields
   document.querySelectorAll('select[name="teacher"]').forEach(sel => {
     if (sel.options.length <= 1) {
-      api('/dashboard/api/teacher-options/').then(d => {
+      _pending.push(api('/dashboard/api/teacher-options/').then(d => {
         (d.items || []).forEach(t => {
           const opt = document.createElement('option');
           opt.value = t.id;
@@ -1845,9 +1878,13 @@ function openModal(sectionKey, record) {
           if (record && String(record.teacher) === String(t.id)) opt.selected = true;
           sel.appendChild(opt);
         });
-      });
+      }));
     }
   });
+  if (_pending.length) {
+    _saveBtn.disabled = true;
+    Promise.allSettled(_pending).then(() => { _saveBtn.disabled = false; });
+  }
 
   document.getElementById('modalOverlay').classList.add('open');
 }
@@ -1877,6 +1914,10 @@ function saveModal() {
   const data = {};
   form.querySelectorAll('input, select, textarea').forEach(inp => {
     if (inp.type === 'file') return; // géré séparément (upload)
+    // Select FK charge en asynchrone (gei_id/teacher) : s'il ne contient encore
+    // que le placeholder, ne PAS l'envoyer -> evite d'ecraser la FK a null lors
+    // d'un enregistrement avant la fin du chargement (les PUT serveur sont partiels).
+    if (inp.tagName === 'SELECT' && (inp.name === 'gei_id' || inp.name === 'teacher') && inp.options.length <= 1) return;
     if (inp.type === 'checkbox') data[inp.name] = inp.checked;
     else if (inp.type === 'number') data[inp.name] = inp.value === '' ? 0 : (parseInt(inp.value) || 0);
     // Une date/heure laissée vide doit être envoyée comme null (jamais '' -> erreur SQL).

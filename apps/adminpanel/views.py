@@ -433,6 +433,7 @@ def _serialize_member(m: Member) -> dict[str, Any]:
         "last_name": m.last_name,
         "email": m.email,
         "phone": m.phone,
+        "gei_id": m.gei_id,
         "gei__name": gei.name if gei else None,
         "gei__city": gei.city if gei else None,
         "status": m.status,
@@ -2298,6 +2299,17 @@ def _export_fields(model_class) -> list[str]:
     return fields
 
 
+def _csv_safe(value: Any) -> Any:
+    """Neutralise l'injection de formules CSV (Excel/Sheets).
+
+    Une cellule commençant par = + - @ (ou tab/retour) peut etre interpretee
+    comme une formule a l'ouverture. On la prefixe d'une apostrophe.
+    """
+    if isinstance(value, str) and value[:1] in ("=", "+", "-", "@", "\t", "\r"):
+        return "'" + value
+    return value
+
+
 def _csv_stream(queryset: QuerySet, fields: list[str]) -> Generator[str, None, None]:
     import csv, io
     buffer = io.StringIO()
@@ -2307,7 +2319,7 @@ def _csv_stream(queryset: QuerySet, fields: list[str]) -> Generator[str, None, N
     buffer.seek(0)
     buffer.truncate(0)
     for obj in queryset.iterator():
-        writer.writerow([getattr(obj, f, "") for f in fields])
+        writer.writerow([_csv_safe(getattr(obj, f, "")) for f in fields])
         yield buffer.getvalue()
         buffer.seek(0)
         buffer.truncate(0)

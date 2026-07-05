@@ -109,7 +109,7 @@ function saveForm(id){
      .catch(e=>alert(e.message));
 }
 function del(id){ if(!confirm('Supprimer ce chapitre ?'))return; api('/formation/chapitres/'+id+'/',{method:'DELETE'}).then(()=>{chapters=chapters.filter(c=>c.id!==id);render();}).catch(e=>alert(e.message)); }
-function move(id,dir){ const i=chapters.findIndex(c=>c.id===id), j=i+dir; if(j<0||j>=chapters.length)return; [chapters[i],chapters[j]]=[chapters[j],chapters[i]]; render(); api('/formation/cours/'+COURSE+'/chapitres/reordonner/',{method:'POST',body:JSON.stringify({order:chapters.map(c=>c.id)})}).catch(e=>alert(e.message)); }
+function move(id,dir){ const i=chapters.findIndex(c=>c.id===id), j=i+dir; if(j<0||j>=chapters.length)return; const prev=chapters.slice(); [chapters[i],chapters[j]]=[chapters[j],chapters[i]]; render(); api('/formation/cours/'+COURSE+'/chapitres/reordonner/',{method:'POST',body:JSON.stringify({order:chapters.map(c=>c.id)})}).catch(e=>{chapters=prev; render(); alert('Réordonnancement annulé : '+e.message);}); }
 
 function pickVideo(id){ const inp=document.createElement('input');inp.type='file';inp.accept='video/*';inp.onchange=()=>{if(inp.files[0])uploadVideo(id,inp.files[0]);};inp.click(); }
 function setV(id,html){ const el=$('v-'+id); if(el)el.innerHTML=html; }
