@@ -18,6 +18,7 @@ from .views import (
     healthcheck,
     robots_txt,
     sitemap_xml,
+    venue_availability,
 )
 from .webhooks import webhook_receiver
 
@@ -30,6 +31,7 @@ urlpatterns = [
     path("sitemap.xml", sitemap_xml, name="sitemap_xml"),
     path("api/contact-requests/", ContactRequestCreateView.as_view(), name="contact_request_create"),
     path("api/venue-bookings/", VenueBookingCreateView.as_view(), name="venue_booking_create"),
+    path("api/venue-availability/", venue_availability, name="venue_availability"),
     path("api/course-enrollments/", CourseEnrollmentCreateView.as_view(), name="course_enrollment_create"),
     path("api/providers/", get_active_providers, name="active_providers"),
     path("api/courses/", get_active_courses, name="active_courses"),

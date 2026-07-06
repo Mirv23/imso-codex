@@ -96,3 +96,34 @@ def test_order_stock_decrement_is_idempotent():
     order.save()
     product.refresh_from_db()
     assert product.stock == 7
+
+
+# ── Reservation de salle : un creneau confirme devient indisponible ──
+def _book(client, date, st, et):
+    import json as _j
+    return client.post("/api/venue-bookings/", _j.dumps({
+        "requester_name": "Jean Test", "requester_phone": "509", "event_type": "Mariage",
+        "event_date": date, "start_time": st, "end_time": et, "setup": "assis 40", "guest_count": 40,
+    }), content_type="application/json")
+
+
+def test_confirmed_booking_blocks_slot_and_prevents_double_booking():
+    from apps.adminpanel.models import VenueBooking
+    c = Client()
+    r1 = _book(c, "2026-09-20", "18:00", "22:00")
+    assert r1.status_code == 201
+    bid = r1.json()["id"]
+    # REQUESTED n'occupe pas encore le creneau
+    av = c.get("/api/venue-availability/?from=2026-09-01&to=2026-09-30").json()
+    assert av["occupied"].get("2026-09-20", []) == []
+    # Une fois confirmee -> creneau occupe
+    b = VenueBooking.objects.get(id=bid)
+    b.status = VenueBooking.Status.CONFIRMED
+    b.save()
+    av = c.get("/api/venue-availability/?from=2026-09-01&to=2026-09-30").json()
+    assert "soir" in av["occupied"].get("2026-09-20", [])
+    # Double reservation (meme creneau ou chevauchement) -> 409
+    assert _book(c, "2026-09-20", "18:00", "22:00").status_code == 409
+    assert _book(c, "2026-09-20", "19:00", "21:00").status_code == 409
+    # Autre creneau le meme jour -> autorise
+    assert _book(c, "2026-09-20", "08:00", "12:00").status_code == 201

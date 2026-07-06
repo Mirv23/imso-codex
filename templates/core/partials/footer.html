@@ -255,15 +255,31 @@ const SLOT_DEFS = [
   { id: 'soir',     label: 'Soirée',      time: '18:00 — 22:00', period: '4 heures' }
 ];
 
-// Deterministic pseudo-random booked-slot generator based on date
-function seedFor(dateStr, slotId) {
-  let h = 0;
-  const s = dateStr + slotId;
-  for (let i = 0; i < s.length; i++) h = ((h << 5) - h + s.charCodeAt(i)) | 0;
-  return Math.abs(h);
+// Disponibilité RÉELLE : ensemble des créneaux occupés ("YYYY-MM-DD|slotId"),
+// chargé depuis /api/venue-availability/ (réservations en paiement/validées/confirmées).
+let OCCUPIED = new Set();
+
+async function fetchAvailability() {
+  const mm = String(viewMonth + 1).padStart(2, '0');
+  const from = `${viewYear}-${mm}-01`;
+  const last = new Date(viewYear, viewMonth + 1, 0).getDate();
+  const to = `${viewYear}-${mm}-${String(last).padStart(2, '0')}`;
+  try {
+    const r = await fetch(`/api/venue-availability/?from=${from}&to=${to}`, { credentials: 'same-origin' });
+    if (r.ok) {
+      const data = await r.json();
+      OCCUPIED = new Set();
+      Object.entries(data.occupied || {}).forEach(([date, slots]) => {
+        (slots || []).forEach(s => OCCUPIED.add(date + '|' + s));
+      });
+    }
+  } catch (_) { /* en cas d'échec réseau, le serveur revalidera à la réservation */ }
+  renderCalendar();
+  if (selectedDate) selectDate(selectedDate);
 }
+
 function slotStatusFor(dateStr, slotId) {
-  return (seedFor(dateStr, slotId) % 5 === 0) ? 'booked' : 'available';
+  return OCCUPIED.has(dateStr + '|' + slotId) ? 'booked' : 'available';
 }
 function dayAvailability(dateObj) {
   const today = new Date(); today.setHours(0,0,0,0);
@@ -383,15 +399,15 @@ calPrev.addEventListener('click', () => {
   if (calPrev.disabled) return;
   viewMonth--;
   if (viewMonth < 0) { viewMonth = 11; viewYear--; }
-  renderCalendar();
+  fetchAvailability();
 });
 calNext.addEventListener('click', () => {
   viewMonth++;
   if (viewMonth > 11) { viewMonth = 0; viewYear++; }
-  renderCalendar();
+  fetchAvailability();
 });
 
-renderCalendar();
+fetchAvailability();
 
 // ====== Booking modal ======
 const bookingModal = document.getElementById('bookingModal');
@@ -472,9 +488,18 @@ modalForm.addEventListener('submit', async (e) => {
       }),
     });
 
-    if (!response.ok) throw new Error('request-failed');
+    const data = await response.json().catch(() => ({}));
 
-    const data = await response.json();
+    // 409 = le créneau vient d'être pris entre-temps : message clair + on
+    // rafraîchit la disponibilité pour que le calendrier le montre comme réservé.
+    if (response.status === 409) {
+      const msg = (data.errors && data.errors.event_date && data.errors.event_date[0])
+        || "Ce créneau vient d'être réservé. Merci d'en choisir un autre.";
+      alert(msg);
+      fetchAvailability();
+      return;
+    }
+    if (!response.ok) throw new Error('request-failed');
 
     modalForm.style.display = 'none';
     modalSuccess.style.display = '';

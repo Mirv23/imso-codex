@@ -158,6 +158,16 @@ class VenueBookingCreateView(View):
         if not form.is_valid():
             return JsonResponse({"ok": False, "errors": form.errors}, status=400)
 
+        # Anti double-reservation : si le creneau est deja pris (reservation en
+        # paiement / validee / confirmee), on refuse au lieu de creer un doublon.
+        from .venue import slot_taken
+        cd = form.cleaned_data
+        if slot_taken(cd["event_date"], cd["start_time"], cd["end_time"]):
+            return JsonResponse({
+                "ok": False,
+                "errors": {"event_date": ["Ce créneau vient d'être réservé. Merci d'en choisir un autre."]},
+            }, status=409)
+
         booking = form.save()
         return JsonResponse({
             "ok": True,
@@ -634,3 +644,41 @@ def sitemap_xml(request: HttpRequest) -> HttpResponse:
         f"{urls}</urlset>"
     )
     return HttpResponse(xml, content_type="application/xml")
+
+
+# ── Disponibilité des créneaux de réservation de salle ───────────
+@require_http_methods(["GET"])
+def venue_availability(request: HttpRequest) -> JsonResponse:
+    """Créneaux OCCUPÉS (réservation en paiement / validée / confirmée) sur une
+    plage de dates, pour que le calendrier public affiche la vraie disponibilité.
+
+    GET /api/venue-availability/?from=YYYY-MM-DD&to=YYYY-MM-DD
+    -> {"occupied": {"2026-08-01": ["matin"], ...}, "slots": ["matin","aprem","soir"]}
+    """
+    from datetime import timedelta
+    from django.utils.dateparse import parse_date
+    from .venue import VENUE_SLOTS, OCCUPIED_STATUSES, occupied_slots_for
+
+    def _d(raw):
+        try:
+            return parse_date(str(raw or "")) or None
+        except (ValueError, TypeError):
+            return None
+
+    today = timezone.localdate()
+    frm = _d(request.GET.get("from")) or today
+    to = _d(request.GET.get("to")) or (frm + timedelta(days=120))
+    # Fenêtre bornée (max ~6 mois) pour éviter une requête non maîtrisée.
+    if (to - frm).days > 186:
+        to = frm + timedelta(days=186)
+    if to < frm:
+        to = frm
+
+    qs = VenueBooking.objects.filter(
+        status__in=OCCUPIED_STATUSES, event_date__gte=frm, event_date__lte=to
+    ).only("event_date", "start_time", "end_time")
+    occ = occupied_slots_for(qs)
+    return JsonResponse({
+        "occupied": {d: sorted(s) for d, s in occ.items()},
+        "slots": [s[0] for s in VENUE_SLOTS],
+    })
