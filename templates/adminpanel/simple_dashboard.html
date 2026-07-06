@@ -1044,6 +1044,9 @@ const SECTIONS = {
     title: 'Inscriptions',
     endpoint: '/dashboard/api/enrollments/',
     canCreate: false, canEdit: true, canDelete: false,
+    statusChips: [
+      { v:'', l:'Toutes' }, { v:'pending', l:'En attente' }, { v:'confirmed', l:'Confirmées' }, { v:'cancelled', l:'Annulées' },
+    ],
     columns: [
       { key:'member', label:'Membre', render: r => r.member ? esc(r.member.first_name + ' ' + r.member.last_name) : '<span style="color:var(--muted)">—</span>' },
       { key:'course', label:'Cours', render: r => r.course ? esc(r.course.title) : '<span style="color:var(--muted)">—</span>' },
@@ -1151,6 +1154,10 @@ const SECTIONS = {
     title: 'Commandes',
     endpoint: '/dashboard/api/orders/',
     canCreate: false, canEdit: true, canDelete: false,
+    statusChips: [
+      { v:'', l:'Toutes' }, { v:'pending', l:'En attente' }, { v:'paid', l:'Payées' },
+      { v:'preparing', l:'En préparation' }, { v:'shipped', l:'Expédiées' }, { v:'delivered', l:'Livrées' }, { v:'cancelled', l:'Annulées' },
+    ],
     columns: [
       { key:'reference', label:'Réf.', render: r => `<code style="font-size:11px">${esc(r.reference)}</code>` },
       { key:'customer_name', label:'Client', render: r => `<strong>${esc(r.customer_name)}</strong><br><span style="font-size:11px;color:var(--muted)">${esc(r.customer_phone)}</span>` },
@@ -1170,6 +1177,9 @@ const SECTIONS = {
     title: 'Blog',
     endpoint: '/dashboard/api/blog/',
     createEndpoint: '/dashboard/api/blog/create/',
+    statusChips: [
+      { v:'', l:'Tous' }, { v:'draft', l:'Brouillons' }, { v:'scheduled', l:'Programmés' }, { v:'published', l:'Publiés' },
+    ],
     canCreate: true, canEdit: true, canDelete: true, uploadTarget: 'blog',
     columns: [
       { key:'title', label:'Titre', render: r => `<strong>${esc(r.title)}</strong>` },
@@ -1263,6 +1273,9 @@ const SECTIONS = {
     title: 'Inscriptions formation',
     endpoint: '/dashboard/api/course-enrollments/',
     canCreate: false, canEdit: true, canDelete: true,
+    statusChips: [
+      { v:'', l:'Toutes' }, { v:'pending_payment', l:'Paiement en attente' }, { v:'active', l:'Accès actif' },
+    ],
     columns: [
       { key:'student_name', label:'Étudiant', render: r => `<strong>${esc(r.student_name)}</strong><br><span style="font-size:11px;color:var(--muted)">${esc(r.student_email || '')}</span>` },
       { key:'course_title', label:'Cours', render: r => esc(r.course_title) },
