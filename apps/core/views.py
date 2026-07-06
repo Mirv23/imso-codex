@@ -7,6 +7,7 @@ from typing import Any
 from django_ratelimit.decorators import ratelimit
 from django.db import transaction
 from django.core.signing import BadSignature
+from django.db import IntegrityError
 from django.http import HttpRequest, JsonResponse, HttpResponseBadRequest, HttpResponseRedirect, Http404
 from django.utils.decorators import method_decorator
 from django.shortcuts import get_object_or_404, render, redirect
@@ -184,17 +185,27 @@ class CourseEnrollmentCreateView(View):
         if course_id:
             course = get_object_or_404(Course, id=course_id)
 
-        enrollment = Enrollment.objects.create(
-            member=member,
-            course=course,
-            status=Enrollment.Status.PENDING,
-        )
+        # Idempotent : une 2e inscription (double-clic, retour pour repayer) au
+        # meme cours reutilise l'inscription existante au lieu de violer la
+        # contrainte unique (member, course) -> plus de 500.
+        try:
+            enrollment, created = Enrollment.objects.get_or_create(
+                member=member,
+                course=course,
+                defaults={"status": Enrollment.Status.PENDING},
+            )
+        except IntegrityError:
+            # Race concurrente : recuperer l'inscription creee entre-temps.
+            enrollment = Enrollment.objects.filter(member=member, course=course).order_by("id").first()
+            if enrollment is None:
+                raise
+            created = False
 
         return JsonResponse({
             "ok": True,
             "id": enrollment.id,
             "payment_url": f"/paiement/cours/{make_payment_token('cours', enrollment.id)}/",
-        }, status=201)
+        }, status=201 if created else 200)
 
 
 from django.core.serializers.json import DjangoJSONEncoder
@@ -209,9 +220,17 @@ class PaymentPageView(TemplateView):
             "id", "name", "provider_type", "instructions", "checkout_url", "sort_order"
         )
         context["providers"] = providers
-        context["providers_json"] = json.dumps(list(providers.values(
+        _providers_raw = json.dumps(list(providers.values(
             "id", "name", "provider_type", "instructions", "checkout_url", "sort_order"
         )), cls=DjangoJSONEncoder)
+        # Injecte dans un <script> via |safe : echapper < > & (comme le fait
+        # json_script de Django) sinon un champ "instructions" contenant
+        # "</script>" ferme la balise et casse toute la page (et ouvre un XSS).
+        context["providers_json"] = (
+            _providers_raw.replace("<", "\\u003c")
+            .replace(">", "\\u003e")
+            .replace("&", "\\u0026")
+        )
 
         payment_type = kwargs.get("type")
         # Le jeton signé remplace l'id séquentiel : illisible/infalsifiable sans SECRET_KEY.
@@ -289,6 +308,12 @@ class PaymentProcessView(View):
         provider_id = data.get("provider_id")
         if not provider_id:
             return JsonResponse({"ok": False, "error": "Mode de paiement requis"}, status=400)
+        # Coercition avant la requete : un provider_id non entier ferait lever
+        # ValueError par l'AutoField -> 500. On renvoie un 400 propre.
+        try:
+            provider_id = int(provider_id)
+        except (TypeError, ValueError):
+            return JsonResponse({"ok": False, "error": "Mode de paiement invalide"}, status=400)
 
         provider = get_object_or_404(PaymentProvider, id=provider_id, is_active=True)
 
@@ -363,6 +388,16 @@ class PaymentProcessView(View):
             order=order,
             notes=notes,
         )
+
+        # Preuve de paiement (capture mobile money) televersee en multipart :
+        # la persister sur le paiement, sinon l'admin ne voit jamais la preuve.
+        if screenshot_file:
+            ct = getattr(screenshot_file, "content_type", "") or ""
+            if ct.startswith("image/") and screenshot_file.size <= 5 * 1024 * 1024:
+                try:
+                    payment.screenshot.save(screenshot_file.name, screenshot_file)
+                except Exception:
+                    logger.warning("Echec sauvegarde screenshot paiement %s", payment.id)
 
         if provider.checkout_url:
             return JsonResponse({

@@ -57,9 +57,15 @@ def webhook_receiver(request, provider):
         logger.warning("No external reference found in %s webhook payload", provider)
         return JsonResponse({"status": "ok", "payment": None})
 
-    try:
-        payment = Payment.objects.get(external_reference=external_ref)
-    except Payment.DoesNotExist:
+    # external_reference n'est pas unique (le client saisit librement son ID de
+    # transaction) : .get() leverait MultipleObjectsReturned -> 500. On selectionne
+    # de facon deterministe, en privilegiant un paiement encore PENDING.
+    _matches = Payment.objects.filter(external_reference=external_ref)
+    payment = (
+        _matches.filter(status=Payment.Status.PENDING).order_by("-created_at").first()
+        or _matches.order_by("-created_at").first()
+    )
+    if payment is None:
         logger.info("No payment found for external_reference=%s (provider=%s)", external_ref, provider)
         return JsonResponse({"status": "ok", "payment": None})
 

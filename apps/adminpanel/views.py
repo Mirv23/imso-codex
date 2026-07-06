@@ -7,7 +7,7 @@ import os
 from datetime import timedelta
 from typing import Any, Callable, Generator
 
-from django.contrib.auth import get_user_model
+from django.contrib.auth import get_user_model, logout as auth_logout
 from django.contrib.auth.views import LoginView
 from django.core.cache import cache
 from django.core.exceptions import ValidationError
@@ -22,6 +22,7 @@ from django.views.decorators.csrf import ensure_csrf_cookie
 from django.views.decorators.http import require_http_methods
 from django.views.generic import TemplateView
 from django_ratelimit.decorators import ratelimit
+from django.conf import settings
 
 logger = logging.getLogger(__name__)
 
@@ -68,6 +69,20 @@ class RateLimitedLoginView(LoginView):
         return super().dispatch(request, *args, **kwargs)
 
 
+def logout_view(request: HttpRequest) -> HttpResponse:
+    """Deconnexion admin acceptant GET et POST.
+
+    Le lien « Deconnexion » de la barre laterale est un <a> (GET) ; or la
+    LogoutView de Django 5.2 n'accepte que POST -> 405. On gere donc GET+POST
+    ici et on renvoie vers la page de login.
+    """
+    from django.shortcuts import redirect
+
+    auth_logout(request)
+    return redirect(settings.LOGIN_URL)
+
+
+@method_decorator(ensure_csrf_cookie, name="dispatch")
 class DashboardView(StaffRequiredMixin, TemplateView):
     template_name = "adminpanel/simple_dashboard.html"
 
@@ -670,8 +685,17 @@ def course_detail(request: HttpRequest, pk: int) -> JsonResponse:
         logger.info("Course %d updated by user %s", pk, request.user.username)
         return JsonResponse(_serialize_course(c))
     elif request.method == "DELETE":
-        # Suppression libre : les inscriptions liées sont conservées (leur lien
-        # vers le cours passe à NULL). Aucune donnée détruite en cascade.
+        # Les inscriptions ADMIN (Enrollment) passent à NULL (SET_NULL), MAIS les
+        # inscriptions ETUDIANTS de la plateforme /formation/ (CourseEnrollment) et
+        # les chapitres sont en CASCADE : supprimer un cours détruirait alors la
+        # progression de tous ses étudiants. On bloque dans ce cas.
+        student_count = c.student_enrollments.count()
+        if student_count:
+            return _error(
+                f"Ce cours a {student_count} étudiant(s) inscrit(s) sur la plateforme "
+                "de formation. Désactivez-le (is_active=False) au lieu de le supprimer.",
+                409,
+            )
         logger.info("Course %d deleted by user %s", pk, request.user.username)
         c.delete()
         return _ok()
@@ -1703,7 +1727,15 @@ def dashboard_summary(request: HttpRequest) -> JsonResponse:
 # et que DASHBOARD_SUMMARY_CACHE_TTL > 0. Raison : sur Vercel, le cache par
 # defaut (LocMemCache) est propre a chaque instance lambda -> compteurs figes et
 # desynchronises pendant plusieurs minutes. Les comptages sont peu couteux.
-_SUMMARY_TTL = int(os.environ.get("DASHBOARD_SUMMARY_CACHE_TTL", "0"))
+def _env_int(name: str, default: int) -> int:
+    raw = os.environ.get(name, "")
+    try:
+        return int(raw) if str(raw).strip() else default
+    except (TypeError, ValueError):
+        return default
+
+
+_SUMMARY_TTL = _env_int("DASHBOARD_SUMMARY_CACHE_TTL", 0)
 
 
 def get_dashboard_summary(request: HttpRequest | None = None) -> dict[str, Any]:

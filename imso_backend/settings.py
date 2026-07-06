@@ -12,6 +12,24 @@ BASE_DIR = Path(__file__).resolve().parent.parent
 
 load_dotenv(BASE_DIR / ".env")
 
+
+def _env_int(name: str, default: int) -> int:
+    """int() d'une var d'env, mais une valeur VIDE (fréquent sur Vercel) retombe
+    sur le défaut au lieu de lever ValueError et de casser tout le site au boot."""
+    raw = os.environ.get(name, "")
+    try:
+        return int(raw) if str(raw).strip() else default
+    except (TypeError, ValueError):
+        return default
+
+
+def _env_float(name: str, default: float) -> float:
+    raw = os.environ.get(name, "")
+    try:
+        return float(raw) if str(raw).strip() else default
+    except (TypeError, ValueError):
+        return default
+
 SECRET_KEY = os.environ.get("DJANGO_SECRET_KEY")
 if not SECRET_KEY:
     raise ImproperlyConfigured("DJANGO_SECRET_KEY must be set")
@@ -31,7 +49,7 @@ if SENTRY_DSN:
     sentry_sdk.init(
         dsn=SENTRY_DSN,
         integrations=[DjangoIntegration()],
-        traces_sample_rate=float(os.environ.get("SENTRY_TRACES_SAMPLE_RATE", "0.1")),
+        traces_sample_rate=_env_float("SENTRY_TRACES_SAMPLE_RATE", 0.1),
         send_default_pii=False,
         environment=os.environ.get("DJANGO_ENV", "production"),
     )
@@ -97,7 +115,7 @@ WSGI_APPLICATION = "imso_backend.wsgi.app"
 # jamais conn_max_age est repasse a une valeur > 0 via l'environnement.
 _db_config = dj_database_url.config(
     default=f"sqlite:///{BASE_DIR / 'db.sqlite3'}",
-    conn_max_age=int(os.environ.get("DJANGO_CONN_MAX_AGE", "0")),
+    conn_max_age=_env_int("DJANGO_CONN_MAX_AGE", 0),
     conn_health_checks=os.environ.get("DJANGO_CONN_HEALTH_CHECKS", "True").lower() == "true",
 )
 # En serverless (Vercel), on cible le Transaction pooler de Supabase (port 6543),
@@ -172,9 +190,7 @@ def _supabase_s3_options(bucket: str, *, public: bool) -> dict:
     else:
         # Bucket PRIVÉ : .url renvoie une URL présignée qui expire (par défaut 1h).
         opts["querystring_auth"] = True
-        opts["querystring_expire"] = int(
-            os.environ.get("SUPABASE_PRIVATE_URL_EXPIRE", "3600")
-        )
+        opts["querystring_expire"] = _env_int("SUPABASE_PRIVATE_URL_EXPIRE", 3600)
     return opts
 
 
@@ -229,7 +245,7 @@ CORS_ALLOW_ALL_ORIGINS = os.environ.get("DJANGO_CORS_ALLOW_ALL_ORIGINS", "False"
 CORS_ALLOW_CREDENTIALS = os.environ.get("DJANGO_CORS_ALLOW_CREDENTIALS", "False").lower() == "true"
 
 SECURE_SSL_REDIRECT = os.environ.get("DJANGO_SECURE_SSL_REDIRECT", "True").lower() == "true"
-SECURE_HSTS_SECONDS = int(os.environ.get("DJANGO_HSTS_SECONDS", "31536000"))
+SECURE_HSTS_SECONDS = _env_int("DJANGO_HSTS_SECONDS", 31536000)
 SECURE_HSTS_INCLUDE_SUBDOMAINS = True
 SECURE_HSTS_PRELOAD = True
 SESSION_COOKIE_SECURE = os.environ.get("DJANGO_SESSION_COOKIE_SECURE", "True").lower() == "true"
@@ -253,7 +269,7 @@ LOGGING = {
 # ── Email ────────────────────────────────────────────────
 EMAIL_BACKEND = os.environ.get("DJANGO_EMAIL_BACKEND", "django.core.mail.backends.console.EmailBackend")
 EMAIL_HOST = os.environ.get("DJANGO_EMAIL_HOST", "")
-EMAIL_PORT = int(os.environ.get("DJANGO_EMAIL_PORT", "587"))
+EMAIL_PORT = _env_int("DJANGO_EMAIL_PORT", 587)
 EMAIL_USE_TLS = os.environ.get("DJANGO_EMAIL_USE_TLS", "True").lower() == "true"
 EMAIL_HOST_USER = os.environ.get("DJANGO_EMAIL_USER", "")
 EMAIL_HOST_PASSWORD = os.environ.get("DJANGO_EMAIL_PASSWORD", "")

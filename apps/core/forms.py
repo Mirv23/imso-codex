@@ -48,16 +48,19 @@ class CourseEnrollmentRequestForm(forms.Form):
     def get_or_create_member(self) -> Member:
         full_name = self.cleaned_data["full_name"].strip()
         parts = full_name.split()
-        first_name = parts[0]
+        first_name = parts[0] if parts else "-"
         last_name = " ".join(parts[1:]) or "-"
-        member, _created = Member.objects.get_or_create(
-            phone=self.cleaned_data["phone"],
-            defaults={
-                "first_name": first_name,
-                "last_name": last_name,
-                "email": self.cleaned_data.get("email", ""),
-            },
-        )
+        # phone n'est PAS unique : plusieurs Member peuvent partager le numero
+        # (creation admin sans controle d'unicite). get_or_create ferait alors
+        # un .get() qui leve MultipleObjectsReturned -> 500. On prend le 1er.
+        member = Member.objects.filter(phone=self.cleaned_data["phone"]).order_by("id").first()
+        if member is None:
+            member = Member.objects.create(
+                phone=self.cleaned_data["phone"],
+                first_name=first_name,
+                last_name=last_name,
+                email=self.cleaned_data.get("email", ""),
+            )
         updated = False
         if member.email != self.cleaned_data.get("email", ""):
             member.email = self.cleaned_data.get("email", "")

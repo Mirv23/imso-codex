@@ -1,11 +1,10 @@
 from django.conf import settings
 from django.conf.urls.static import static
 from django.contrib import admin
-from django.contrib.auth.views import LogoutView
 from django.urls import include, path
 from drf_spectacular.views import SpectacularAPIView, SpectacularSwaggerView, SpectacularRedocView
 
-from apps.adminpanel.views import RateLimitedLoginView
+from apps.adminpanel.views import RateLimitedLoginView, logout_view
 
 
 urlpatterns = [
@@ -14,7 +13,7 @@ urlpatterns = [
     path("dashboard/", include("apps.adminpanel.urls")),
     path("formation/", include("apps.formation.urls")),
     path("login/", RateLimitedLoginView.as_view(), name="login"),
-    path("logout/", LogoutView.as_view(), name="logout"),
+    path("logout/", logout_view, name="logout"),
     path("api/schema/", SpectacularAPIView.as_view(), name="schema"),
     path("api/docs/", SpectacularSwaggerView.as_view(url_name="schema"), name="swagger-ui"),
     path("api/redoc/", SpectacularRedocView.as_view(url_name="schema"), name="redoc"),

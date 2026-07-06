@@ -3,6 +3,7 @@ from __future__ import annotations
 import base64
 import hashlib
 import os
+import secrets
 
 from typing import Any
 
@@ -400,7 +401,10 @@ class Payment(TimestampedModel):
         if not self.reference:
             stamp = timezone.now().strftime("%Y%m%d%H%M%S")
             prefix = self.purpose.upper()[:3]
-            self.reference = f"IMSO-{prefix}-{stamp}"
+            # Suffixe aleatoire : sans lui, deux paiements du meme type crees dans
+            # la meme seconde violent la contrainte unique -> IntegrityError/500
+            # (frequent en serverless ou plusieurs lambdas repondent en parallele).
+            self.reference = f"IMSO-{prefix}-{stamp}-{secrets.token_hex(3)}"
         if self.status == self.Status.PAID and not self.paid_at:
             self.paid_at = timezone.now()
         super().save(*args, **kwargs)
@@ -532,7 +536,9 @@ class Order(TimestampedModel):
     def save(self, *args: Any, **kwargs: Any) -> None:
         if not self.reference:
             stamp = timezone.now().strftime("%Y%m%d%H%M%S")
-            self.reference = f"IMSO-CMD-{stamp}"
+            # Suffixe aleatoire : evite la collision de reference (unique) quand
+            # deux commandes tombent dans la meme seconde -> IntegrityError/500.
+            self.reference = f"IMSO-CMD-{stamp}-{secrets.token_hex(3)}"
         super().save(*args, **kwargs)
 
     def recompute_total(self) -> int:
