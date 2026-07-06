@@ -439,11 +439,11 @@ function selectProvider(id) {
     html += `<div style="margin-top:16px;">
       <div class="field">
         <label style="font-weight:600;font-size:13px;">🔢 ID de transaction (reçu)</label>
-        <input class="input mono" id="txIdInput" placeholder="ex: TX-123456789" oninput="manualPaymentData.transactionId = this.value" style="width:100%;padding:10px 12px;border:1px solid var(--border);border-radius:9px;font-size:13.5px;"/>
+        <input class="input mono" id="txIdInput" placeholder="ex: TX-123456789" oninput="manualPaymentData.transactionId = this.value" style="width:100%;padding:10px 12px;border:1px solid var(--border);border-radius:9px;font-size:16px;"/>
       </div>
       <div class="field" style="margin-top:12px;">
         <label style="font-weight:600;font-size:13px;">📸 Screenshot du paiement (optionnel)</label>
-        <input type="file" id="screenshotInput" accept="image/*" onchange="manualPaymentData.screenshot = this.files[0]" style="width:100%;padding:10px;border:1px solid var(--border);border-radius:9px;font-size:13px;background:#fff;"/>
+        <input type="file" id="screenshotInput" accept="image/*" onchange="manualPaymentData.screenshot = this.files[0]" style="width:100%;padding:10px;border:1px solid var(--border);border-radius:9px;font-size:16px;background:#fff;"/>
       </div>
       <button class="btn primary" id="confirmManualBtn" style="margin-top:14px;" onclick="confirmManualPayment()">
         ✅ J'ai payé — Envoyer la confirmation

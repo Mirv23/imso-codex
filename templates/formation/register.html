@@ -7,14 +7,17 @@
 .authcard{padding:26px 26px 28px}
 .fg{margin-bottom:15px}
 .fg label{display:block;font-size:13px;font-weight:700;margin-bottom:6px;color:#38493f}
-.fg input,.fg select{width:100%;padding:11px 13px;border:1px solid var(--line);border-radius:10px;font-size:14.5px;background:#fff;color:var(--ink);transition:.15s}
+.fg input,.fg select{width:100%;padding:11px 13px;border:1px solid var(--line);border-radius:10px;font-size:16px;background:#fff;color:var(--ink);transition:.15s}
 .fg input:focus,.fg select:focus{outline:none;border-color:var(--primary);box-shadow:0 0 0 3px rgba(45,106,79,.12)}
 .fg .err{color:#b4322c;font-size:12.5px;margin-top:5px;font-weight:600}
 .roles{display:grid;grid-template-columns:1fr 1fr;gap:10px}
 .roles label{border:1.5px solid var(--line);border-radius:11px;padding:12px;cursor:pointer;text-align:center;font-weight:700;font-size:14px;transition:.15s;display:block;margin:0}
-.roles input{display:none}
+/* Masque visuellement le radio SANS le retirer du clavier / lecteur d'ecran
+   (display:none le rendait inatteignable au clavier). */
+.roles input{position:absolute;opacity:0;width:1px;height:1px;pointer-events:none}
 .roles input:checked+span{color:var(--primary)}
 .roles label:has(input:checked){border-color:var(--primary);background:#f0f7f3}
+.roles label:focus-within{border-color:var(--primary);box-shadow:0 0 0 3px rgba(45,106,79,.2)}
 .authcard .btn{width:100%;justify-content:center;margin-top:6px}
 .authalt{text-align:center;margin-top:16px;font-size:13.5px;color:var(--muted)}
 .authalt a{color:var(--primary);font-weight:700}
