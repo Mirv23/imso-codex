@@ -11,6 +11,26 @@ os.environ.setdefault("DJANGO_ALLOW_ASYNC_UNSAFE", "true")
 def _setup():
     django.setup()
     _run_startup_migrations()
+    _run_private_media_migration()
+
+
+def _run_private_media_migration():
+    """Migration ponctuelle des fichiers sensibles vers le bucket privé.
+
+    Activée en posant RUN_PRIVATE_MEDIA_MIGRATION=1 le temps d'un démarrage à
+    froid, puis retirée. Idempotente (copie-si-absent), donc sans danger si elle
+    tourne plusieurs fois. Ne bloque jamais le démarrage en cas d'échec.
+    """
+    if os.environ.get("RUN_PRIVATE_MEDIA_MIGRATION", "").lower() not in ("1", "true", "yes"):
+        return
+    from django.core.management import call_command
+
+    try:
+        print("[startup] migrate_private_media: debut", flush=True)
+        call_command("migrate_private_media")
+        print("[startup] migrate_private_media: OK", flush=True)
+    except Exception as e:  # noqa: BLE001
+        print(f"[startup] migrate_private_media a echoue: {e}", flush=True)
 
 
 def _run_startup_migrations():

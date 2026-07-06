@@ -850,7 +850,13 @@ def _storage_enabled() -> bool:
     return bool(os.environ.get("SUPABASE_S3_ACCESS_KEY") and os.environ.get("SUPABASE_S3_SECRET_KEY"))
 
 
-def _s3_client_and_bucket():
+def _s3_client_and_bucket(private: bool = False):
+    """Client boto3 + bucket cible.
+
+    private=True renvoie le bucket PRIVÉ (vidéos payantes, KYC, captures) — celui
+    dont django-storages sert les fichiers via URL signée. Le presign PUT doit y
+    déposer les fichiers pour que le presign GET (via .url) les retrouve.
+    """
     import boto3
     from botocore.client import Config
     endpoint = os.environ.get("SUPABASE_S3_ENDPOINT") or (
@@ -864,6 +870,8 @@ def _s3_client_and_bucket():
         region_name=os.environ.get("SUPABASE_S3_REGION", "us-west-2"),
         config=Config(signature_version="s3v4", s3={"addressing_style": "path"}),
     )
+    if private:
+        return client, os.environ.get("SUPABASE_PRIVATE_BUCKET", "private")
     return client, os.environ.get("SUPABASE_STORAGE_BUCKET", "media")
 
 
@@ -890,7 +898,7 @@ def chapter_video_upload_url(request: HttpRequest, pk: int) -> JsonResponse:
     if ext not in _ALLOWED_VIDEO_EXT:
         return _error("Format vidéo non supporté (mp4, webm, mov…).", 400)
     key = f"courses/videos/chapter_{pk}.{ext}"
-    client, bucket = _s3_client_and_bucket()
+    client, bucket = _s3_client_and_bucket(private=True)
     url = client.generate_presigned_url(
         "put_object",
         Params={"Bucket": bucket, "Key": key, "ContentType": content_type},
@@ -915,9 +923,10 @@ def chapter_video_confirm(request: HttpRequest, pk: int) -> JsonResponse:
     ch.video.name = key
     ch.save(update_fields=["video"])
     # Efface l'ancienne vidéo si remplacée par un autre fichier (ex. format différent).
+    # Utilise le storage du champ (bucket PRIVÉ), pas le storage public par défaut.
     if old_name and old_name != key:
         try:
-            default_storage.delete(old_name)
+            ch.video.storage.delete(old_name)
         except Exception:
             pass
     logger.info("Chapter %d video set by %s", pk, request.user.username)

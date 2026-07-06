@@ -12,6 +12,8 @@ from django.db import models
 from django.utils import timezone
 from django.utils.text import slugify
 
+from .storage import private_media_storage
+
 
 _FERNET_PREFIX = "fer:"   # nouveau chiffrement (Fernet / AES)
 _LEGACY_PREFIX = "enc:"   # ancien XOR — encore lu pour compatibilité
@@ -161,7 +163,10 @@ class Chapter(TimestampedModel):
     duration_minutes = models.PositiveIntegerField(default=0)
     # La vidéo transite en direct navigateur -> stockage objet (jamais par l'app,
     # à cause de la limite de taille des fonctions serverless Vercel).
-    video = models.FileField(upload_to="courses/videos/", blank=True)
+    # Bucket PRIVÉ : contenu payant, servi seulement via URL signée temporaire.
+    video = models.FileField(
+        upload_to="courses/videos/", blank=True, storage=private_media_storage
+    )
 
     class Meta:
         ordering = ["position", "id"]
@@ -193,7 +198,10 @@ class Profile(TimestampedModel):
     # KYC (vérification d'identité des professeurs)
     kyc_status = models.CharField(max_length=20, choices=KycStatus.choices, default=KycStatus.NOT_SUBMITTED)
     id_number = models.CharField(max_length=60, blank=True)
-    id_document = models.FileField(upload_to="kyc/", blank=True)
+    # Bucket PRIVÉ : pièce d'identité, servie seulement via URL signée temporaire.
+    id_document = models.FileField(
+        upload_to="kyc/", blank=True, storage=private_media_storage
+    )
     kyc_note = models.CharField(max_length=200, blank=True)  # motif de rejet éventuel
 
     class Meta:
@@ -372,7 +380,10 @@ class Payment(TimestampedModel):
     venue_booking = models.ForeignKey(VenueBooking, on_delete=models.SET_NULL, null=True, blank=True, related_name="payments")
     enrollment = models.ForeignKey(Enrollment, on_delete=models.SET_NULL, null=True, blank=True, related_name="payments")
     order = models.ForeignKey("Order", on_delete=models.SET_NULL, null=True, blank=True, related_name="payments")
-    screenshot = models.FileField(upload_to="screenshots/", blank=True)
+    # Bucket PRIVÉ : capture de paiement (PII/preuve), servie via URL signée temporaire.
+    screenshot = models.FileField(
+        upload_to="screenshots/", blank=True, storage=private_media_storage
+    )
 
     class Meta:
         ordering = ["-created_at"]

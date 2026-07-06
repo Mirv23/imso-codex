@@ -361,7 +361,7 @@ def t_video_url(request: HttpRequest, pk: int) -> HttpResponse:
     if ext not in av._ALLOWED_VIDEO_EXT:
         return JsonResponse({"error": "Format vidéo non supporté (mp4, webm, mov…)."}, status=400)
     key = f"courses/videos/chapter_{pk}.{ext}"
-    client, bucket = av._s3_client_and_bucket()
+    client, bucket = av._s3_client_and_bucket(private=True)
     url = client.generate_presigned_url(
         "put_object",
         Params={"Bucket": bucket, "Key": key, "ContentType": content_type},
@@ -382,9 +382,10 @@ def t_video_confirm(request: HttpRequest, pk: int) -> HttpResponse:
     old_name = ch.video.name if ch.video else ""
     ch.video.name = key
     ch.save(update_fields=["video"])
+    # Storage du champ (bucket PRIVÉ), pas le storage public par défaut.
     if old_name and old_name != key:
         try:
-            default_storage.delete(old_name)
+            ch.video.storage.delete(old_name)
         except Exception:
             pass
     return JsonResponse(av._serialize_chapter(ch))

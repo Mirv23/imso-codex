@@ -140,40 +140,69 @@ _supabase_ref = os.environ.get("SUPABASE_PROJECT_REF", "").strip()
 _supabase_s3_key = os.environ.get("SUPABASE_S3_ACCESS_KEY", "").strip()
 _supabase_s3_secret = os.environ.get("SUPABASE_S3_SECRET_KEY", "").strip()
 
+def _supabase_s3_options(bucket: str, *, public: bool) -> dict:
+    """Options S3 (django-storages) pour un bucket Supabase.
+
+    public=True  : URLs publiques permanentes via custom_domain (assets exposés :
+                   images produits/blog, logos, bannières…).
+    public=False : URLs PRÉSIGNÉES à durée limitée (querystring_auth) pour les
+                   fichiers sensibles (vidéos payantes, pièces d'identité KYC,
+                   captures de paiement). Aucune URL publique n'est servie.
+    """
+    opts = {
+        "bucket_name": bucket,
+        "region_name": os.environ.get("SUPABASE_S3_REGION", "us-west-2").strip(),
+        # Endpoint S3 exact (Supabase utilise l'hôte .storage.supabase.co) ;
+        # repli sur la forme construite si la variable n'est pas fournie.
+        "endpoint_url": os.environ.get(
+            "SUPABASE_S3_ENDPOINT", f"https://{_supabase_ref}.supabase.co/storage/v1/s3"
+        ).strip(),
+        "access_key": _supabase_s3_key,
+        "secret_key": _supabase_s3_secret,
+        "addressing_style": "path",   # Supabase impose le path-style
+        "signature_version": "s3v4",
+        "url_protocol": "https:",
+        "file_overwrite": False,
+        "default_acl": None,          # Supabase ne gère pas les ACL S3
+    }
+    if public:
+        # https://<ref>.supabase.co/storage/v1/object/public/<bucket>/<clé> (bucket public).
+        opts["custom_domain"] = f"{_supabase_ref}.supabase.co/storage/v1/object/public/{bucket}"
+        opts["querystring_auth"] = False
+    else:
+        # Bucket PRIVÉ : .url renvoie une URL présignée qui expire (par défaut 1h).
+        opts["querystring_auth"] = True
+        opts["querystring_expire"] = int(
+            os.environ.get("SUPABASE_PRIVATE_URL_EXPIRE", "3600")
+        )
+    return opts
+
+
+# Bucket privé pour les fichiers sensibles (jamais d'URL publique permanente).
+_private_bucket = os.environ.get("SUPABASE_PRIVATE_BUCKET", "private").strip()
+
 if _supabase_ref and _supabase_s3_key and _supabase_s3_secret:
     _bucket = os.environ.get("SUPABASE_STORAGE_BUCKET", "media").strip()
     _default_storage = {
         "BACKEND": "storages.backends.s3.S3Storage",
-        "OPTIONS": {
-            "bucket_name": _bucket,
-            "region_name": os.environ.get("SUPABASE_S3_REGION", "us-west-2").strip(),
-            # Endpoint S3 exact (Supabase utilise l'hôte .storage.supabase.co) ;
-            # repli sur la forme construite si la variable n'est pas fournie.
-            "endpoint_url": os.environ.get(
-                "SUPABASE_S3_ENDPOINT", f"https://{_supabase_ref}.supabase.co/storage/v1/s3"
-            ).strip(),
-            "access_key": _supabase_s3_key,
-            "secret_key": _supabase_s3_secret,
-            "addressing_style": "path",   # Supabase impose le path-style
-            "signature_version": "s3v4",
-            # URLs publiques : https://<ref>.supabase.co/storage/v1/object/public/<bucket>/<clé>
-            # (nécessite un bucket public). querystring_auth=False -> URLs sans signature.
-            "custom_domain": f"{_supabase_ref}.supabase.co/storage/v1/object/public/{_bucket}",
-            "url_protocol": "https:",
-            "querystring_auth": False,
-            "file_overwrite": False,
-            "default_acl": None,          # Supabase ne gère pas les ACL S3
-        },
+        "OPTIONS": _supabase_s3_options(_bucket, public=True),
+    }
+    _private_storage = {
+        "BACKEND": "storages.backends.s3.S3Storage",
+        "OPTIONS": _supabase_s3_options(_private_bucket, public=False),
     }
 else:
-    _default_storage = {
-        "BACKEND": os.environ.get(
-            "DJANGO_FILE_STORAGE", "django.core.files.storage.FileSystemStorage"
-        ),
-    }
+    _fs_backend = os.environ.get(
+        "DJANGO_FILE_STORAGE", "django.core.files.storage.FileSystemStorage"
+    )
+    # En dev local, le bucket « privé » retombe aussi sur le disque : .url reste servable.
+    _default_storage = {"BACKEND": _fs_backend}
+    _private_storage = {"BACKEND": _fs_backend}
 
 STORAGES = {
     "default": _default_storage,
+    # Fichiers sensibles servis uniquement via URL signée temporaire.
+    "private": _private_storage,
     "staticfiles": {
         "BACKEND": "whitenoise.storage.CompressedStaticFilesStorage",
     },
