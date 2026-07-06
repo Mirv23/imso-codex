@@ -16,6 +16,8 @@ from .views import (
     get_active_products,
     get_active_providers,
     healthcheck,
+    robots_txt,
+    sitemap_xml,
 )
 from .webhooks import webhook_receiver
 
@@ -24,6 +26,8 @@ app_name = "core"
 
 urlpatterns = [
     path("", HomeView.as_view(), name="home"),
+    path("robots.txt", robots_txt, name="robots_txt"),
+    path("sitemap.xml", sitemap_xml, name="sitemap_xml"),
     path("api/contact-requests/", ContactRequestCreateView.as_view(), name="contact_request_create"),
     path("api/venue-bookings/", VenueBookingCreateView.as_view(), name="venue_booking_create"),
     path("api/course-enrollments/", CourseEnrollmentCreateView.as_view(), name="course_enrollment_create"),

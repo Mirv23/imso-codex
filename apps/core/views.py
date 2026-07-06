@@ -8,7 +8,7 @@ from django_ratelimit.decorators import ratelimit
 from django.db import transaction
 from django.core.signing import BadSignature
 from django.db import IntegrityError
-from django.http import HttpRequest, JsonResponse, HttpResponseBadRequest, HttpResponseRedirect, Http404
+from django.http import HttpRequest, HttpResponse, JsonResponse, HttpResponseBadRequest, HttpResponseRedirect, Http404
 from django.utils.decorators import method_decorator
 from django.shortcuts import get_object_or_404, render, redirect
 from django.utils import timezone
@@ -594,3 +594,39 @@ class OrderCreateView(View):
             },
             status=201,
         )
+
+
+# ── SEO : robots.txt & sitemap.xml ───────────────────────────────
+@require_http_methods(["GET"])
+def robots_txt(request: HttpRequest) -> HttpResponse:
+    host = f"{request.scheme}://{request.get_host()}"
+    body = "\n".join([
+        "User-agent: *",
+        "Allow: /",
+        "Disallow: /dashboard/",
+        "Disallow: /django-admin/",
+        "Disallow: /api/",
+        f"Sitemap: {host}/sitemap.xml",
+    ])
+    return HttpResponse(body + "\n", content_type="text/plain")
+
+
+@require_http_methods(["GET"])
+def sitemap_xml(request: HttpRequest) -> HttpResponse:
+    from django.utils.html import escape
+    host = f"{request.scheme}://{request.get_host()}"
+    paths = ["/", "/blog/", "/formation/"]
+    try:
+        slugs = BlogPost.objects.filter(
+            status=BlogPost.Status.PUBLISHED, published_at__lte=timezone.now()
+        ).values_list("slug", flat=True)
+        paths += [f"/blog/{s}/" for s in slugs if s]
+    except Exception:
+        pass
+    urls = "".join(f"<url><loc>{escape(host + p)}</loc></url>" for p in paths)
+    xml = (
+        '<?xml version="1.0" encoding="UTF-8"?>'
+        '<urlset xmlns="http://www.sitemaps.org/schemas/sitemap/0.9">'
+        f"{urls}</urlset>"
+    )
+    return HttpResponse(xml, content_type="application/xml")

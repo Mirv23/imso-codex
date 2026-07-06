@@ -153,6 +153,11 @@ STATIC_URL = "/static/"
 STATIC_ROOT = BASE_DIR / "staticfiles"
 STATICFILES_DIRS = [BASE_DIR / "static"]
 WHITENOISE_USE_FINDERS = True
+# Cache long des assets : tous les fichiers servis ont un nom hashe (UUID) donc
+# un contenu modifie = un nouveau nom -> aucun risque de servir un asset perime.
+# Remplace le max-age=60s par defaut (les polices/images n'etaient re-telechargees
+# que toutes les 60s). Surchargeable via l'environnement.
+WHITENOISE_MAX_AGE = _env_int("WHITENOISE_MAX_AGE", 31536000)
 # ── Stockage des fichiers uploadés (images produits/blog/logo, captures paiement) ──
 # En prod Vercel, le système de fichiers est éphémère (tout upload disparaît au
 # redéploiement). On stocke donc sur Supabase Storage via son API S3-compatible
