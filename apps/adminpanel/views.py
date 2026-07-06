@@ -524,12 +524,24 @@ def member_overview(request: HttpRequest) -> JsonResponse:
         row["status"]: row["c"]
         for row in Member.objects.values("status").annotate(c=Count("id"))
     }
+    # Stats du GEI ciblé (panneau « membres du groupe ») — calculées sur TOUT le
+    # GEI (indépendant de la pagination). null si aucun ?gei= (section Membres intacte).
+    gei_param = request.GET.get("gei")
+    gei_stats = None
+    if gei_param and str(gei_param).isdigit():
+        scoped = Member.objects.filter(gei_id=int(gei_param))
+        gei_stats = {
+            "total": scoped.count(),
+            "active": scoped.filter(status="active").count(),
+            "savings": scoped.aggregate(s=Sum("monthly_saving_htg"))["s"] or 0,
+        }
     return JsonResponse({
         "items": items,
         "total": total,
         "page": page,
         "per_page": per_page,
         "total_pages": (total + per_page - 1) // per_page if total else 0,
+        "gei_stats": gei_stats,
         "stats": {
             "total": sum(status_counts.values()),
             "active": status_counts.get("active", 0),

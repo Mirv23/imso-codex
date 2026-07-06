@@ -216,6 +216,13 @@ textarea { resize: vertical; min-height: 80px; }
 .fchip { padding:6px 14px; border-radius:999px; border:1px solid var(--border); background:var(--card); color:var(--muted); font:inherit; font-size:13px; font-weight:600; cursor:pointer; transition:all .15s; }
 .fchip:hover { border-color:var(--primary); color:var(--text); }
 .fchip--on { background:var(--primary); color:#fff; border-color:var(--primary); }
+/* ===== Section Contacts (triage) — prefixe ct- pour eviter toute collision ===== */
+.ct-wa { display:inline-flex; align-items:center; gap:5px; background:#25D366; border-color:#25D366; color:#fff; text-decoration:none; }
+.ct-wa:hover { background:#1EBE5B; border-color:#1EBE5B; color:#fff; }
+.ct-wa svg { width:14px; height:14px; }
+.ct-done { color:#16A34A; border-color:#16A34A; }
+.ct-done:hover { background:#16A34A; color:#fff; }
+.ct-done svg { width:14px; height:14px; vertical-align:-2px; }
 .stat-grid { display:grid; grid-template-columns:repeat(auto-fit,minmax(205px,1fr)); gap:16px; margin-bottom:20px; }
 .stat { position:relative; background:var(--card); border:1px solid var(--border); border-radius:var(--radius-lg); padding:18px; overflow:hidden; box-shadow:var(--shadow-sm); transition:transform .25s ease, box-shadow .25s ease; opacity:0; transform:translateY(12px); animation:dashIn .5s cubic-bezier(.4,0,.2,1) forwards; }
 .stat:hover { transform:translateY(-4px); box-shadow:var(--shadow-lg); }
@@ -381,6 +388,14 @@ textarea { resize: vertical; min-height: 80px; }
 .gei-tile__count b { font-size:21px; font-weight:800; color:var(--text); font-variant-numeric:tabular-nums; }
 .gei-tile__count small { font-size:11px; color:var(--muted); margin-left:4px; }
 .gei-tile__act { display:flex; gap:6px; }
+/* Panneau lateral GEI — reutilise .ce-overlay/.ce-panel/.ce-banner/.ce-body/.ce-sec/.mcard existants */
+.gei-tile { cursor:pointer; }
+.gei-kpis { display:grid; grid-template-columns:repeat(3,1fr); gap:10px; margin-bottom:20px; }
+.gei-kpi { background:var(--bg); border:1px solid var(--border); border-radius:12px; padding:14px 10px; text-align:center; }
+.gei-kpi__v { font-size:22px; font-weight:800; color:var(--text); font-variant-numeric:tabular-nums; letter-spacing:-.02em; line-height:1.1; }
+.gei-kpi__l { font-size:10.5px; color:var(--muted); margin-top:4px; }
+.gei-mlist { display:flex; flex-direction:column; gap:8px; }
+@media (max-width:520px){ .gei-kpis { grid-template-columns:1fr 1fr; } }
 
 /* ===== Éditeur de cours (chapitres) ===== */
 .ce-overlay { position:fixed; inset:0; background:rgba(15,23,42,.55); backdrop-filter:blur(3px); z-index:200; display:none; align-items:flex-start; justify-content:center; padding:32px 16px; overflow-y:auto; }
@@ -700,6 +715,7 @@ function navigateTo(section, resetPage = true) {
   else if (section === 'geis') { if (resetPage) geiFilters.search = ''; loadGeis(); }
   else if (section === 'courses') { if (resetPage) courseFilters.search = ''; loadCourses(); }
   else if (section === 'providers') loadProviders();
+  else if (section === 'contacts') { if (resetPage) contactState.search = ''; loadContacts(); }
   else loadTable(section);
 }
 
@@ -1448,6 +1464,7 @@ function refreshSection(sectionKey) {
   else if (sectionKey === 'geis') loadGeis();
   else if (sectionKey === 'courses') loadCourses();
   else if (sectionKey === 'providers') loadProviders();
+  else if (sectionKey === 'contacts') loadContacts();
   else loadTable(sectionKey);
 }
 
@@ -1623,7 +1640,7 @@ function renderGeis(d) {
       const active = g.is_active;
       const dotColor = active ? '#16A34A' : '#94A3B8';
       const coord = g.coordinator ? esc(g.coordinator) : 'Sans coordinateur';
-      return `<div class="gei-tile" data-id="${g.id}" style="animation-delay:${Math.min(i*45,360)}ms">
+      return `<div class="gei-tile" data-id="${g.id}" style="animation-delay:${Math.min(i*45,360)}ms" onclick="if(!event.target.closest('.gei-tile__act'))openGeiPanel(${g.id})">
         <div class="gei-tile__band" style="background-color:${col}">${GEI_ICON}
           <span class="gei-tile__badge"><i style="background:${dotColor}"></i>${active ? 'Actif' : 'Inactif'}</span>
         </div>
@@ -1642,6 +1659,95 @@ function renderGeis(d) {
   h += pagerHtml(total, 'GEI', page, totalPages, 'loadGeis');
   host.innerHTML = h;
   if (_geiSearchFocus) { const si = document.getElementById('geiSearch'); if (si) { si.focus(); const v = si.value; si.value = ''; si.value = v; } _geiSearchFocus = false; }
+}
+
+// ============= PANNEAU LATERAL GEI (membres du groupe) =============
+// Reutilise l'overlay lateral partage (#courseEditorOverlay/#courseEditorPanel).
+// closeCourseEditor() (deja definie) + les handlers Echap/clic-exterieur existants
+// ferment ce panneau sans code supplementaire.
+let _geiPanelId = null;
+
+function openGeiPanel(geiId) {
+  _geiPanelId = geiId;
+  const g = (_rowCache['geis'] && _rowCache['geis'][geiId]) || { id: geiId, name: 'GEI' };
+  const col = avatarColor(g.name || String(geiId));
+  const panel = document.getElementById('courseEditorPanel');
+  document.getElementById('courseEditorOverlay').classList.add('open');
+  panel.innerHTML = '<div class="mloading" style="padding:80px 20px"><span class="mspin"></span> Chargement des membres…</div>';
+  const params = new URLSearchParams({ gei: geiId, per_page: 100, sort: 'name' });
+  api('/dashboard/api/members/overview/?' + params.toString())
+    .then(d => renderGeiPanel(g, col, d))
+    .catch(e => { panel.innerHTML = '<div style="padding:24px;color:var(--danger)">' + esc(e.message) + '</div>'; });
+}
+
+function renderGeiPanel(g, col, d) {
+  const panel = document.getElementById('courseEditorPanel');
+  const items = d.items || [];
+  // Alimente le cache membres pour que le bouton "Modifier" (editRow) retrouve la ligne
+  // meme si la section Membres n'a jamais ete ouverte (sinon editRow ouvrirait un modal vide).
+  _rowCache['members'] = _rowCache['members'] || {};
+  items.forEach(m => { _rowCache['members'][m.id] = m; });
+
+  const st = d.gei_stats || {};
+  const total = (st.total != null) ? st.total : (d.total || items.length);
+  const active = (st.active != null) ? st.active : items.filter(m => m.status === 'active').length;
+  const savings = (st.savings != null) ? st.savings : items.reduce((s, m) => s + (m.monthly_saving_htg || 0), 0);
+  const gid = _geiPanelId;
+
+  let h = '<div class="ce-banner" style="background-color:' + col + '">'
+        + '<button class="ce-close" onclick="closeCourseEditor()">✕</button>'
+        + '<div class="ce-banner__title">' + esc(g.name || 'GEI') + '</div></div>';
+  h += '<div class="ce-body">';
+
+  h += '<div class="ce-meta">';
+  if (g.city) h += '<span class="pill gray">' + esc(g.city) + '</span>';
+  h += '<span class="pill ' + (g.is_active === false ? 'red' : 'green') + '">' + (g.is_active === false ? 'Inactif' : 'Actif') + '</span>';
+  if (g.coordinator) h += '<span class="pill blue">' + esc(g.coordinator) + '</span>';
+  h += '</div>';
+
+  h += '<div class="gei-kpis">'
+     + '<div class="gei-kpi"><div class="gei-kpi__v">' + fmt(total) + '</div><div class="gei-kpi__l">Membres</div></div>'
+     + '<div class="gei-kpi"><div class="gei-kpi__v">' + fmt(active) + '</div><div class="gei-kpi__l">Actifs</div></div>'
+     + '<div class="gei-kpi"><div class="gei-kpi__v">' + fmt(savings) + '</div><div class="gei-kpi__l">HTG épargne / mois</div></div>'
+     + '</div>';
+
+  // Ferme d'abord le panneau (z-index 200) avant d'ouvrir le modal (z-index 100), sinon
+  // le modal apparait DERRIERE l'overlay.
+  h += '<div class="ce-sec"><h3>Membres du groupe</h3>'
+     + '<button class="btn btn-primary btn-sm" onclick="closeCourseEditor();geiAddMember(' + gid + ')">' + PLUS_ICON + ' Ajouter un membre</button></div>';
+
+  if (!items.length) {
+    h += '<div class="mempty">' + MEMBERS_ICON.replace('<svg', '<svg width="46" height="46"')
+       + '<h4>Aucun membre</h4><div>Ce GEI ne compte encore aucun membre. Ajoutez-en un avec le bouton ci-dessus.</div></div>';
+  } else {
+    h += '<div class="gei-mlist">' + items.map((m, i) => {
+      const name = ((m.first_name || '') + ' ' + (m.last_name || '')).trim();
+      const c = avatarColor(name || String(m.id));
+      const contact = esc(m.email || m.phone || '—');
+      return '<div class="mcard" data-id="' + m.id + '" style="animation-delay:' + Math.min(i * 30, 300) + 'ms">'
+        + '<div class="mcard__av" style="background:' + hexA(c, 0.15) + ';color:' + c + '">' + memberInitials(m.first_name, m.last_name) + '</div>'
+        + '<div class="mcard__main"><div class="mcard__name"><span class="nm">' + esc(name || '—') + '</span>' + statusBadge(m.status) + '</div>'
+        + '<div class="mcard__meta">' + contact + '</div></div>'
+        + '<div class="mcard__sav"><b>' + fmt(m.monthly_saving_htg || 0) + '</b> <small>HTG / mois</small></div>'
+        + '<div class="mcard__act"><button class="membtn" title="Modifier" onclick="closeCourseEditor();editRow(\'members\',' + m.id + ')">' + EDIT_ICON + '</button></div>'
+        + '</div>';
+    }).join('') + '</div>';
+  }
+  h += '</div>';
+  panel.innerHTML = h;
+}
+
+// Ouvre le modal de creation de membre en mode CREATE, puis pre-selectionne le GEI
+// une fois la liste FK chargee en asynchrone par openModal (le select gei_id se remplit
+// via un fetch). On ne passe PAS de "record" (sinon saveModal ferait un PUT au lieu d'un POST).
+function geiAddMember(geiId) {
+  openModal('members', null);
+  let tries = 0;
+  (function trySelect() {
+    const sel = document.getElementById('geiSelect_members');
+    if (sel && sel.options.length > 1) { sel.value = String(geiId); return; }
+    if (tries++ < 50) setTimeout(trySelect, 60);
+  })();
 }
 
 // ============= SECTION COURS (vue premium) =============
@@ -1913,6 +2019,98 @@ function testProvider(id) {
   api('/dashboard/api/providers/' + id + '/test/', { method:'POST', body:'{}' })
     .then(d => toast(d.message || (d.ok ? 'Connexion réussie' : 'Échec'), d.ok ? 'success' : 'error'))
     .catch(e => toast(e.message, 'error'));
+}
+
+// ============= SECTION CONTACTS (boite de triage — rendu custom) =============
+// Reutilise la config SECTIONS.contacts (colonnes + modale d'edition) mais gere
+// ses propres onglets ?processed, un bouton WhatsApp et un bouton "Marquer traite"
+// en ligne (PUT is_processed=true) sans ouvrir la modale.
+const contactState = { tab: '0', page: 1, search: '' }; // tab: '0'=non traites, '1'=traites, ''=tous
+
+// Construit un lien wa.me : chiffres seuls ; si numero local (<=8 chiffres) on
+// prefixe l'indicatif Haiti 509. Ajuster si numeros deja internationaux stockes.
+function contactWaLink(phone) {
+  let digits = String(phone || '').replace(/\D/g, '');
+  if (!digits) return '';
+  if (digits.length <= 8) digits = '509' + digits;
+  return 'https://wa.me/' + digits;
+}
+
+function contactSetTab(v) { contactState.tab = v; loadContacts(1); }
+function contactSearch(val) { contactState.search = val; loadContacts(1); }
+
+function contactMarkDone(id) {
+  api('/dashboard/api/contacts/' + id + '/', { method: 'PUT', body: JSON.stringify({ is_processed: true }) })
+    .then(() => { toast('Contact marque comme traite', 'success'); loadContacts(); })
+    .catch(e => toast(e.message, 'error'));
+}
+
+function loadContacts(page) {
+  currentSection.name = 'contacts';
+  // Honore un filtre pousse depuis le tableau de bord (carte « Contacts a traiter »
+  // -> gotoFiltered('contacts','processed','0')). tableFilters est conserve par
+  // gotoFiltered (_keepFilter) puis lu ici pour selectionner le bon onglet.
+  const _f = tableFilters['contacts'];
+  if (_f && _f.processed != null && _f.processed !== '') contactState.tab = String(_f.processed);
+  delete tableFilters['contacts']; // handoff one-shot: onglets ensuite libres
+  const p = page || contactState.page; contactState.page = p;
+  document.getElementById('headerActions').innerHTML = ''; // pas de "Nouveau" pour les contacts
+  const params = new URLSearchParams({ page: p, per_page: 20 });
+  if (contactState.search) params.set('search', contactState.search);
+  if (contactState.tab !== '') params.set('processed', contactState.tab);
+  const host = document.getElementById('card-contacts');
+  if (!host.querySelector('.table-wrap')) host.innerHTML = '<div class="mloading"><span class="mspin"></span> Chargement des messages…</div>';
+  api('/dashboard/api/contacts/?' + params.toString())
+    .then(d => renderContacts(d))
+    .catch(e => { host.innerHTML = '<div class="card"><div style="padding:24px;color:var(--danger)">' + esc(e.message) + '</div></div>'; });
+}
+
+function renderContacts(d) {
+  const cfg = SECTIONS.contacts;
+  const items = d.items || [];
+  _rowCache['contacts'] = {}; // permet a editRow('contacts', id) de retrouver l'enregistrement
+  items.forEach(r => { _rowCache['contacts'][r.id] = r; });
+  const total = d.total || 0, page = d.page || 1, totalPages = d.total_pages || 1;
+  contactState.page = page;
+
+  let html = '<div class="toolbar">';
+  html += '<div class="search-wrap"><svg class="search-icon" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="11" cy="11" r="8"/><line x1="21" y1="21" x2="16.65" y2="16.65"/></svg>';
+  html += '<input type="text" placeholder="Rechercher..." value="' + esc(contactState.search) + '" onkeyup="if(event.key===\'Enter\')contactSearch(this.value)"></div>';
+  html += '<div class="spacer"></div>';
+  html += '<div class="pagination"><span>' + total + ' resultat(s)</span>';
+  if (totalPages > 1) {
+    if (page > 1) html += '<button class="btn btn-sm" onclick="loadContacts(' + (page - 1) + ')">&lsaquo;</button>';
+    html += '<span style="padding:0 6px;font-weight:600">' + page + '/' + totalPages + '</span>';
+    if (page < totalPages) html += '<button class="btn btn-sm" onclick="loadContacts(' + (page + 1) + ')">&rsaquo;</button>';
+  }
+  html += '</div></div>';
+
+  // Onglets de triage (mappes sur ?processed).
+  const tabs = [ { v: '0', l: 'Non traites' }, { v: '1', l: 'Traites' }, { v: '', l: 'Tous' } ];
+  html += '<div class="chip-bar">' + tabs.map(t =>
+    `<button class="fchip${t.v === contactState.tab ? ' fchip--on' : ''}" onclick="contactSetTab('${t.v}')">${esc(t.l)}</button>`
+  ).join('') + '</div>';
+
+  html += '<div class="table-wrap"><table class="table"><thead><tr>';
+  cfg.columns.forEach(c => { html += '<th>' + c.label + '</th>'; });
+  html += '<th style="text-align:right">Actions</th></tr></thead><tbody>';
+
+  if (!items.length) {
+    html += '<tr><td class="empty" colspan="' + (cfg.columns.length + 1) + '">Aucun message</td></tr>';
+  } else {
+    items.forEach(r => {
+      html += '<tr data-id="' + r.id + '">';
+      cfg.columns.forEach(c => { html += '<td>' + (c.render ? c.render(r) : esc(r[c.key])) + '</td>'; });
+      html += '<td class="actions">';
+      const wa = contactWaLink(r.phone);
+      if (wa) html += '<a class="btn btn-sm ct-wa" href="' + esc(wa) + '" target="_blank" rel="noopener" title="Contacter sur WhatsApp"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M21 15.5a2 2 0 0 1-2 2 16 16 0 0 1-13-13 2 2 0 0 1 2-2h2a2 2 0 0 1 2 1.7c.1.9.3 1.8.6 2.6a2 2 0 0 1-.5 2.1L13 10a12 12 0 0 0 4 4l1.1-1.1a2 2 0 0 1 2.1-.5c.8.3 1.7.5 2.6.6a2 2 0 0 1 1.7 2z"/></svg>WhatsApp</a>';
+      if (!r.is_processed) html += '<button class="btn btn-sm ct-done" onclick="contactMarkDone(' + r.id + ')" title="Marquer comme traite"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="20 6 9 17 4 12"/></svg> Traite</button>';
+      html += '<button class="btn btn-sm" onclick="editRow(\'contacts\',' + r.id + ')" title="Modifier / voir le detail"><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M11 4H4a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-7"/><path d="M18.5 2.5a2.121 2.121 0 0 1 3 3L12 15l-4 1 1-4 9.5-9.5z"/></svg></button>';
+      html += '</td></tr>';
+    });
+  }
+  html += '</tbody></table></div>';
+  document.getElementById('card-contacts').innerHTML = html;
 }
 
 function searchTable(sectionKey, val) {
