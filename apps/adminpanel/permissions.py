@@ -22,17 +22,31 @@ from rest_framework.permissions import BasePermission
 _FORBIDDEN_MESSAGE = "Accès réservé au personnel administrateur."
 
 
+def _is_api_request(request: HttpRequest) -> bool:
+    """Requête censée recevoir du JSON (endpoint /dashboard/api/*, XHR, ou Accept
+    JSON) : on ne doit PAS lui renvoyer une redirection 302 vers une page HTML."""
+    return (
+        "/api/" in request.path
+        or request.headers.get("x-requested-with") == "XMLHttpRequest"
+        or "application/json" in request.headers.get("accept", "")
+    )
+
+
 def staff_required(view_func):
     """Autorise uniquement les utilisateurs `is_staff`.
 
-    - Anonyme          → redirection vers la page de connexion (avec `next`).
-    - Connecté non-staff → 403 JSON (le dashboard consomme du JSON).
+    - Anonyme, appel API → 401 JSON (sinon fetch suit la 302 vers /login/ et
+      recoit une page HTML 200 -> dashboard vide silencieux / faux succes).
+    - Anonyme, page HTML → redirection vers la connexion (avec `next`).
+    - Connecté non-staff → 403 JSON.
     """
 
     @wraps(view_func)
     def _wrapped(request: HttpRequest, *args, **kwargs):
         user = getattr(request, "user", None)
         if not (user and user.is_authenticated):
+            if _is_api_request(request):
+                return JsonResponse({"error": "Session expirée, veuillez vous reconnecter."}, status=401)
             return redirect(f"{settings.LOGIN_URL}?next={request.get_full_path()}")
         if not user.is_staff:
             return JsonResponse({"error": _FORBIDDEN_MESSAGE}, status=403)

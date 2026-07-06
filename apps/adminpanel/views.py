@@ -1563,11 +1563,22 @@ def provider_detail(request: HttpRequest, pk: int) -> JsonResponse:
                 data["sort_order"] = max(0, int(data.get("sort_order") or 0))
             except (ValueError, TypeError):
                 return _error("L'ordre doit être un nombre.")
+        # Bornes de longueur : un save() nu n'applique PAS max_length et laisse
+        # remonter une DataError Postgres -> 500. On tronque comme provider_create.
+        _maxlen = {
+            "name": 120, "account_name": 120, "account_number": 80,
+            "checkout_url": 200, "api_public_key": 255,
+        }
         for fld in ("name", "provider_type", "mode", "is_active", "instructions",
                      "account_name", "account_number", "checkout_url",
                      "api_public_key", "sort_order"):
             if fld in data:
-                setattr(p, fld, data[fld])
+                val = data[fld]
+                if fld == "is_active":
+                    val = bool(val)
+                elif fld in _maxlen and val is not None:
+                    val = str(val)[: _maxlen[fld]]
+                setattr(p, fld, val)
         # La clé secrète n'est mise à jour que si une nouvelle valeur est fournie
         # (un champ vide ne l'efface pas — évite de la perdre en éditant le reste).
         if data.get("api_secret_key"):

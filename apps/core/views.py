@@ -437,9 +437,11 @@ class PaymentConfirmationView(View):
 
 
 from django.views.decorators.http import require_http_methods
+from django.views.decorators.csrf import csrf_exempt
 import os
 
 
+@csrf_exempt  # appel serveur-a-serveur authentifie par X-API-KEY (comme le webhook)
 @require_http_methods(["POST"])
 def confirm_manual_payment(request: HttpRequest) -> JsonResponse:
     """Confirms a manual payment with transaction ID and optional screenshot."""

@@ -153,7 +153,13 @@ def register(request: HttpRequest) -> HttpResponse:
     from .forms import RegisterForm
     form = RegisterForm(request.POST or None)
     if request.method == "POST" and form.is_valid():
-        user = form.save()
+        from django.core.exceptions import ValidationError
+        try:
+            user = form.save()
+        except ValidationError as exc:
+            # Collision d'email en concurrence : re-afficher le formulaire proprement.
+            form.add_error("email", exc)
+            return render(request, "formation/register.html", {"form": form})
         if form.cleaned_data["role"] == "teacher":
             messages.success(request, "Compte professeur créé. Il sera actif dès qu'un administrateur l'aura validé.")
             return redirect("formation:login")

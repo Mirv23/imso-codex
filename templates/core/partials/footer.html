@@ -446,7 +446,11 @@ modalForm.addEventListener('submit', async (e) => {
   submitBtn.disabled = true;
   submitBtn.textContent = 'Envoi en cours...';
 
-  const payload = new FormData(modalForm);
+  // Derive les vraies heures du creneau choisi (data-time, ex. "18:00 — 22:00")
+  // au lieu d'envoyer 09:00-12:00 en dur -> la reservation admin reflete le creneau.
+  const _times = (modalForm.dataset.time || '').match(/\d{1,2}:\d{2}/g) || [];
+  const startTime = _times[0] || '09:00';
+  const endTime = _times[1] || '12:00';
   try {
     const response = await fetch('/api/venue-bookings/', {
       method: 'POST',
@@ -460,8 +464,8 @@ modalForm.addEventListener('submit', async (e) => {
         requester_email: email,
         event_type: eventType,
         event_date: modalForm.dataset.date,
-        start_time: '09:00',
-        end_time: '12:00',
+        start_time: startTime,
+        end_time: endTime,
         setup: setup,
         guest_count: setup.includes('40') ? 40 : 60,
         notes: `Créneau: ${modalForm.dataset.label} (${modalForm.dataset.time})`,

@@ -130,6 +130,10 @@ if _db_config.get("ENGINE") == "django.db.backends.postgresql":
     if _pooler_port:
         _db_config["PORT"] = _pooler_port
     _db_config.setdefault("OPTIONS", {})["prepare_threshold"] = None
+    # En mode transaction (pgbouncer), un curseur nomme cote serveur (QuerySet
+    # .iterator(), ex. export CSV) peut atterrir sur un autre backend entre deux
+    # FETCH -> 'cursor does not exist'. On desactive les curseurs cote serveur.
+    _db_config["DISABLE_SERVER_SIDE_CURSORS"] = True
 
 DATABASES = {"default": _db_config}
 

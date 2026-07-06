@@ -313,14 +313,16 @@ class TestAdminEndpoints:
         client.force_login(user)
 
     def test_summary_redirect_without_auth(self):
+        # API anonyme -> 401 JSON (plus 302 vers login) pour que le fetch du
+        # dashboard remonte une vraie erreur au lieu d'un dashboard vide silencieux.
         client = Client()
         response = client.get(reverse("adminpanel:summary"))
-        assert response.status_code == 302
+        assert response.status_code == 401
 
     def test_members_redirect_without_auth(self):
         client = Client()
         response = client.get(reverse("adminpanel:member-list"))
-        assert response.status_code == 302
+        assert response.status_code == 401
 
     def test_summary_with_auth(self):
         client = Client()

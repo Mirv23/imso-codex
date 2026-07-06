@@ -77,6 +77,17 @@ def stash_old_payment_status(sender: type[Payment], instance: Payment, **kwargs:
         instance._old_status = None
 
 
+@receiver(pre_save, sender=VenueBooking)
+def stash_old_booking_status(sender: type[VenueBooking], instance: VenueBooking, **kwargs: Any) -> None:
+    if instance.pk:
+        try:
+            instance._old_status = VenueBooking.objects.get(pk=instance.pk).status
+        except VenueBooking.DoesNotExist:
+            instance._old_status = None
+    else:
+        instance._old_status = None
+
+
 @receiver(post_save, sender=VenueBooking)
 def venue_booking_notification(sender: type[VenueBooking], instance: VenueBooking, created: bool, **kwargs: Any) -> None:
     if created:
@@ -90,33 +101,33 @@ def venue_booking_notification(sender: type[VenueBooking], instance: VenueBookin
             f"Réservation #{instance.pk}\n\nNom: {instance.requester_name}\nTéléphone: {instance.requester_phone}\nEmail: {instance.requester_email}\nÉvénement: {instance.event_type}\nDate: {instance.event_date}\nHeure: {instance.start_time} - {instance.end_time}",
         )
     else:
-        try:
-            old = VenueBooking.objects.get(pk=instance.pk)
-            if old.status != instance.status:
-                if instance.status == VenueBooking.Status.CONFIRMED:
-                    nt = AdminNotification.NotificationType.BOOKING_CONFIRMED
-                    AdminNotification.objects.create(
-                        message=f"Réservation confirmée: {instance.event_type}",
-                        notification_type=nt,
-                        related_id=instance.pk,
-                    )
-                    _notify_admin_by_email(
-                        "Réservation confirmée",
-                        f"Réservation #{instance.pk} confirmée pour {instance.event_type}",
-                    )
-                elif instance.status == VenueBooking.Status.CANCELLED:
-                    nt = AdminNotification.NotificationType.BOOKING_CANCELLED
-                    AdminNotification.objects.create(
-                        message=f"Réservation annulée: {instance.event_type}",
-                        notification_type=nt,
-                        related_id=instance.pk,
-                    )
-                    _notify_admin_by_email(
-                        "Réservation annulée",
-                        f"Réservation #{instance.pk} annulée pour {instance.event_type}",
-                    )
-        except VenueBooking.DoesNotExist:
-            pass
+        # NE PAS relire la DB ici : en post_save la ligne porte deja le NOUVEAU
+        # statut, donc old.status == instance.status et les notifs ne partaient
+        # jamais. On compare au statut memorise en pre_save.
+        old_status = getattr(instance, "_old_status", None)
+        if old_status != instance.status:
+            if instance.status == VenueBooking.Status.CONFIRMED:
+                nt = AdminNotification.NotificationType.BOOKING_CONFIRMED
+                AdminNotification.objects.create(
+                    message=f"Réservation confirmée: {instance.event_type}",
+                    notification_type=nt,
+                    related_id=instance.pk,
+                )
+                _notify_admin_by_email(
+                    "Réservation confirmée",
+                    f"Réservation #{instance.pk} confirmée pour {instance.event_type}",
+                )
+            elif instance.status == VenueBooking.Status.CANCELLED:
+                nt = AdminNotification.NotificationType.BOOKING_CANCELLED
+                AdminNotification.objects.create(
+                    message=f"Réservation annulée: {instance.event_type}",
+                    notification_type=nt,
+                    related_id=instance.pk,
+                )
+                _notify_admin_by_email(
+                    "Réservation annulée",
+                    f"Réservation #{instance.pk} annulée pour {instance.event_type}",
+                )
 
 
 @receiver(post_save, sender=Payment)
@@ -132,20 +143,56 @@ def payment_notification(sender: type[Payment], instance: Payment, created: bool
             f"Paiement #{instance.pk}\n\nPayeur: {instance.payer_name}\nMontant: {instance.amount_htg} HTG\nRéférence: {instance.reference}\nObjet: {instance.purpose}",
         )
     else:
+        # Comparer au statut memorise en pre_save (stash_old_payment_status), pas
+        # a une relecture DB qui renverrait deja le nouveau statut en post_save.
+        old_status = getattr(instance, "_old_status", None)
+        if old_status != instance.status and instance.status == Payment.Status.PAID:
+            AdminNotification.objects.create(
+                message=f"Paiement reçu: {instance.reference}",
+                notification_type=AdminNotification.NotificationType.PAYMENT_RECEIVED,
+                related_id=instance.pk,
+            )
+            _notify_admin_by_email(
+                "Paiement reçu",
+                f"Paiement reçu: {instance.reference}\nMontant: {instance.amount_htg} HTG\nPayeur: {instance.payer_name}",
+            )
+
+
+@receiver(pre_save, sender=Order)
+def stash_old_order_status(sender: type[Order], instance: Order, **kwargs: Any) -> None:
+    if instance.pk:
         try:
-            old = Payment.objects.get(pk=instance.pk)
-            if old.status != instance.status and instance.status == Payment.Status.PAID:
-                AdminNotification.objects.create(
-                    message=f"Paiement reçu: {instance.reference}",
-                    notification_type=AdminNotification.NotificationType.PAYMENT_RECEIVED,
-                    related_id=instance.pk,
+            instance._old_status = Order.objects.get(pk=instance.pk).status
+        except Order.DoesNotExist:
+            instance._old_status = None
+    else:
+        instance._old_status = None
+
+
+def _decrement_order_stock(order: Order) -> None:
+    """Decrement ATOMIQUE du stock des produits d'une commande (evite la race
+    read-modify-write / la survente)."""
+    from django.db.models import F, Value
+    from django.db.models.functions import Greatest
+    from django.utils import timezone as _tz
+    with transaction.atomic():
+        for item in order.items.select_related("product"):
+            if item.product_id:
+                Product.objects.filter(pk=item.product_id).update(
+                    stock=Greatest(F("stock") - item.quantity, Value(0)),
+                    updated_at=_tz.now(),
                 )
-                _notify_admin_by_email(
-                    "Paiement reçu",
-                    f"Paiement reçu: {instance.reference}\nMontant: {instance.amount_htg} HTG\nPayeur: {instance.payer_name}",
-                )
-        except Payment.DoesNotExist:
-            pass
+
+
+@receiver(post_save, sender=Order)
+def order_stock_on_paid(sender: type[Order], instance: Order, created: bool, **kwargs: Any) -> None:
+    """Source UNIQUE de la decrementation : sur la transition -> PAID, quel que
+    soit le declencheur (paiement encaisse OU passage a 'Payee' dans le dashboard)."""
+    if created:
+        return
+    old_status = getattr(instance, "_old_status", None)
+    if old_status != Order.Status.PAID and instance.status == Order.Status.PAID:
+        _decrement_order_stock(instance)
 
 
 @receiver(post_save, sender=Payment)
@@ -162,20 +209,10 @@ def payment_cascade_status(sender: type[Payment], instance: Payment, created: bo
         instance.enrollment.status = Enrollment.Status.CONFIRMED
         instance.enrollment.save(update_fields=["status", "updated_at"])
     if instance.order and instance.order.status == Order.Status.PENDING:
-        with transaction.atomic():
-            order = instance.order
-            order.status = Order.Status.PAID
-            order.save(update_fields=["status", "updated_at"])
-            from django.db.models import F, Value
-            from django.db.models.functions import Greatest
-            from django.utils import timezone as _tz
-            for item in order.items.select_related("product"):
-                if item.product_id:
-                    # Decrement ATOMIQUE (evite la race read-modify-write / la survente).
-                    Product.objects.filter(pk=item.product_id).update(
-                        stock=Greatest(F("stock") - item.quantity, Value(0)),
-                        updated_at=_tz.now(),
-                    )
+        # On se contente de passer la commande a PAID : le signal post_save(Order)
+        # ci-dessus decremente le stock (source unique, pas de double decrement).
+        instance.order.status = Order.Status.PAID
+        instance.order.save(update_fields=["status", "updated_at"])
 
 
 @receiver(post_save, sender=ContactRequest)

@@ -625,6 +625,12 @@ function api(url, opts = {}) {
   if (opts.body) opts.headers['Content-Type'] = 'application/json';
   opts.credentials = 'same-origin';
   return fetch(url, opts).then(r => {
+    // Session expiree : le backend renvoie 401 JSON pour l'API ; par securite on
+    // detecte aussi une redirection suivie vers /login/ (page HTML 200) qui, sinon,
+    // serait avalee comme un objet vide -> sections vides / faux succes silencieux.
+    if (r.status === 401 || (r.redirected && /\/login\//.test(r.url))) {
+      throw new Error('Session expirée. Rechargez la page pour vous reconnecter.');
+    }
     if (r.status === 204) return {};
     return r.text().then(txt => {
       let payload = null;
