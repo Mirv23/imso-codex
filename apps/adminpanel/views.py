@@ -1117,6 +1117,47 @@ def teacher_options(request: HttpRequest) -> JsonResponse:
     })
 
 
+@staff_required
+def teacher_kyc_overview(request: HttpRequest) -> JsonResponse:
+    """File de vérification KYC des professeurs : compteurs par statut + liste
+    filtrable (?kyc_status/?search), les « à vérifier » (submitted) en premier."""
+    from django.db.models import Case, IntegerField, When
+
+    base = Profile.objects.filter(role=Profile.Role.TEACHER)
+    raw = {row["kyc_status"]: row["n"] for row in base.values("kyc_status").annotate(n=Count("id"))}
+    counts = {
+        "all": sum(raw.values()),
+        "submitted": raw.get(Profile.KycStatus.SUBMITTED, 0),
+        "not_submitted": raw.get(Profile.KycStatus.NOT_SUBMITTED, 0),
+        "rejected": raw.get(Profile.KycStatus.REJECTED, 0),
+        "approved": raw.get(Profile.KycStatus.APPROVED, 0),
+    }
+    # annotate enroll_count : evite le N+1 de _serialize_profile (fallback .count()).
+    qs = base.select_related("user").annotate(enroll_count=Count("user__course_enrollments"))
+    status = request.GET.get("kyc_status")
+    if status in Profile.KycStatus.values:
+        qs = qs.filter(kyc_status=status)
+    search = request.GET.get("search")
+    if search:
+        qs = qs.filter(
+            Q(user__username__icontains=search)
+            | Q(user__first_name__icontains=search)
+            | Q(user__last_name__icontains=search)
+            | Q(user__email__icontains=search)
+        )
+    order = Case(
+        When(kyc_status=Profile.KycStatus.SUBMITTED, then=0),
+        When(kyc_status=Profile.KycStatus.NOT_SUBMITTED, then=1),
+        When(kyc_status=Profile.KycStatus.REJECTED, then=2),
+        When(kyc_status=Profile.KycStatus.APPROVED, then=3),
+        default=4,
+        output_field=IntegerField(),
+    )
+    qs = qs.annotate(_kyc_order=order).order_by("_kyc_order", "-created_at")
+    items = [_serialize_profile(p) for p in qs[:300]]
+    return JsonResponse({"counts": counts, "items": items})
+
+
 def _serialize_course_enrollment(e: CourseEnrollment) -> dict[str, Any]:
     return {
         "id": e.pk,

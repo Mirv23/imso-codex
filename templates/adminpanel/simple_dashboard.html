@@ -345,6 +345,30 @@ textarea { resize: vertical; min-height: 80px; }
 .pm-grid { display:grid; grid-template-columns:repeat(auto-fill,minmax(320px,1fr)); gap:16px; }
 .pm-card { background:var(--card); border:1px solid var(--border); border-radius:15px; padding:16px 17px; box-shadow:var(--shadow-sm); display:flex; flex-direction:column; opacity:0; transform:translateY(10px); animation:dashIn .45s cubic-bezier(.4,0,.2,1) forwards; transition:transform .2s, box-shadow .2s; }
 .pm-card:hover { transform:translateY(-3px); box-shadow:var(--shadow-lg); }
+/* ===== SECTION PRODUITS — grille d'inventaire (prefixe pinv-) ===== */
+.pinv-grid { display:grid; grid-template-columns:repeat(auto-fill,minmax(240px,1fr)); gap:16px; }
+.pinv-card { background:var(--card); border:1px solid var(--border); border-radius:15px; overflow:hidden; box-shadow:var(--shadow-sm); display:flex; flex-direction:column; opacity:0; transform:translateY(10px); animation:dashIn .45s cubic-bezier(.4,0,.2,1) forwards; transition:transform .2s, box-shadow .2s; }
+.pinv-card:hover { transform:translateY(-3px); box-shadow:var(--shadow-lg); }
+.pinv-thumb { position:relative; height:132px; background:var(--bg); display:flex; align-items:center; justify-content:center; overflow:hidden; }
+.pinv-thumb img { width:100%; height:100%; object-fit:cover; }
+.pinv-ph { width:100%; height:100%; display:flex; align-items:center; justify-content:center; font-size:40px; font-weight:800; color:#fff; background:var(--kc); }
+.pinv-kind { position:absolute; top:8px; left:8px; color:#fff; font-size:10.5px; font-weight:700; padding:2px 9px; border-radius:999px; letter-spacing:.2px; box-shadow:0 1px 3px rgba(0,0,0,.2); }
+.pinv-body { padding:12px 14px 4px; flex:1; display:flex; flex-direction:column; gap:6px; }
+.pinv-name { font-weight:700; font-size:14px; color:var(--text); line-height:1.25; display:flex; align-items:center; gap:6px; flex-wrap:wrap; }
+.pinv-off { font-size:10px; font-weight:700; color:#B91C1C; background:rgba(239,68,68,0.10); padding:1px 6px; border-radius:999px; }
+.pinv-price { font-weight:800; font-size:15px; color:var(--primary); }
+.pinv-sb { display:flex; align-items:center; justify-content:space-between; gap:8px; margin-top:2px; }
+.pinv-stbadge { font-size:11px; font-weight:700; padding:3px 9px; border-radius:999px; white-space:nowrap; }
+.pinv-stbadge.rupture { background:rgba(239,68,68,0.10); color:#B91C1C; }
+.pinv-stbadge.faible  { background:rgba(245,158,11,0.12); color:#B45309; }
+.pinv-stbadge.ok      { background:rgba(16,185,129,0.10); color:#047857; }
+.pinv-stbtns { display:flex; gap:6px; }
+.pinv-stbtn { width:28px; height:28px; border:1px solid var(--border); background:var(--card); border-radius:8px; font-size:16px; font-weight:700; line-height:1; color:var(--text); cursor:pointer; display:flex; align-items:center; justify-content:center; transition:background .15s, border-color .15s, color .15s; }
+.pinv-stbtn:hover { background:var(--primary-light); border-color:var(--primary); color:var(--primary-600); }
+.pinv-stbtn:disabled { opacity:.4; cursor:not-allowed; background:var(--bg); }
+.pinv-stbtn:disabled:hover { border-color:var(--border); color:var(--text); }
+.pinv-act { display:flex; gap:8px; padding:8px 14px 14px; }
+.pinv-act .btn { flex:1; justify-content:center; }
 .pm-card__top { display:flex; align-items:center; gap:13px; }
 .pm-logo { width:52px; height:52px; border-radius:13px; flex-shrink:0; overflow:hidden; display:grid; place-items:center; background:var(--bg); border:1px solid var(--border); }
 .pm-logo img { width:100%; height:100%; object-fit:contain; padding:6px; background:#fff; }
@@ -448,6 +472,33 @@ textarea { resize: vertical; min-height: 80px; }
 .ce-uploading { display:inline-flex; align-items:center; gap:8px; font-size:11.5px; color:var(--muted); font-weight:600; font-variant-numeric:tabular-nums; }
 .ce-progbar { width:110px; height:7px; background:var(--border); border-radius:5px; overflow:hidden; }
 .ce-progfill { display:block; height:100%; background:var(--primary); border-radius:5px; transition:width .15s ease; }
+/* ===== SECTION PROFESSEURS — File de verification KYC (prefixe tkyc-) ===== */
+.tkyc-chips { display:flex; flex-wrap:wrap; gap:8px; margin:4px 0 16px; }
+.tkyc-chipn { display:inline-block; min-width:18px; padding:0 6px; margin-left:4px; border-radius:999px; background:rgba(0,0,0,0.08); font-size:11px; font-weight:700; line-height:17px; text-align:center; }
+.fchip--on .tkyc-chipn { background:rgba(255,255,255,0.28); }
+.tkyc-toolbar { margin-bottom:14px; }
+.tkyc-grid { display:grid; grid-template-columns:repeat(auto-fill,minmax(340px,1fr)); gap:16px; }
+.tkyc-card { display:flex; flex-direction:column; gap:12px; padding:16px; border:1px solid var(--border); border-radius:14px; background:var(--card); }
+.tkyc-card.is-submitted { border-color:#F59E0B; box-shadow:0 0 0 1px rgba(245,158,11,0.25); }
+.tkyc-card__top { display:flex; align-items:center; gap:12px; }
+.tkyc-av { width:42px; height:42px; flex:none; border-radius:50%; display:flex; align-items:center; justify-content:center; color:#fff; font-weight:700; font-size:15px; }
+.tkyc-id { min-width:0; flex:1; }
+.tkyc-name { font-weight:700; font-size:14px; color:var(--text); white-space:nowrap; overflow:hidden; text-overflow:ellipsis; }
+.tkyc-mail { font-size:11.5px; color:var(--muted); white-space:nowrap; overflow:hidden; text-overflow:ellipsis; }
+.tkyc-meta { font-size:12.5px; color:var(--muted); }
+.tkyc-meta code { font-size:12px; background:var(--bg); padding:1px 6px; border-radius:5px; color:var(--text); }
+.tkyc-note { font-size:12px; color:#B91C1C; background:rgba(239,68,68,0.07); border-radius:8px; padding:6px 9px; }
+.tkyc-doc { display:block; position:relative; border:1px solid var(--border); border-radius:10px; overflow:hidden; background:var(--bg); text-decoration:none; }
+.tkyc-doc img { display:block; width:100%; height:150px; object-fit:cover; background:#0000000a; }
+.tkyc-doc__cap { display:block; padding:7px 10px; font-size:12px; font-weight:600; color:var(--primary); }
+.tkyc-doc--file img { display:none; }
+.tkyc-doc--file .tkyc-doc__cap::before { content:'\1F4C4  '; }
+.tkyc-doc--none { padding:18px 10px; text-align:center; font-size:12.5px; color:var(--muted); border:1px dashed var(--border); border-radius:10px; }
+.tkyc-act { display:flex; flex-wrap:wrap; gap:8px; margin-top:auto; }
+.tkyc-ok { background:#16A34A; border-color:#16A34A; color:#fff; }
+.tkyc-ok:hover { background:#128a3d; }
+.tkyc-no { background:#fff; border-color:#DC2626; color:#DC2626; }
+.tkyc-no:hover { background:rgba(220,38,38,0.06); }
 </style>
 </head>
 <body>
@@ -716,6 +767,8 @@ function navigateTo(section, resetPage = true) {
   else if (section === 'courses') { if (resetPage) courseFilters.search = ''; loadCourses(); }
   else if (section === 'providers') loadProviders();
   else if (section === 'contacts') { if (resetPage) contactState.search = ''; loadContacts(); }
+  else if (section === 'teachers') loadTeachers();
+  else if (section === 'products') loadProducts();
   else loadTable(section);
 }
 
@@ -1465,6 +1518,8 @@ function refreshSection(sectionKey) {
   else if (sectionKey === 'courses') loadCourses();
   else if (sectionKey === 'providers') loadProviders();
   else if (sectionKey === 'contacts') loadContacts();
+  else if (sectionKey === 'teachers') loadTeachers();
+  else if (sectionKey === 'products') loadProducts();
   else loadTable(sectionKey);
 }
 
@@ -2111,6 +2166,234 @@ function renderContacts(d) {
   }
   html += '</tbody></table></div>';
   document.getElementById('card-contacts').innerHTML = html;
+}
+
+// ============= SECTION PROFESSEURS — File de verification KYC (vue premium) =============
+const teacherKyc = { filter: '', search: '' };
+let _teacherSearchTimer;
+const TKYC_META = { not_submitted:['gray','Non soumis'], submitted:['amber','À vérifier'], approved:['green','✓ Vérifié'], rejected:['red','Rejeté'] };
+
+function teacherSearchInput(v) { teacherKyc.search = v; clearTimeout(_teacherSearchTimer); _teacherSearchTimer = setTimeout(() => loadTeachers(), 260); }
+function setTeacherKyc(v) { teacherKyc.filter = v; loadTeachers(); }
+
+function loadTeachers() {
+  currentSection.name = 'teachers';
+  _headerNewButton('Nouveau professeur', 'teachers');
+  const host = document.getElementById('card-teachers');
+  if (!host.querySelector('.tkyc-grid') && !host.querySelector('.tkyc-chips'))
+    host.innerHTML = '<div class="mloading"><span class="mspin"></span> Chargement de la file de vérification…</div>';
+  const params = new URLSearchParams();
+  if (teacherKyc.filter) params.set('kyc_status', teacherKyc.filter);
+  if (teacherKyc.search) params.set('search', teacherKyc.search);
+  const q = params.toString();
+  api('/dashboard/api/learners/kyc-overview/' + (q ? '?' + q : ''))
+    .then(d => renderTeachers(d))
+    .catch(e => { host.innerHTML = '<div style="padding:24px;color:var(--danger)">' + esc(e.message) + '</div>'; });
+}
+
+function renderTeachers(d) {
+  const host = document.getElementById('card-teachers');
+  const items = d.items || [];
+  const c = d.counts || {};
+  // Cache pour editRow('teachers',id) / confirmDelete('teachers',id) (modale existante).
+  _rowCache['teachers'] = {};
+  items.forEach(r => { _rowCache['teachers'][r.id] = r; });
+
+  let h = statsHtml([
+    { l:'Professeurs', v: fmt(c.all || 0), c:'#2D6A4F' },
+    { l:'À vérifier', v: fmt(c.submitted || 0), c:'#F59E0B' },
+    { l:'Vérifiés', v: fmt(c.approved || 0), c:'#16A34A' },
+    { l:'Rejetés', v: fmt(c.rejected || 0), c:'#DC2626' },
+  ]);
+
+  const chips = [
+    { v:'', l:'Tous', n:c.all },
+    { v:'submitted', l:'À vérifier', n:c.submitted },
+    { v:'not_submitted', l:'Non soumis', n:c.not_submitted },
+    { v:'rejected', l:'Rejeté', n:c.rejected },
+    { v:'approved', l:'✓ Vérifié', n:c.approved },
+  ];
+  h += '<div class="tkyc-chips">' + chips.map(ch =>
+    `<button class="fchip${ch.v === teacherKyc.filter ? ' fchip--on' : ''}" onclick="setTeacherKyc('${ch.v}')">${esc(ch.l)}<span class="tkyc-chipn">${fmt(ch.n || 0)}</span></button>`
+  ).join('') + '</div>';
+
+  h += '<div class="toolbar tkyc-toolbar"><div class="search-wrap"><svg class="search-icon" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="11" cy="11" r="8"/><line x1="21" y1="21" x2="16.65" y2="16.65"/></svg>'
+    + '<input type="text" placeholder="Rechercher un professeur…" value="' + esc(teacherKyc.search) + '" oninput="teacherSearchInput(this.value)"></div></div>';
+
+  if (!items.length) {
+    h += '<div class="mempty"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6"><path d="M9 11a4 4 0 1 0 0-8 4 4 0 0 0 0 8z"/><path d="M17 11l2 2 4-4"/><path d="M2 21v-1a6 6 0 0 1 6-6h2"/></svg><h4>Aucun professeur dans cette file</h4><div>Changez de filtre ou créez un compte professeur avec « Nouveau professeur ».</div></div>';
+  } else {
+    h += '<div class="tkyc-grid">' + items.map(r => {
+      const m = TKYC_META[r.kyc_status] || ['gray', r.kyc_status];
+      const initial = esc((r.name || '?').trim().charAt(0).toUpperCase());
+      const doc = r.id_document
+        ? '<a class="tkyc-doc" href="' + esc(r.id_document) + '" target="_blank" rel="noopener">'
+          + '<img src="' + esc(r.id_document) + '" alt="Pièce d\'identité" onerror="this.closest(\'.tkyc-doc\').classList.add(\'tkyc-doc--file\')">'
+          + '<span class="tkyc-doc__cap">Ouvrir la pièce d\'identité</span></a>'
+        : '<div class="tkyc-doc--none">Aucune pièce d\'identité fournie</div>';
+      const idline = '<div class="tkyc-meta">N° pièce : ' + (r.id_number ? '<code>' + esc(r.id_number) + '</code>' : '<span style="color:var(--muted)">non renseigné</span>') + '</div>';
+      const note = (r.kyc_status === 'rejected' && r.kyc_note) ? '<div class="tkyc-note">Motif : ' + esc(r.kyc_note) + '</div>' : '';
+      let acts = '';
+      if (r.kyc_status !== 'approved') acts += '<button class="btn btn-sm tkyc-ok" onclick="teacherApprove(' + r.id + ')">✓ Approuver</button>';
+      if (r.kyc_status !== 'rejected') acts += '<button class="btn btn-sm tkyc-no" onclick="teacherReject(' + r.id + ')">✕ Rejeter</button>';
+      acts += '<button class="btn btn-sm" onclick="editRow(\'teachers\',' + r.id + ')">Modifier</button>';
+      acts += '<button class="btn btn-sm btn-danger" onclick="confirmDelete(\'teachers\',' + r.id + ')">Supprimer</button>';
+      return '<div class="tkyc-card' + (r.kyc_status === 'submitted' ? ' is-submitted' : '') + '" data-id="' + r.id + '">'
+        + '<div class="tkyc-card__top"><div class="tkyc-av" style="background:' + avatarColor(r.name || '?') + '">' + initial + '</div>'
+        + '<div class="tkyc-id"><div class="tkyc-name">' + esc(r.name) + '</div><div class="tkyc-mail">' + esc(r.email || '') + '</div></div>'
+        + '<span class="pill ' + m[0] + '">' + esc(m[1]) + '</span></div>'
+        + idline + note + doc
+        + '<div class="tkyc-act">' + acts + '</div></div>';
+    }).join('') + '</div>';
+  }
+  host.innerHTML = h;
+}
+
+// Approbation / rejet : reutilise l'endpoint PUT learner_detail (pilote is_approved cote serveur).
+function teacherApprove(id) {
+  api('/dashboard/api/learners/' + id + '/', { method:'PUT', body: JSON.stringify({ kyc_status:'approved' }) })
+    .then(() => { toast('Professeur vérifié — accès débloqué', 'success'); loadTeachers(); })
+    .catch(e => toast(e.message, 'error'));
+}
+function teacherReject(id) {
+  const reason = window.prompt('Motif du rejet (visible par le professeur) :', '');
+  if (reason === null) return; // annulé
+  api('/dashboard/api/learners/' + id + '/', { method:'PUT', body: JSON.stringify({ kyc_status:'rejected', kyc_note: reason }) })
+    .then(() => { toast('Vérification rejetée', 'info'); loadTeachers(); })
+    .catch(e => toast(e.message, 'error'));
+}
+
+// ============= SECTION PRODUITS — grille d'inventaire (vue premium) =============
+const PINV_KIND = {
+  kit:      { l:'Kit complet', c:'#635BFF' },
+  book:     { l:'Livre',       c:'#2D6A4F' },
+  workbook: { l:'Cahier',      c:'#F59E0B' },
+  other:    { l:'Autre',       c:'#64748B' },
+};
+let _pinvSearch = '';
+const _pinvSeq = {};   // anti-race: la derniere maj de stock par produit fait foi
+
+// Niveau de stock a 3 paliers (Rupture 0 / Faible <=5 / En stock).
+function _pinvLevel(n) {
+  if (n <= 0) return { cls:'rupture', l:'Rupture' };
+  if (n <= 5) return { cls:'faible',  l:'Faible'  };
+  return { cls:'ok', l:'En stock' };
+}
+
+// Badge stock + boutons -1/+1 (reinjecte seul lors d'une maj optimiste).
+function _pinvStockHtml(p) {
+  const lv = _pinvLevel(p.stock);
+  const noMinus = p.stock <= 0 ? ' disabled' : '';
+  return '<span class="pinv-stbadge ' + lv.cls + '">' + esc(lv.l) + ' · ' + fmt(p.stock) + '</span>'
+    + '<div class="pinv-stbtns">'
+    + '<button type="button" class="pinv-stbtn" onclick="adjustStock(' + p.id + ',-1)" title="Retirer 1"' + noMinus + '>−</button>'
+    + '<button type="button" class="pinv-stbtn" onclick="adjustStock(' + p.id + ',1)" title="Ajouter 1">+</button>'
+    + '</div>';
+}
+
+// Repeint uniquement le bloc stock d'une carte (pas toute la grille).
+function _pinvPaint(id) {
+  const box = document.getElementById('pinv-sb-' + id);
+  const p = (_rowCache['products'] || {})[id];
+  if (box && p) box.innerHTML = _pinvStockHtml(p);
+}
+
+// Ajuste le stock : maj UI immediate, PUT partiel, revert si echec.
+function adjustStock(id, delta) {
+  const p = (_rowCache['products'] || {})[id];
+  if (!p) return;
+  const next = p.stock + delta;
+  if (next < 0) return;                 // le backend refuse un stock negatif
+  const prev = p.stock;
+  p.stock = next;
+  _pinvPaint(id);                       // maj optimiste
+  const seq = (_pinvSeq[id] = (_pinvSeq[id] || 0) + 1);
+  api('/dashboard/api/products/' + id + '/', { method:'PUT', body: JSON.stringify({ stock: next }) })
+    .then(d => {
+      if (seq !== _pinvSeq[id]) return;  // une maj plus recente a pris le dessus
+      p.stock = d.stock;                 // valeur serveur qui fait foi
+      _pinvPaint(id);
+    })
+    .catch(e => {
+      if (seq !== _pinvSeq[id]) return;
+      p.stock = prev;                    // revert
+      _pinvPaint(id);
+      toast(e.message, 'error');
+    });
+}
+
+function loadProducts(page, search) {
+  currentSection.name = 'products';
+  if (search !== undefined) _pinvSearch = search;
+  const p = page || 1;
+  _headerNewButton('Nouveau produit', 'products');
+  const host = document.getElementById('card-products');
+  if (!host.querySelector('.pinv-grid')) host.innerHTML = '<div class="mloading"><span class="mspin"></span> Chargement de l\'inventaire…</div>';
+  const params = new URLSearchParams({ page: p, per_page: 60 });
+  if (_pinvSearch) params.set('search', _pinvSearch);
+  api('/dashboard/api/products/?' + params.toString())
+    .then(d => renderProductsGrid(d, p))
+    .catch(e => { host.innerHTML = '<div class="card"><div style="padding:24px;color:var(--danger)">' + esc(e.message) + '</div></div>'; });
+}
+
+function renderProductsGrid(d, page) {
+  const host = document.getElementById('card-products');
+  const items = d.items || [];
+  _rowCache['products'] = {};
+  items.forEach(r => { _rowCache['products'][r.id] = r; });
+  const totalPages = d.total_pages || 1;
+
+  // Stats (calculees sur la page chargee).
+  let rupture = 0, faible = 0, actifs = 0;
+  items.forEach(r => {
+    if (r.stock <= 0) rupture++; else if (r.stock <= 5) faible++;
+    if (r.is_active) actifs++;
+  });
+  let h = statsHtml([
+    { l:'Produits', v: fmt(d.total || items.length), c:'#2D6A4F' },
+    { l:'Actifs', v: fmt(actifs), c:'#16A34A' },
+    { l:'Stock faible', v: fmt(faible), c:'#F59E0B' },
+    { l:'Ruptures', v: fmt(rupture), c:'#EF4444' },
+  ]);
+
+  // Barre outils : recherche + pagination.
+  h += '<div class="toolbar"><div class="search-wrap"><svg class="search-icon" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="11" cy="11" r="8"/><line x1="21" y1="21" x2="16.65" y2="16.65"/></svg>'
+    + '<input type="text" placeholder="Rechercher un produit..." value="' + esc(_pinvSearch) + '" onkeyup="if(event.key===\'Enter\')loadProducts(1,this.value)"></div>';
+  h += '<div class="spacer"></div><div class="pagination"><span>' + (d.total || items.length) + ' produit(s)</span>';
+  if (totalPages > 1) {
+    if (page > 1) h += '<button class="btn btn-sm" onclick="loadProducts(' + (page - 1) + ')">‹</button>';
+    h += '<span style="padding:0 6px;font-weight:600">' + page + '/' + totalPages + '</span>';
+    if (page < totalPages) h += '<button class="btn btn-sm" onclick="loadProducts(' + (page + 1) + ')">›</button>';
+  }
+  h += '</div></div>';
+
+  if (!items.length) {
+    h += '<div class="mempty"><svg viewBox="0 0 24 24" width="46" height="46" fill="none" stroke="currentColor" stroke-width="1.6"><path d="M3 3h2l2 13h11l2-9H6"/><circle cx="9" cy="20" r="1"/><circle cx="18" cy="20" r="1"/></svg><h4>Aucun produit</h4><div>Ajoutez un kit, un livre ou un cahier avec le bouton « Nouveau produit ».</div></div>';
+    host.innerHTML = h;
+    return;
+  }
+
+  h += '<div class="pinv-grid">' + items.map(p => {
+    const k = PINV_KIND[p.kind] || { l:p.kind, c:'#64748B' };
+    const thumb = p.image
+      ? '<img src="' + esc(p.image) + '" alt="" loading="lazy">'
+      : '<span class="pinv-ph" style="--kc:' + k.c + '">' + esc((p.name || '?').trim().charAt(0).toUpperCase()) + '</span>';
+    const inactive = p.is_active ? '' : '<span class="pinv-off">Inactif</span>';
+    return '<div class="pinv-card" data-id="' + p.id + '">'
+      + '<div class="pinv-thumb">' + thumb + '<span class="pinv-kind" style="background:' + k.c + '">' + esc(k.l) + '</span></div>'
+      + '<div class="pinv-body">'
+        + '<div class="pinv-name">' + esc(p.name) + inactive + '</div>'
+        + '<div class="pinv-price">' + fmt(p.price_htg) + ' HTG</div>'
+        + '<div class="pinv-sb" id="pinv-sb-' + p.id + '">' + _pinvStockHtml(p) + '</div>'
+      + '</div>'
+      + '<div class="pinv-act">'
+        + '<button class="btn btn-sm" onclick="editRow(\'products\',' + p.id + ')" title="Modifier">Modifier</button>'
+        + '<button class="btn btn-sm btn-danger" onclick="confirmDelete(\'products\',' + p.id + ')" title="Supprimer">Suppr.</button>'
+      + '</div>'
+    + '</div>';
+  }).join('') + '</div>';
+
+  host.innerHTML = h;
 }
 
 function searchTable(sectionKey, val) {
