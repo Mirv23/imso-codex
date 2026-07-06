@@ -2566,8 +2566,11 @@ def _csv_safe(value: Any) -> Any:
 
 def _csv_stream(queryset: QuerySet, fields: list[str]) -> Generator[str, None, None]:
     import csv, io
+    # BOM UTF-8 + séparateur « ; » : le fichier s'ouvre proprement dans Excel FR
+    # (accents corrects, colonnes séparées) et Google Sheets (détection auto).
+    yield "﻿"
     buffer = io.StringIO()
-    writer = csv.writer(buffer)
+    writer = csv.writer(buffer, delimiter=";")
     writer.writerow(fields)
     yield buffer.getvalue()
     buffer.seek(0)
@@ -2585,8 +2588,25 @@ def export_csv(request: HttpRequest, model_name: str) -> HttpResponse:
         return _error(f"Modèle non autorisé: {model_name}", 404)
     model_class = ALLOWED_EXPORT_MODELS[model_name]
     qs = model_class.objects.all()
+    _model_fields = {f.name for f in model_class._meta.fields}
+    # Filtre période (réconciliation comptable) : event_date pour les réservations,
+    # created_at sinon. Valeurs invalides ignorées (_safe_date).
+    date_field = "event_date" if model_name == "bookings" else "created_at"
+    if date_field in _model_fields:
+        _lookup = f"{date_field}__gte" if date_field == "event_date" else f"{date_field}__date__gte"
+        _lookup_to = f"{date_field}__lte" if date_field == "event_date" else f"{date_field}__date__lte"
+        d_from = _safe_date(request.GET.get("date_from"))
+        d_to = _safe_date(request.GET.get("date_to"))
+        if d_from:
+            qs = qs.filter(**{_lookup: d_from})
+        if d_to:
+            qs = qs.filter(**{_lookup_to: d_to})
+    # Filtre statut (payments/orders/bookings/enrollments…) si le modèle en a un.
+    status = request.GET.get("status")
+    if status and "status" in _model_fields:
+        qs = qs.filter(status=status)
     fields = _export_fields(model_class)
-    response = StreamingHttpResponse(_csv_stream(qs, fields), content_type="text/csv")
+    response = StreamingHttpResponse(_csv_stream(qs, fields), content_type="text/csv; charset=utf-8")
     response["Content-Disposition"] = f'attachment; filename="{model_name}.csv"'
     return response
 
