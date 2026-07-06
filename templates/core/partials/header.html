@@ -2117,6 +2117,9 @@ a { color: inherit; text-decoration: none; }
   max-width: 440px;
   padding: 28px;
   box-shadow: var(--shadow-lg);
+  /* Defile si le formulaire depasse la hauteur d'ecran (mobile) au lieu d'etre coupe. */
+  max-height: 90vh;
+  overflow-y: auto;
   transform: scale(.96) translateY(10px);
   transition: transform .35s cubic-bezier(.6,.2,.2,1);
 }

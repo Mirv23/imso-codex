@@ -71,6 +71,7 @@ class BlogListView(TemplateView):
         context["posts"] = BlogPost.objects.filter(
             status=BlogPost.Status.PUBLISHED, published_at__lte=timezone.now()
         ).order_by("-published_at")
+        context["page_title"] = "Blog"
         return context
 
 
@@ -79,12 +80,15 @@ class BlogDetailView(TemplateView):
 
     def get_context_data(self, **kwargs: Any) -> dict[str, Any]:
         context = super().get_context_data(**kwargs)
-        context["post"] = get_object_or_404(
+        post = get_object_or_404(
             BlogPost,
             slug=kwargs.get("slug"),
             status=BlogPost.Status.PUBLISHED,
             published_at__lte=timezone.now(),
         )
+        context["post"] = post
+        # <title>/OG propres a l'article (etaient le titre generique du site).
+        context["page_title"] = post.title
         return context
 
 

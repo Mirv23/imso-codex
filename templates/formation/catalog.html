@@ -4,7 +4,8 @@
 {% block head %}<style>
 .hero-f{padding:44px 0 30px}
 .hero-f .h1{font-size:34px}
-.grid-c{display:grid;grid-template-columns:repeat(auto-fill,minmax(290px,1fr));gap:22px;margin-top:8px}
+/* min(290px,100%) : evite le debordement horizontal sous 290px de large. */
+.grid-c{display:grid;grid-template-columns:repeat(auto-fill,minmax(min(290px,100%),1fr));gap:22px;margin-top:8px}
 .ccard{display:flex;flex-direction:column;overflow:hidden;transition:transform .2s,box-shadow .2s;cursor:pointer}
 .ccard:hover{transform:translateY(-5px);box-shadow:var(--shadow-lg)}
 .ccard__ban{height:150px;background:linear-gradient(135deg,var(--primary),var(--primary-d));position:relative;display:flex;align-items:flex-end;padding:12px}
