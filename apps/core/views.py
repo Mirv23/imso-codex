@@ -511,6 +511,7 @@ class OrderCreateView(View):
                     continue
                 if qty < 1:
                     continue
+                qty = min(qty, 1000)  # borne haute (evite le depassement d'entier / commandes absurdes)
                 try:
                     product = Product.objects.get(id=raw.get("product_id"), is_active=True)
                 except (Product.DoesNotExist, ValueError, TypeError):

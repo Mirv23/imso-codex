@@ -308,6 +308,19 @@ def _error(msg: str, status: int = 400) -> JsonResponse:
     return JsonResponse({"error": msg}, status=status)
 
 
+def _safe_date(raw):
+    """Parse une date en ignorant tout ce qui est invalide OU hors-plage.
+
+    parse_date() LEVE ValueError sur '2026-13-45' au lieu de renvoyer None :
+    ce helper protege les filtres de liste d'un 500.
+    """
+    from django.utils.dateparse import parse_date
+    try:
+        return parse_date(str(raw or "")) or None
+    except (ValueError, TypeError):
+        return None
+
+
 def _ok() -> JsonResponse:
     return JsonResponse({"ok": True})
 
@@ -895,7 +908,8 @@ def chapter_video_confirm(request: HttpRequest, pk: int) -> JsonResponse:
     except Chapter.DoesNotExist:
         return _error("Chapter not found", 404)
     key = str(_json_body(request).get("key") or "").strip()
-    if not key or not key.startswith("courses/videos/"):
+    # La cle doit correspondre a CE chapitre (evite de pointer la video d'un autre cours).
+    if not key or not key.startswith(f"courses/videos/chapter_{pk}."):
         return _error("Clé de fichier invalide.", 400)
     old_name = ch.video.name if ch.video else ""
     ch.video.name = key
@@ -1124,10 +1138,10 @@ def booking_list(request: HttpRequest) -> JsonResponse:
     status = request.GET.get("status")
     if status:
         qs = qs.filter(status=status)
-    date_from = parse_date(request.GET.get("date_from") or "")
+    date_from = _safe_date(request.GET.get("date_from"))
     if date_from:
         qs = qs.filter(event_date__gte=date_from)
-    date_to = parse_date(request.GET.get("date_to") or "")
+    date_to = _safe_date(request.GET.get("date_to"))
     if date_to:
         qs = qs.filter(event_date__lte=date_to)
     search = request.GET.get("search")
@@ -1160,13 +1174,26 @@ def booking_detail(request: HttpRequest, pk: int) -> JsonResponse:
                      "event_type", "setup", "notes"):
             if fld in data:
                 setattr(b, fld, str(data[fld] or ""))
-        # Champs date/heure requis : on refuse une valeur vide (400) au lieu de
-        # provoquer un 500 (chaîne vide invalide OU contrainte NOT NULL).
-        for fld, label in (("event_date", "La date"), ("start_time", "L'heure de début"), ("end_time", "L'heure de fin")):
+        # Champs date/heure requis : on refuse une valeur vide OU malformee (400)
+        # au lieu de provoquer un 500 (chaîne invalide / contrainte NOT NULL).
+        from django.utils.dateparse import parse_date, parse_time
+        if "event_date" in data:
+            try:
+                d = parse_date(str(data["event_date"] or ""))
+            except ValueError:
+                d = None
+            if not d:
+                return _error("La date de l'événement est invalide.")
+            b.event_date = d
+        for fld, label in (("start_time", "L'heure de début"), ("end_time", "L'heure de fin")):
             if fld in data:
-                if not data[fld]:
-                    return _error(f"{label} ne peut pas être vide.")
-                setattr(b, fld, data[fld])
+                try:
+                    t = parse_time(str(data[fld] or ""))
+                except ValueError:
+                    t = None
+                if not t:
+                    return _error(f"{label} est invalide.")
+                setattr(b, fld, t)
         if "guest_count" in data:
             try:
                 b.guest_count = max(0, int(data["guest_count"] or 0))
@@ -1212,10 +1239,10 @@ def payment_list(request: HttpRequest) -> JsonResponse:
     if purpose:
         qs = qs.filter(purpose=purpose)
     # Dates : on ignore une valeur non parsable (evite un 500 sur filtre invalide).
-    date_from = parse_date(request.GET.get("date_from") or "")
+    date_from = _safe_date(request.GET.get("date_from"))
     if date_from:
         qs = qs.filter(created_at__date__gte=date_from)
-    date_to = parse_date(request.GET.get("date_to") or "")
+    date_to = _safe_date(request.GET.get("date_to"))
     if date_to:
         qs = qs.filter(created_at__date__lte=date_to)
     search = request.GET.get("search")
@@ -1263,8 +1290,13 @@ def payment_detail(request: HttpRequest, pk: int) -> JsonResponse:
                 setattr(p, fld, str(data[fld] or ""))
         if "provider_id" in data:
             pid = data["provider_id"] or None
-            if pid and not PaymentProvider.objects.filter(pk=pid).exists():
-                return _error("Le moyen de paiement sélectionné n'existe pas.")
+            if pid is not None:
+                try:
+                    pid = int(pid)
+                except (ValueError, TypeError):
+                    return _error("Moyen de paiement invalide.")
+                if not PaymentProvider.objects.filter(pk=pid).exists():
+                    return _error("Le moyen de paiement sélectionné n'existe pas.")
             p.provider_id = pid
         p.save()
         logger.info("Payment %d updated by user %s (status: %s)", pk, request.user.username, p.status)

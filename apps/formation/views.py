@@ -1,6 +1,7 @@
 from __future__ import annotations
 
 import json
+import uuid
 
 from django.contrib import messages
 from django.contrib.auth import login as auth_login, logout as auth_logout
@@ -201,7 +202,6 @@ def kyc(request: HttpRequest) -> HttpResponse:
         else:
             profile.id_number = id_number[:60]
             if doc:
-                import uuid
                 ext = doc.name.rsplit(".", 1)[-1].lower() if "." in doc.name else "jpg"
                 doc.name = f"{uuid.uuid4().hex}.{ext}"  # nom illisible (confidentialité)
                 profile.id_document = doc
@@ -377,7 +377,7 @@ def t_video_confirm(request: HttpRequest, pk: int) -> HttpResponse:
     if err:
         return err
     key = str(_json(request).get("key") or "").strip()
-    if not key or not key.startswith("courses/videos/"):
+    if not key or not key.startswith(f"courses/videos/chapter_{pk}."):
         return JsonResponse({"error": "Clé de fichier invalide."}, status=400)
     old_name = ch.video.name if ch.video else ""
     ch.video.name = key

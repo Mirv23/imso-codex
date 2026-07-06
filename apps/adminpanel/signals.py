@@ -166,11 +166,16 @@ def payment_cascade_status(sender: type[Payment], instance: Payment, created: bo
             order = instance.order
             order.status = Order.Status.PAID
             order.save(update_fields=["status", "updated_at"])
+            from django.db.models import F, Value
+            from django.db.models.functions import Greatest
+            from django.utils import timezone as _tz
             for item in order.items.select_related("product"):
-                product = item.product
-                if product:
-                    product.stock = max(0, product.stock - item.quantity)
-                    product.save(update_fields=["stock", "updated_at"])
+                if item.product_id:
+                    # Decrement ATOMIQUE (evite la race read-modify-write / la survente).
+                    Product.objects.filter(pk=item.product_id).update(
+                        stock=Greatest(F("stock") - item.quantity, Value(0)),
+                        updated_at=_tz.now(),
+                    )
 
 
 @receiver(post_save, sender=ContactRequest)
