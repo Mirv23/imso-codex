@@ -211,6 +211,11 @@ textarea { resize: vertical; min-height: 80px; }
 .wchip__go { color:var(--wc); font-weight:800; margin-left:2px; }
 .wchip--done { cursor:default; opacity:.55; border-left-color:var(--border); box-shadow:none; }
 .wchip--done .wchip__n { color:var(--muted); }
+/* Puces de filtre par statut (paiements, reservations, …) */
+.chip-bar { display:flex; flex-wrap:wrap; gap:8px; padding:0 4px 14px; }
+.fchip { padding:6px 14px; border-radius:999px; border:1px solid var(--border); background:var(--card); color:var(--muted); font:inherit; font-size:13px; font-weight:600; cursor:pointer; transition:all .15s; }
+.fchip:hover { border-color:var(--primary); color:var(--text); }
+.fchip--on { background:var(--primary); color:#fff; border-color:var(--primary); }
 .stat-grid { display:grid; grid-template-columns:repeat(auto-fit,minmax(205px,1fr)); gap:16px; margin-bottom:20px; }
 .stat { position:relative; background:var(--card); border:1px solid var(--border); border-radius:var(--radius-lg); padding:18px; overflow:hidden; box-shadow:var(--shadow-sm); transition:transform .25s ease, box-shadow .25s ease; opacity:0; transform:translateY(12px); animation:dashIn .5s cubic-bezier(.4,0,.2,1) forwards; }
 .stat:hover { transform:translateY(-4px); box-shadow:var(--shadow-lg); }
@@ -991,6 +996,10 @@ const SECTIONS = {
     title: 'Paiements',
     endpoint: '/dashboard/api/payments/',
     canCreate: false, canEdit: true, canDelete: false,
+    statusChips: [
+      { v:'', l:'Tous' }, { v:'pending', l:'En attente' }, { v:'paid', l:'Payé' },
+      { v:'refunded', l:'Remboursé' }, { v:'failed', l:'Échoué' }, { v:'cancelled', l:'Annulé' },
+    ],
     columns: [
       { key:'reference', label:'Réf.', render: r => `<code style="font-size:11px">${esc(r.reference)}</code>` },
       { key:'payer_name', label:'Payeur' },
@@ -1012,6 +1021,10 @@ const SECTIONS = {
     title: 'Réservations',
     endpoint: '/dashboard/api/bookings/',
     canCreate: false, canEdit: true, canDelete: false,
+    statusChips: [
+      { v:'', l:'Toutes' }, { v:'requested', l:'Demandées' }, { v:'payment_pending', l:'Paiement attendu' },
+      { v:'admin_review', l:'À valider' }, { v:'confirmed', l:'Confirmées' }, { v:'cancelled', l:'Annulées' },
+    ],
     columns: [
       { key:'requester_name', label:'Client', render: r => `<strong>${esc(r.requester_name)}</strong><br><span style="font-size:11px;color:var(--muted)">${esc(r.requester_phone)}</span>` },
       { key:'event_type', label:'Événement' },
@@ -1320,6 +1333,13 @@ function clearTableFilter(section) {
   loadTable(section, 1);
 }
 
+// Puce de filtre par statut : '' = tout afficher.
+function setStatusChip(section, val) {
+  if (val) tableFilters[section] = { status: val };
+  else delete tableFilters[section];
+  loadTable(section, 1);
+}
+
 function loadTable(sectionKey, page, search) {
   const cfg = SECTIONS[sectionKey];
   if (!cfg) return;
@@ -1375,6 +1395,14 @@ function renderTable(sectionKey, data) {
     if (page < totalPages) html += '<button class="btn btn-sm" onclick="loadTable(\'' + sectionKey + '\',' + (page + 1) + ')">›</button>';
   }
   html += '</div></div>';
+
+  // Barre de puces de filtre par statut (si la section en declare).
+  if (cfg.statusChips) {
+    const cur = (tableFilters[sectionKey] && tableFilters[sectionKey].status) || '';
+    html += '<div class="chip-bar">' + cfg.statusChips.map(ch =>
+      `<button class="fchip${ch.v === cur ? ' fchip--on' : ''}" onclick="setStatusChip('${sectionKey}','${ch.v}')">${esc(ch.l)}</button>`
+    ).join('') + '</div>';
+  }
 
   html += '<div class="table-wrap"><table class="table"><thead><tr>';
   cfg.columns.forEach(c => { html += '<th>' + c.label + '</th>'; });
