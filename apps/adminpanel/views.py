@@ -2181,6 +2181,33 @@ def order_detail(request: HttpRequest, pk: int) -> JsonResponse:
     return JsonResponse(_serialize_order(o))
 
 
+@staff_required
+def order_payments(request: HttpRequest) -> JsonResponse:
+    """Paiements liés à une commande (lecture seule) pour le drawer détail.
+    N'expose PAS la capture (bucket privé) : uniquement les métadonnées."""
+    try:
+        pk = int(request.GET.get("order", 0))
+    except (TypeError, ValueError):
+        pk = 0
+    try:
+        o = Order.objects.prefetch_related("payments").get(pk=pk)
+    except Order.DoesNotExist:
+        return _error("Order not found", 404)
+    items = [
+        {
+            "id": p.pk,
+            "reference": p.reference,
+            "status": p.status,
+            "amount_htg": p.amount_htg,
+            "entry_mode": p.entry_mode,
+            "paid_at": p.paid_at.isoformat() if p.paid_at else None,
+            "created_at": p.created_at.isoformat(),
+        }
+        for p in o.payments.all()
+    ]
+    return JsonResponse({"items": items})
+
+
 # ── Blog ─────────────────────────────────────────────────
 
 def _serialize_blogpost(b: BlogPost) -> dict[str, Any]:

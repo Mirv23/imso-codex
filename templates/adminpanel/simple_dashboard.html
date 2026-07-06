@@ -216,6 +216,93 @@ textarea { resize: vertical; min-height: 80px; }
 .fchip { padding:6px 14px; border-radius:999px; border:1px solid var(--border); background:var(--card); color:var(--muted); font:inherit; font-size:13px; font-weight:600; cursor:pointer; transition:all .15s; }
 .fchip:hover { border-color:var(--primary); color:var(--text); }
 .fchip--on { background:var(--primary); color:#fff; border-color:var(--primary); }
+/* ===== Reservations : vue calendrier (prefixe bk-) ===== */
+.bk-bar { display:flex; align-items:center; flex-wrap:wrap; gap:10px; padding:2px 4px 12px; }
+.bk-nav { display:flex; gap:6px; }
+.bk-title { font-size:16px; font-weight:700; color:var(--text); letter-spacing:.2px; }
+.bk-spacer { flex:1 1 auto; }
+.bk-chips { display:flex; flex-wrap:wrap; gap:8px; }
+.bk-legend { display:flex; flex-wrap:wrap; gap:16px; padding:0 4px 12px; font-size:12.5px; color:var(--muted); }
+.bk-lg { display:inline-flex; align-items:center; gap:6px; }
+.bk-lg i { width:10px; height:10px; border-radius:50%; display:inline-block; }
+.bk-cal { border:1px solid var(--border); border-radius:var(--radius); overflow:hidden; background:var(--card); }
+.bk-dow { display:grid; grid-template-columns:repeat(7,1fr); background:var(--bg); border-bottom:1px solid var(--border); }
+.bk-dow > div { padding:8px 6px; text-align:center; font-size:12px; font-weight:700; color:var(--muted); text-transform:uppercase; letter-spacing:.4px; }
+.bk-grid { display:grid; grid-template-columns:repeat(7,1fr); }
+.bk-cell { min-height:96px; border-right:1px solid var(--border); border-bottom:1px solid var(--border); padding:6px; cursor:pointer; position:relative; transition:background .12s; display:flex; flex-direction:column; gap:6px; }
+.bk-cell:nth-child(7n) { border-right:0; }
+.bk-cell:hover { background:var(--primary-light); }
+.bk-cell.bk-out { background:var(--bg); }
+.bk-cell.bk-out .bk-num { color:#C7CBD1; }
+.bk-cell.bk-sel { box-shadow:inset 0 0 0 2px var(--primary); background:var(--primary-light); }
+.bk-num { font-size:12.5px; font-weight:600; color:var(--text); line-height:1; }
+.bk-today .bk-num { background:var(--primary); color:#fff; border-radius:50%; width:22px; height:22px; display:inline-flex; align-items:center; justify-content:center; }
+.bk-dots { display:flex; flex-wrap:wrap; gap:4px; align-items:center; }
+.bk-dot { width:9px; height:9px; border-radius:50%; display:inline-block; }
+.bk-more { font-size:11px; font-weight:700; color:var(--muted); line-height:9px; }
+/* Panneau liste du jour */
+.bk-day { margin-top:18px; border:1px solid var(--border); border-radius:var(--radius); background:var(--card); overflow:hidden; }
+.bk-day__hd { display:flex; align-items:center; justify-content:space-between; gap:10px; padding:12px 16px; border-bottom:1px solid var(--border); background:var(--bg); }
+.bk-day__hd h4 { margin:0; font-size:14.5px; color:var(--text); }
+.bk-day__hd span { font-size:12.5px; color:var(--muted); font-weight:600; }
+.bk-day__empty { padding:28px 16px; text-align:center; color:var(--muted); font-size:13.5px; }
+.bk-day__list { display:flex; flex-direction:column; }
+.bk-item { display:flex; align-items:center; gap:14px; padding:12px 16px; border-bottom:1px solid var(--border); border-left:4px solid var(--bc,#9CA3AF); }
+.bk-item:last-child { border-bottom:0; }
+.bk-item__time { min-width:96px; font-size:13px; font-weight:700; color:var(--text); white-space:nowrap; }
+.bk-item__body { flex:1 1 auto; min-width:0; }
+.bk-item__ttl { display:flex; align-items:center; gap:8px; flex-wrap:wrap; font-size:14px; font-weight:600; color:var(--text); }
+.bk-item__sub { font-size:12.5px; color:var(--muted); margin-top:2px; }
+.bk-item__act { flex:0 0 auto; }
+@media (max-width:640px){
+  .bk-cell { min-height:74px; padding:4px; }
+  .bk-item { flex-wrap:wrap; }
+  .bk-item__time { min-width:auto; }
+}
+/* ── Pipeline commandes (kanban) — préfixe .okb / drawer .od ── */
+.okb { display:flex; gap:14px; overflow-x:auto; padding:4px 4px 18px; align-items:flex-start; }
+.okb-col { flex:0 0 276px; min-width:276px; background:var(--bg); border:1px solid var(--border); border-radius:14px; display:flex; flex-direction:column; max-height:calc(100vh - 200px); }
+.okb-col__hd { display:flex; align-items:center; gap:8px; padding:12px 14px; border-bottom:1px solid var(--border); }
+.okb-col__dot { width:9px; height:9px; border-radius:50%; flex:none; }
+.okb-col__ttl { font-weight:700; font-size:13px; color:var(--text); }
+.okb-col__ct { margin-left:auto; font-size:12px; font-weight:700; color:var(--muted); background:var(--card); border:1px solid var(--border); border-radius:999px; padding:1px 9px; }
+.okb-col__body { padding:10px; display:flex; flex-direction:column; gap:10px; overflow-y:auto; }
+.okb-card { background:var(--card); border:1px solid var(--border); border-left:3px solid var(--border); border-radius:11px; padding:11px 12px; cursor:pointer; transition:box-shadow .15s, transform .05s; }
+.okb-card:hover { box-shadow:0 6px 18px rgba(15,23,42,.10); }
+.okb-card:active { transform:scale(.995); }
+.okb-card__ref { font-family:ui-monospace,Menlo,Consolas,monospace; font-size:11px; color:var(--muted); }
+.okb-card__cust { font-weight:700; font-size:14px; color:var(--text); margin:2px 0 5px; }
+.okb-card__row { display:flex; align-items:center; gap:5px; font-size:12.5px; color:var(--muted); margin-top:3px; }
+.okb-card__row svg { width:13px; height:13px; flex:none; }
+.okb-card__total { font-weight:800; color:var(--text); }
+.okb-next { margin-top:9px; width:100%; display:inline-flex; align-items:center; justify-content:center; gap:6px; border:none; border-radius:8px; background:var(--primary); color:#fff; font:inherit; font-size:12.5px; font-weight:700; padding:7px 10px; cursor:pointer; transition:background .15s; }
+.okb-next:hover { background:var(--primary-600); }
+.okb-next:disabled { opacity:.6; cursor:default; }
+.okb-next svg { width:13px; height:13px; }
+.okb-empty { color:var(--muted); font-size:12.5px; text-align:center; padding:16px 8px; }
+.okb-more { text-align:center; font-size:12px; color:var(--muted); padding:2px; }
+
+/* Drawer latéral de détail (z-index 90 : SOUS le modal d'édition à 100, AU-DESSUS du contenu/sidebar) */
+#orderDrawerRoot { position:fixed; inset:0; z-index:90; pointer-events:none; }
+#orderDrawerRoot .od-ov { position:absolute; inset:0; background:rgba(15,23,42,.5); backdrop-filter:blur(2px); opacity:0; transition:opacity .2s; }
+#orderDrawerRoot .od-drawer { position:absolute; top:0; right:0; height:100%; width:min(440px,92vw); background:var(--card); box-shadow:-16px 0 48px rgba(0,0,0,.28); transform:translateX(100%); transition:transform .28s cubic-bezier(.4,0,.2,1); display:flex; flex-direction:column; }
+#orderDrawerRoot.open { pointer-events:auto; }
+#orderDrawerRoot.open .od-ov { opacity:1; }
+#orderDrawerRoot.open .od-drawer { transform:translateX(0); }
+.od-hd { position:relative; padding:18px 20px 14px; border-bottom:1px solid var(--border); }
+.od-close { position:absolute; top:14px; right:14px; width:32px; height:32px; border-radius:9px; border:1px solid var(--border); background:var(--card); color:var(--muted); font-size:15px; cursor:pointer; display:grid; place-items:center; }
+.od-close:hover { color:var(--text); }
+.od-body { padding:4px 20px 16px; overflow-y:auto; flex:1; }
+.od-sect { padding:14px 0; border-bottom:1px solid var(--border); }
+.od-sect:last-child { border-bottom:none; }
+.od-sect__t { font-size:11px; font-weight:700; letter-spacing:.05em; text-transform:uppercase; color:var(--muted); margin-bottom:9px; }
+.od-kv { display:flex; justify-content:space-between; gap:12px; font-size:13.5px; margin:5px 0; }
+.od-kv > span:first-child { color:var(--muted); }
+.od-kv > span:last-child { color:var(--text); text-align:right; font-weight:600; }
+.od-line { display:flex; justify-content:space-between; gap:12px; font-size:13px; padding:6px 0; }
+.od-foot { padding:13px 20px; border-top:1px solid var(--border); display:flex; gap:10px; }
+.od-stepper { display:flex; gap:4px; margin-top:9px; }
+.od-step { flex:1; height:5px; border-radius:3px; background:var(--border); }
 /* ===== Section Contacts (triage) — prefixe ct- pour eviter toute collision ===== */
 .ct-wa { display:inline-flex; align-items:center; gap:5px; background:#25D366; border-color:#25D366; color:#fff; text-decoration:none; }
 .ct-wa:hover { background:#1EBE5B; border-color:#1EBE5B; color:#fff; }
@@ -499,6 +586,34 @@ textarea { resize: vertical; min-height: 80px; }
 .tkyc-ok:hover { background:#128a3d; }
 .tkyc-no { background:#fff; border-color:#DC2626; color:#DC2626; }
 .tkyc-no:hover { background:rgba(220,38,38,0.06); }
+/* ===== SECTION SETTINGS — onglets + toggles + save bar (a ajouter avant </style>) ===== */
+.settings-card { padding: 0; overflow: visible; }
+.settings-tabs { display:flex; flex-wrap:wrap; gap:4px; padding:12px 16px; border-bottom:1px solid var(--border); position:sticky; top:0; background:var(--card); z-index:6; border-radius:var(--radius) var(--radius) 0 0; }
+.settings-tab { padding:8px 16px; border-radius:999px; border:1px solid transparent; background:transparent; color:var(--muted); font:inherit; font-size:13px; font-weight:600; cursor:pointer; transition:all .15s; white-space:nowrap; }
+.settings-tab:hover { color:var(--text); background:var(--bg); }
+.settings-tab--on { background:var(--primary-light); color:var(--primary); }
+.settings-body { padding:22px 24px; }
+.settings-pane { display:none; animation:settingsFade .2s ease; }
+.settings-pane--on { display:block; }
+@keyframes settingsFade { from { opacity:0; transform:translateY(4px); } to { opacity:1; transform:none; } }
+.settings-grid2 { display:grid; grid-template-columns:repeat(2,1fr); gap:0 16px; }
+@media (max-width:720px){ .settings-grid2 { grid-template-columns:1fr; } }
+.settings-savebar { position:sticky; bottom:0; display:flex; align-items:center; justify-content:flex-end; gap:16px; padding:14px 24px; background:rgba(255,255,255,0.92); backdrop-filter:blur(6px); border-top:1px solid var(--border); border-radius:0 0 var(--radius) var(--radius); z-index:6; }
+.settings-savebar__hint { font-size:12px; color:var(--muted); margin-right:auto; }
+/* Interrupteurs (toggles) pour les booleens */
+.stoggle-list { display:flex; flex-direction:column; }
+.stoggle { display:flex; align-items:center; justify-content:space-between; gap:16px; padding:14px 2px; border-bottom:1px solid var(--border); cursor:pointer; margin:0; }
+.stoggle:last-child { border-bottom:none; }
+.stoggle__txt { display:flex; flex-direction:column; gap:2px; }
+.stoggle__label { font-size:13.5px; font-weight:600; color:var(--text); }
+.stoggle__hint { font-size:12px; color:var(--muted); }
+.switch { position:relative; flex-shrink:0; width:44px; height:24px; }
+.switch input { position:absolute; opacity:0; width:100%; height:100%; margin:0; cursor:pointer; z-index:2; }
+.switch__track { position:absolute; inset:0; background:var(--border); border-radius:999px; transition:background .2s; }
+.switch__track::after { content:''; position:absolute; top:2px; left:2px; width:20px; height:20px; background:#fff; border-radius:50%; box-shadow:0 1px 3px rgba(0,0,0,.2); transition:transform .2s; }
+.switch input:checked + .switch__track { background:var(--primary); }
+.switch input:checked + .switch__track::after { transform:translateX(20px); }
+.switch input:focus-visible + .switch__track { box-shadow:0 0 0 3px rgba(45,106,79,0.25); }
 </style>
 </head>
 <body>
@@ -769,6 +884,8 @@ function navigateTo(section, resetPage = true) {
   else if (section === 'contacts') { if (resetPage) contactState.search = ''; loadContacts(); }
   else if (section === 'teachers') loadTeachers();
   else if (section === 'products') loadProducts();
+  else if (section === 'orders') loadOrders();
+  else if (section === 'bookings') loadBookings();
   else loadTable(section);
 }
 
@@ -1520,6 +1637,8 @@ function refreshSection(sectionKey) {
   else if (sectionKey === 'contacts') loadContacts();
   else if (sectionKey === 'teachers') loadTeachers();
   else if (sectionKey === 'products') loadProducts();
+  else if (sectionKey === 'orders') loadOrders();
+  else if (sectionKey === 'bookings') loadBookings();
   else loadTable(sectionKey);
 }
 
@@ -2396,8 +2515,327 @@ function renderProductsGrid(d, page) {
   host.innerHTML = h;
 }
 
+// ============= SECTION COMMANDES (pipeline kanban) =============
+// Rendu custom (comme loadProviders/loadCourses) : remplace loadTable pour 'orders'.
+const ORDER_PIPELINE = [
+  { v:'pending',   l:'En attente',     next:'paid',      nextLabel:'Marquer payée', color:'#F59E0B' },
+  { v:'paid',      l:'Payée',          next:'preparing', nextLabel:'Préparer',      color:'#2563EB' },
+  { v:'preparing', l:'En préparation', next:'shipped',   nextLabel:'Expédier',      color:'#8E44AD' },
+  { v:'shipped',   l:'Expédiée',       next:'delivered', nextLabel:'Marquer livrée',color:'#0EA5E9' },
+  { v:'delivered', l:'Livrée',         next:null,        nextLabel:'',              color:'#16A34A' },
+  { v:'cancelled', l:'Annulée',        next:null,        nextLabel:'',              color:'#9CA3AF' },
+];
+const ORDER_STATUS_LABEL = ORDER_PIPELINE.reduce((a, c) => { a[c.v] = c.l; return a; }, {});
+
+function loadOrders() {
+  currentSection.name = 'orders';
+  const actions = document.getElementById('headerActions');
+  actions.innerHTML = '';
+  const rb = document.createElement('button');
+  rb.className = 'btn btn-sm';
+  rb.innerHTML = '<svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="23 4 23 10 17 10"/><path d="M20.49 15a9 9 0 1 1-2.12-9.36L23 10"/></svg> Actualiser';
+  rb.onclick = () => loadOrders();
+  actions.appendChild(rb);
+
+  const host = document.getElementById('card-orders');
+  if (!host.querySelector('.okb')) host.innerHTML = '<div class="mloading"><span class="mspin"></span> Chargement du pipeline…</div>';
+
+  Promise.all(ORDER_PIPELINE.map(col =>
+    api('/dashboard/api/orders/?status=' + col.v + '&per_page=100')
+      .then(d => ({ col, items: d.items || [], total: d.total || 0 }))
+  )).then(cols => {
+    _rowCache['orders'] = {};
+    cols.forEach(c => c.items.forEach(o => { _rowCache['orders'][o.id] = o; }));
+    renderOrdersKanban(cols);
+  }).catch(e => {
+    host.innerHTML = '<div class="card"><div style="padding:24px;color:var(--danger)">' + esc(e.message) + '</div></div>';
+  });
+}
+
+function renderOrdersKanban(cols) {
+  let h = '<div class="okb">';
+  cols.forEach(({ col, items, total }) => {
+    h += '<div class="okb-col"><div class="okb-col__hd">'
+       + '<span class="okb-col__dot" style="background:' + col.color + '"></span>'
+       + '<span class="okb-col__ttl">' + esc(col.l) + '</span>'
+       + '<span class="okb-col__ct">' + fmt(total) + '</span></div>'
+       + '<div class="okb-col__body">';
+    if (!items.length) {
+      h += '<div class="okb-empty">Aucune commande</div>';
+    } else {
+      items.forEach(o => { h += orderKanbanCard(o, col); });
+      if (total > items.length) h += '<div class="okb-more">+ ' + fmt(total - items.length) + ' autre(s)…</div>';
+    }
+    h += '</div></div>';
+  });
+  h += '</div>';
+  document.getElementById('card-orders').innerHTML = h;
+}
+
+function orderKanbanCard(o, col) {
+  const pin = '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M21 10c0 7-9 13-9 13s-9-6-9-13a9 9 0 0 1 18 0z"/><circle cx="12" cy="10" r="3"/></svg>';
+  let h = '<div class="okb-card" style="border-left-color:' + col.color + '" onclick="openOrderDrawer(' + o.id + ')">'
+        + '<div class="okb-card__ref">' + esc(o.reference) + '</div>'
+        + '<div class="okb-card__cust">' + esc(o.customer_name) + '</div>'
+        + '<div class="okb-card__row">' + pin + esc(o.city || '—') + '</div>'
+        + '<div class="okb-card__row"><span class="okb-card__total">' + fmt(o.total_htg) + ' HTG</span></div>';
+  if (col.next) {
+    h += '<button class="okb-next" onclick="advanceOrder(event,' + o.id + ',\'' + col.next + '\')">'
+       + esc(col.nextLabel) + ' <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4"><polyline points="9 18 15 12 9 6"/></svg></button>';
+  }
+  h += '</div>';
+  return h;
+}
+
+// Avance le statut d'une commande (PUT order_detail). ev.stopPropagation : évite
+// d'ouvrir le drawer quand le clic vient du bouton d'une carte.
+function advanceOrder(ev, id, next) {
+  ev.stopPropagation();
+  const btn = ev.currentTarget;
+  if (btn) btn.disabled = true;
+  api('/dashboard/api/orders/' + id + '/', { method: 'PUT', body: JSON.stringify({ status: next }) })
+    .then(o => {
+      toast('Commande ' + (o.reference || '') + ' → ' + (ORDER_STATUS_LABEL[next] || next), 'success');
+      if (_orderDrawerId === id) renderOrderDrawerFor(id);
+      loadOrders();
+    })
+    .catch(e => { if (btn) btn.disabled = false; toast(e.message, 'error'); });
+}
+
+// ── Drawer latéral de détail ──
+let _orderDrawerId = null;
+function ensureOrderDrawer() {
+  let root = document.getElementById('orderDrawerRoot');
+  if (root) return root;
+  root = document.createElement('div');
+  root.id = 'orderDrawerRoot';
+  root.innerHTML = '<div class="od-ov" onclick="closeOrderDrawer()"></div><div class="od-drawer" id="orderDrawerPanel"></div>';
+  document.body.appendChild(root);
+  return root;
+}
+function openOrderDrawer(id) {
+  _orderDrawerId = id;
+  ensureOrderDrawer().classList.add('open');
+  document.getElementById('orderDrawerPanel').innerHTML = '<div class="od-hd"><button class="od-close" onclick="closeOrderDrawer()">✕</button><div class="od-sect__t">Chargement…</div></div>';
+  renderOrderDrawerFor(id);
+}
+function closeOrderDrawer() {
+  _orderDrawerId = null;
+  const root = document.getElementById('orderDrawerRoot');
+  if (root) root.classList.remove('open');
+}
+function renderOrderDrawerFor(id) {
+  Promise.all([
+    api('/dashboard/api/orders/' + id + '/'),
+    api('/dashboard/api/orders/payments/?order=' + id).catch(() => ({ items: [] })),
+  ]).then(([o, pay]) => {
+    if (_orderDrawerId !== id) return;               // drawer fermé/changé entre-temps
+    if (_rowCache['orders']) _rowCache['orders'][id] = o;
+    renderOrderDrawer(o, pay.items || []);
+  }).catch(e => {
+    const panel = document.getElementById('orderDrawerPanel');
+    if (panel) panel.innerHTML = '<div class="od-hd"><button class="od-close" onclick="closeOrderDrawer()">✕</button></div><div class="od-body"><div style="color:var(--danger)">' + esc(e.message) + '</div></div>';
+  });
+}
+function renderOrderDrawer(o, payments) {
+  const cfg = ORDER_PIPELINE.find(c => c.v === o.status) || {};
+  const idx = ORDER_PIPELINE.findIndex(c => c.v === o.status);
+  let stepper = '<div class="od-stepper">';
+  for (let i = 0; i < 5; i++) {
+    const done = o.status !== 'cancelled' && i <= idx;
+    stepper += '<div class="od-step" style="background:' + (done ? (cfg.color || 'var(--primary)') : 'var(--border)') + '"></div>';
+  }
+  stepper += '</div>';
+
+  let h = '<div class="od-hd"><button class="od-close" onclick="closeOrderDrawer()">✕</button>'
+        + '<div class="okb-card__ref">' + esc(o.reference) + '</div>'
+        + '<div style="font-size:18px;font-weight:800;margin:3px 0 8px">' + esc(o.customer_name) + '</div>'
+        + statusBadge(o.status) + stepper + '</div><div class="od-body">';
+
+  // Client
+  h += '<div class="od-sect"><div class="od-sect__t">Client</div>'
+     + '<div class="od-kv"><span>Téléphone</span><span>' + esc(o.customer_phone || '—') + '</span></div>';
+  if (o.customer_email) h += '<div class="od-kv"><span>Email</span><span>' + esc(o.customer_email) + '</span></div>';
+  h += '</div>';
+
+  // Livraison
+  h += '<div class="od-sect"><div class="od-sect__t">Livraison</div>'
+     + '<div class="od-kv"><span>Ville</span><span>' + esc(o.city || '—') + '</span></div>'
+     + '<div class="od-kv"><span>Adresse</span><span>' + esc(o.delivery_address || '—') + '</span></div></div>';
+
+  // Articles
+  h += '<div class="od-sect"><div class="od-sect__t">Articles</div>';
+  const items = o.items || [];
+  if (!items.length) h += '<div style="color:var(--muted);font-size:13px">Aucun article</div>';
+  items.forEach(it => {
+    h += '<div class="od-line"><span>' + esc(it.quantity + '× ' + it.product_name) + '</span>'
+       + '<span>' + fmt(it.quantity * it.unit_price_htg) + ' HTG</span></div>';
+  });
+  h += '<div class="od-kv" style="margin-top:8px;font-size:15px"><span>Total</span><span>' + fmt(o.total_htg) + ' HTG</span></div></div>';
+
+  // Paiement lié
+  h += '<div class="od-sect"><div class="od-sect__t">Paiement lié</div>';
+  if (!payments.length) {
+    h += '<div style="color:var(--muted);font-size:13px">Aucun paiement enregistré</div>';
+  } else {
+    payments.forEach(p => {
+      const sub = p.paid_at ? new Date(p.paid_at).toLocaleDateString('fr-FR') : (p.entry_mode === 'manual' ? 'Saisie manuelle' : '—');
+      h += '<div class="od-line"><span><code style="font-size:11px">' + esc(p.reference) + '</code><br>'
+         + '<span style="font-size:11px;color:var(--muted)">' + esc(sub) + '</span></span>'
+         + '<span style="text-align:right">' + statusBadge(p.status) + '<br><strong>' + fmt(p.amount_htg) + ' HTG</strong></span></div>';
+    });
+  }
+  h += '</div>';
+
+  // Note interne
+  if (o.note) h += '<div class="od-sect"><div class="od-sect__t">Note interne</div><div style="font-size:13px;white-space:pre-wrap">' + esc(o.note) + '</div></div>';
+  h += '</div>'; // od-body
+
+  // Footer : édition (modal existant) + étape suivante
+  h += '<div class="od-foot"><button class="btn btn-sm" style="flex:1" onclick="editRow(\'orders\',' + o.id + ')">Modifier</button>';
+  if (cfg.next) h += '<button class="btn btn-primary btn-sm" style="flex:2" onclick="advanceOrder(event,' + o.id + ',\'' + cfg.next + '\')">Étape suivante : ' + esc(ORDER_STATUS_LABEL[cfg.next]) + '</button>';
+  h += '</div>';
+
+  document.getElementById('orderDrawerPanel').innerHTML = h;
+}
+
+// Échap ferme le drawer (accessibilité). Listener dédié : ne touche pas au
+// handler keydown existant. Le modal d'édition (z-index 100) reste au-dessus.
+document.addEventListener('keydown', function (e) {
+  if (e.key === 'Escape' && _orderDrawerId !== null && !document.getElementById('modalOverlay').classList.contains('open')) closeOrderDrawer();
+});
+
 function searchTable(sectionKey, val) {
   loadTable(sectionKey, 1, val);
+}
+
+// ============= SECTION RESERVATIONS (vue calendrier) =============
+// Reutilise /dashboard/api/bookings/ (filtres status + date_from/date_to sur event_date).
+const BK_STATUS_META = {
+  confirmed:       { c:'#16A34A', l:'Confirmee' },
+  admin_review:    { c:'#F59E0B', l:'A valider' },
+  payment_pending: { c:'#F59E0B', l:'Paiement attendu' },
+  requested:       { c:'#2563EB', l:'Demandee' },
+  cancelled:       { c:'#9CA3AF', l:'Annulee' },
+};
+function bkMeta(s){ return BK_STATUS_META[s] || { c:'#9CA3AF', l:s }; }
+
+const _bkCal = { y:0, m:0 };   // annee / mois (0-11) affiches
+let _bkItems = [];             // reservations de la grille visible (6 semaines)
+let _bkByDay = {};             // 'YYYY-MM-DD' -> [reservations]
+let _bkGridStart = null;       // 1er jour (lundi) de la grille
+let _bkSelected = null;        // jour selectionne 'YYYY-MM-DD'
+
+function _bkISO(dt){ return dt.getFullYear() + '-' + String(dt.getMonth()+1).padStart(2,'0') + '-' + String(dt.getDate()).padStart(2,'0'); }
+
+function loadBookings(){
+  currentSection.name = 'bookings';
+  document.getElementById('headerActions').innerHTML = '';  // pas de creation cote admin
+  if (!_bkCal.y){ const n = new Date(); _bkCal.y = n.getFullYear(); _bkCal.m = n.getMonth(); }
+  // Grille = du lundi precedant le 1er au dimanche suivant le dernier jour (42 cases).
+  const first = new Date(_bkCal.y, _bkCal.m, 1);
+  const startOffset = (first.getDay() + 6) % 7;            // lundi = 0
+  _bkGridStart = new Date(_bkCal.y, _bkCal.m, 1 - startOffset);
+  const gridEnd = new Date(_bkGridStart); gridEnd.setDate(gridEnd.getDate() + 41);
+  const params = new URLSearchParams({ page:1, per_page:100, date_from:_bkISO(_bkGridStart), date_to:_bkISO(gridEnd) });
+  const f = tableFilters['bookings'];                       // conserve le filtre venu des cartes « A traiter »
+  if (f && f.status) params.set('status', f.status);
+  const host = document.getElementById('card-bookings');
+  if (!host.querySelector('.bk-cal')) host.innerHTML = '<div class="mloading"><span class="mspin"></span> Chargement du calendrier...</div>';
+  api('/dashboard/api/bookings/?' + params.toString())
+    .then(d => { _bkItems = d.items || []; renderBookingCalendar(); })
+    .catch(e => { host.innerHTML = '<div class="card"><div style="padding:24px;color:var(--danger)">' + esc(e.message) + '</div></div>'; });
+}
+
+function bkPrevMonth(){ if(--_bkCal.m < 0){ _bkCal.m = 11; _bkCal.y--; } _bkSelected = null; loadBookings(); }
+function bkNextMonth(){ if(++_bkCal.m > 11){ _bkCal.m = 0; _bkCal.y++; } _bkSelected = null; loadBookings(); }
+function bkToday(){ const n = new Date(); _bkCal.y = n.getFullYear(); _bkCal.m = n.getMonth(); _bkSelected = _bkISO(n); loadBookings(); }
+function bkSetStatus(v){ if(v) tableFilters['bookings'] = { status:v }; else delete tableFilters['bookings']; loadBookings(); }
+
+// Selection d'un jour : re-rendu depuis le cache (aucun refetch reseau).
+function bkSelectDay(iso){ _bkSelected = (_bkSelected === iso ? null : iso); renderBookingCalendar(); }
+
+function renderBookingCalendar(){
+  // Cache par id (pour editRow/openModal) + regroupement par jour.
+  _rowCache['bookings'] = {}; _bkByDay = {};
+  _bkItems.forEach(b => { _rowCache['bookings'][b.id] = b; (_bkByDay[b.event_date] = _bkByDay[b.event_date] || []).push(b); });
+  Object.values(_bkByDay).forEach(l => l.sort((a,b) => (a.start_time||'').localeCompare(b.start_time||'')));
+
+  const monthLabel = new Date(_bkCal.y, _bkCal.m, 1).toLocaleDateString('fr-FR', { month:'long', year:'numeric' });
+  const todayISO = _bkISO(new Date());
+  const cur = (tableFilters['bookings'] && tableFilters['bookings'].status) || '';
+
+  // Stats du mois affiche.
+  const monthItems = _bkItems.filter(b => { const d = new Date(b.event_date + 'T00:00:00'); return d.getMonth() === _bkCal.m && d.getFullYear() === _bkCal.y; });
+  const cnt = s => monthItems.filter(b => b.status === s).length;
+  let h = statsHtml([
+    { l:'Ce mois',    v:fmt(monthItems.length),      c:'#2D6A4F' },
+    { l:'Confirmees', v:fmt(cnt('confirmed')),       c:'#16A34A' },
+    { l:'A valider',  v:fmt(cnt('admin_review')),    c:'#F59E0B' },
+    { l:'Demandees',  v:fmt(cnt('requested')),       c:'#2563EB' },
+  ]);
+
+  // Barre : navigation + titre + puces de statut (reutilise SECTIONS.bookings.statusChips).
+  h += '<div class="bk-bar">';
+  h += '<div class="bk-nav"><button class="btn btn-sm" onclick="bkPrevMonth()" aria-label="Mois precedent">&lsaquo;</button>';
+  h += '<button class="btn btn-sm" onclick="bkToday()">Aujourd\'hui</button>';
+  h += '<button class="btn btn-sm" onclick="bkNextMonth()" aria-label="Mois suivant">&rsaquo;</button></div>';
+  h += '<div class="bk-title">' + esc(monthLabel.charAt(0).toUpperCase() + monthLabel.slice(1)) + '</div>';
+  h += '<div class="bk-spacer"></div>';
+  h += '<div class="bk-chips">' + SECTIONS.bookings.statusChips.map(ch =>
+        `<button class="fchip${ch.v === cur ? ' fchip--on' : ''}" onclick="bkSetStatus('${ch.v}')">${esc(ch.l)}</button>`).join('') + '</div>';
+  h += '</div>';
+
+  // Legende des couleurs.
+  h += '<div class="bk-legend">' + ['confirmed','admin_review','requested','cancelled'].map(s => {
+        const m = bkMeta(s); return `<span class="bk-lg"><i style="background:${m.c}"></i>${esc(m.l)}</span>`; }).join('') + '</div>';
+
+  // Grille 7 colonnes.
+  const dows = ['Lun','Mar','Mer','Jeu','Ven','Sam','Dim'];
+  h += '<div class="bk-cal"><div class="bk-dow">' + dows.map(d => `<div>${d}</div>`).join('') + '</div><div class="bk-grid">';
+  for (let i = 0; i < 42; i++){
+    const d = new Date(_bkGridStart); d.setDate(d.getDate() + i);
+    const iso = _bkISO(d);
+    const inMonth = d.getMonth() === _bkCal.m;
+    const dayList = _bkByDay[iso] || [];
+    let cls = 'bk-cell'; if(!inMonth) cls += ' bk-out'; if(iso === todayISO) cls += ' bk-today'; if(iso === _bkSelected) cls += ' bk-sel';
+    h += `<div class="${cls}" onclick="bkSelectDay('${iso}')"><div class="bk-num">${d.getDate()}</div>`;
+    if (dayList.length){
+      h += '<div class="bk-dots">';
+      dayList.slice(0,4).forEach(b => { const m = bkMeta(b.status); h += `<span class="bk-dot" style="background:${m.c}" title="${esc(b.event_type)} - ${esc(m.l)}"></span>`; });
+      if (dayList.length > 4) h += `<span class="bk-more">+${dayList.length - 4}</span>`;
+      h += '</div>';
+    }
+    h += '</div>';
+  }
+  h += '</div></div>';
+
+  // Liste du jour selectionne.
+  h += _bkSelected ? bkDayListHtml(_bkSelected) : '';
+
+  document.getElementById('card-bookings').innerHTML = h;
+}
+
+function bkDayListHtml(iso){
+  const list = _bkByDay[iso] || [];
+  const d = new Date(iso + 'T00:00:00');
+  const label = d.toLocaleDateString('fr-FR', { weekday:'long', day:'numeric', month:'long', year:'numeric' });
+  let h = '<div class="bk-day"><div class="bk-day__hd"><h4>' + esc(label.charAt(0).toUpperCase() + label.slice(1)) + '</h4><span>' + fmt(list.length) + ' reservation(s)</span></div>';
+  if (!list.length){ h += '<div class="bk-day__empty">Aucune reservation ce jour.</div></div>'; return h; }
+  h += '<div class="bk-day__list">' + list.map(b => {
+    const m = bkMeta(b.status);
+    const st = (b.start_time || '').slice(0,5), en = (b.end_time || '').slice(0,5);
+    const time = st + (en ? ' - ' + en : '');
+    return `<div class="bk-item" style="--bc:${m.c}">
+      <div class="bk-item__time">${esc(time)}</div>
+      <div class="bk-item__body">
+        <div class="bk-item__ttl">${esc(b.event_type || 'Evenement')} ${statusBadge(b.status)}</div>
+        <div class="bk-item__sub">${esc(b.requester_name || '')}${b.requester_phone ? ' - ' + esc(b.requester_phone) : ''} - ${fmt(b.guest_count || 0)} invite(s)</div>
+      </div>
+      <div class="bk-item__act"><button class="btn btn-sm btn-primary" onclick="editRow('bookings',${b.id})">Gerer</button></div>
+    </div>`;
+  }).join('') + '</div></div>';
+  return h;
 }
 
 // ============= MODAL =============
@@ -2562,55 +3000,111 @@ function _sf(label, name, val, type) {
   return '<div class="form-group"><label class="form-label">' + esc(label) + '</label><input type="' + type + '" name="' + name + '" value="' + esc(String(val ?? '')) + '"></div>';
 }
 
+// ===== SECTION SETTINGS — remplace l'ancienne renderSettings (lignes ~2084-2131). =====
+// _sf(...) et saveSettings(...) restent INCHANGES : les panneaux masques
+// restent dans le DOM (display:none), donc saveSettings collecte tous les champs.
+
+const SETTINGS_TABS = [
+  { key:'identite',  label:'Identité'  },
+  { key:'contact',   label:'Contact'   },
+  { key:'reseaux',   label:'Réseaux'   },
+  { key:'theme',     label:'Thème'     },
+  { key:'accueil',   label:'Accueil'   },
+  { key:'affichage', label:'Affichage' },
+  { key:'seo',       label:'SEO'       },
+];
+let _settingsTab = 'identite';
+
+function settingsTab(key) {
+  _settingsTab = key;
+  document.querySelectorAll('#card-settings .settings-tab').forEach(b => b.classList.toggle('settings-tab--on', b.dataset.tab === key));
+  document.querySelectorAll('#card-settings .settings-pane').forEach(p => p.classList.toggle('settings-pane--on', p.dataset.pane === key));
+}
+
+// Interrupteur pour un booleen : reste un <input type="checkbox" name=...>,
+// donc saveSettings le lit via inp.checked, exactement comme l'ancien _sf checkbox.
+function _stoggle(label, name, val, hint) {
+  return '<label class="stoggle">' +
+    '<span class="stoggle__txt"><span class="stoggle__label">' + esc(label) + '</span>' +
+    (hint ? '<span class="stoggle__hint">' + esc(hint) + '</span>' : '') + '</span>' +
+    '<span class="switch"><input type="checkbox" name="' + name + '" ' + (val ? 'checked' : '') +
+    '><span class="switch__track"></span></span>' +
+    '</label>';
+}
+
 function renderSettings() {
   document.getElementById('headerActions').innerHTML = '';
+  const root = document.getElementById('card-settings');
+  root.innerHTML = '<div class="card"><div style="padding:40px;text-align:center;color:var(--muted)">Chargement…</div></div>';
   api('/dashboard/api/settings/').then(s => {
-    const g = (title, inner) => '<div class="card" style="margin-bottom:16px"><div class="card-head"><div class="card-title">' + title + '</div></div><div style="padding:18px 22px">' + inner + '</div></div>';
-    let h = '';
-    h += g('Identité',
+    const pane = (key, inner) => '<div class="settings-pane" data-pane="' + key + '">' + inner + '</div>';
+
+    const identite = pane('identite',
       _sf('Nom du site','site_name',s.site_name) +
       _sf('Slogan','tagline',s.tagline) +
       '<div class="form-group"><label class="form-label">Logo</label>' + (s.logo ? '<img src="' + esc(s.logo) + '" style="height:44px;display:block;margin-bottom:6px">' : '') + '<input type="file" id="settingsLogo" accept="image/*"></div>');
-    h += g('Contact',
+
+    const contact = pane('contact', '<div class="settings-grid2">' +
       _sf('Téléphone','contact_phone',s.contact_phone) +
       _sf('WhatsApp (format international, ex: 50938221804)','contact_whatsapp',s.contact_whatsapp) +
       _sf('Email','contact_email',s.contact_email,'email') +
-      _sf('Adresse','contact_address',s.contact_address));
-    h += g('Réseaux sociaux',
+      _sf('Adresse','contact_address',s.contact_address) + '</div>');
+
+    const reseaux = pane('reseaux', '<div class="settings-grid2">' +
       _sf('Facebook','facebook_url',s.facebook_url,'url') +
       _sf('Instagram','instagram_url',s.instagram_url,'url') +
       _sf('Twitter / X','twitter_url',s.twitter_url,'url') +
       _sf('LinkedIn','linkedin_url',s.linkedin_url,'url') +
-      _sf('YouTube','youtube_url',s.youtube_url,'url'));
-    h += g('Couleurs du thème',
-      '<div style="display:grid;grid-template-columns:repeat(2,1fr);gap:12px">' +
+      _sf('YouTube','youtube_url',s.youtube_url,'url') + '</div>');
+
+    const theme = pane('theme', '<div class="settings-grid2">' +
       _sf('Principale','color_primary',s.color_primary,'color') +
       _sf('Principale foncée','color_primary_dark',s.color_primary_dark,'color') +
       _sf('Accent','color_accent',s.color_accent,'color') +
       _sf('Highlight','color_highlight',s.color_highlight,'color') + '</div>');
-    h += g('Textes de la page d\'accueil',
+
+    const accueil = pane('accueil',
       _sf('Titre héro','hero_title',s.hero_title) +
       _sf('Sous-titre héro','hero_subtitle',s.hero_subtitle,'textarea') +
+      _sf('Texte du bouton héro','hero_cta_text',s.hero_cta_text) +
       _sf('Titre section « À propos »','about_title',s.about_title) +
       _sf('Texte « À propos »','about_text',s.about_text,'textarea') +
       _sf('Intro boutique','shop_intro',s.shop_intro,'textarea') +
       _sf('Texte du pied de page','footer_text',s.footer_text,'textarea'));
-    h += g('Affichage',
-      _sf('Afficher la boutique','show_shop',s.show_shop,'checkbox') +
-      _sf('Afficher le blog','show_blog',s.show_blog,'checkbox') +
-      _sf('Afficher les cours','show_courses',s.show_courses,'checkbox') +
-      _sf('Afficher les témoignages','show_testimonials',s.show_testimonials,'checkbox') +
-      _sf('Mode maintenance','maintenance_mode',s.maintenance_mode,'checkbox'));
-    h += g('SEO',
+
+    const affichage = pane('affichage', '<div class="stoggle-list">' +
+      _stoggle('Afficher la boutique','show_shop',s.show_shop,'Rend la boutique visible sur le site public') +
+      _stoggle('Afficher le blog','show_blog',s.show_blog) +
+      _stoggle('Afficher les cours','show_courses',s.show_courses) +
+      _stoggle('Afficher les témoignages','show_testimonials',s.show_testimonials) +
+      _stoggle('Mode maintenance','maintenance_mode',s.maintenance_mode,'Coupe l’accès public au site') +
+      '</div>');
+
+    const seo = pane('seo',
       _sf('Meta description','meta_description',s.meta_description,'textarea') +
       _sf('Mots-clés','meta_keywords',s.meta_keywords));
-    h += '<div style="padding:4px 0 24px"><button class="btn btn-primary" onclick="saveSettings()">Enregistrer les paramètres</button></div>';
-    document.getElementById('card-settings').innerHTML = h;
+
+    const panes = identite + contact + reseaux + theme + accueil + affichage + seo;
+    const tabs = SETTINGS_TABS.map(t => '<button type="button" class="settings-tab" data-tab="' + t.key + '" onclick="settingsTab(\'' + t.key + '\')">' + esc(t.label) + '</button>').join('');
+    const modif = s.updated_at ? 'Dernière modification : ' + new Date(s.updated_at).toLocaleDateString('fr-FR') : '';
+
+    root.innerHTML =
+      '<div class="card settings-card">' +
+        '<div class="settings-tabs">' + tabs + '</div>' +
+        '<div class="settings-body">' + panes + '</div>' +
+        '<div class="settings-savebar">' +
+          '<span class="settings-savebar__hint">' + esc(modif) + '</span>' +
+          '<button class="btn btn-primary" onclick="saveSettings()">Enregistrer les paramètres</button>' +
+        '</div>' +
+      '</div>';
+
+    // reactive l'onglet courant (ou le 1er) apres re-render
+    if (!SETTINGS_TABS.some(t => t.key === _settingsTab)) _settingsTab = 'identite';
+    settingsTab(_settingsTab);
   }).catch(e => {
-    document.getElementById('card-settings').innerHTML = '<div class="card"><div style="padding:24px;color:var(--danger)">' + esc(e.message) + '</div></div>';
+    root.innerHTML = '<div class="card"><div style="padding:24px;color:var(--danger)">' + esc(e.message) + '</div></div>';
   });
 }
-
 function saveSettings() {
   const root = document.getElementById('card-settings');
   const data = {};
