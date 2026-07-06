@@ -2,6 +2,7 @@ from django.urls import include, path
 
 from .views import (
     DashboardView,
+    audit_log_list,
     admin_user_create,
     admin_user_detail,
     admin_user_list,
@@ -70,6 +71,7 @@ app_name = "adminpanel"
 urlpatterns = [
     path("", DashboardView.as_view(), name="dashboard"),
     path("api/summary/", dashboard_summary, name="summary"),
+    path("api/audit-log/", audit_log_list, name="audit-log"),
     path("api/v1/summary/", dashboard_summary, name="summary-v1"),
     path("api/charts/", dashboard_charts, name="charts"),
     path("api/members/", member_list, name="member-list"),

@@ -29,6 +29,7 @@ logger = logging.getLogger(__name__)
 from .permissions import StaffRequiredMixin, staff_required
 from .models import (
     AdminNotification,
+    AuditLog,
     BlogPost,
     Chapter,
     ContactRequest,
@@ -1041,6 +1042,10 @@ def learner_list(request: HttpRequest) -> JsonResponse:
     role = request.GET.get("role")
     if role:
         qs = qs.filter(role=role)
+    # Filtre file KYC (profs) : ?kyc_status=submitted|approved|rejected|not_submitted
+    kyc = request.GET.get("kyc_status")
+    if kyc in Profile.KycStatus.values:
+        qs = qs.filter(kyc_status=kyc)
     search = request.GET.get("search")
     if search:
         qs = qs.filter(
@@ -2504,3 +2509,31 @@ def export_csv(request: HttpRequest, model_name: str) -> HttpResponse:
     response = StreamingHttpResponse(_csv_stream(qs, fields), content_type="text/csv")
     response["Content-Disposition"] = f'attachment; filename="{model_name}.csv"'
     return response
+
+
+# ── Journal d'audit (activité récente des administrateurs) ───────
+def _serialize_audit_log(a: AuditLog) -> dict[str, Any]:
+    return {
+        "id": a.pk,
+        "username": a.username or "—",
+        "action": a.action,
+        "action_label": a.get_action_display(),
+        "model_name": a.model_name,
+        "object_id": a.object_id,
+        "object_label": a.object_label,
+        "detail": a.detail,
+        "created_at": a.created_at.isoformat(),
+    }
+
+
+@staff_required
+def audit_log_list(request: HttpRequest) -> JsonResponse:
+    """Timeline des actions du personnel (qui a créé/modifié/supprimé quoi)."""
+    qs = AuditLog.objects.select_related("user")
+    action = request.GET.get("action")
+    if action in AuditLog.Action.values:
+        qs = qs.filter(action=action)
+    model_name = request.GET.get("model")
+    if model_name:
+        qs = qs.filter(model_name=model_name)
+    return _paginated_response(qs.order_by("-created_at"), request, _serialize_audit_log)
