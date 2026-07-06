@@ -57,7 +57,9 @@ class TestOrderCreation:
         data = resp.json()
         assert data["ok"] is True
         assert data["total_htg"] == 1000  # 2 × 500, pas 2 × 1
-        assert data["payment_url"] == f"/paiement/commande/{data['id']}/"
+        # L'URL de paiement porte un jeton signé opaque, pas l'id séquentiel (anti-IDOR).
+        assert data["payment_url"].startswith("/paiement/commande/")
+        assert data["payment_url"] != f"/paiement/commande/{data['id']}/"
         order = Order.objects.get(id=data["id"])
         assert order.total_htg == 1000
         assert order.items.count() == 1
@@ -103,8 +105,10 @@ class TestOrderPaymentFlow:
         r1 = client.post("/api/orders/", data=json.dumps(order_payload), content_type="application/json")
         order_id = r1.json()["id"]
 
+        # L'API partage le même jeton signé que la page (anti-IDOR) : /api + payment_url.
+        api_url = "/api" + r1.json()["payment_url"]
         r2 = client.post(
-            f"/api/paiement/commande/{order_id}/",
+            api_url,
             data=json.dumps({"provider_id": provider.id}),
             content_type="application/json",
         )

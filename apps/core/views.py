@@ -6,7 +6,8 @@ from typing import Any
 
 from django_ratelimit.decorators import ratelimit
 from django.db import transaction
-from django.http import HttpRequest, JsonResponse, HttpResponseBadRequest, HttpResponseRedirect
+from django.core.signing import BadSignature
+from django.http import HttpRequest, JsonResponse, HttpResponseBadRequest, HttpResponseRedirect, Http404
 from django.utils.decorators import method_decorator
 from django.shortcuts import get_object_or_404, render, redirect
 from django.utils import timezone
@@ -28,6 +29,7 @@ from apps.adminpanel.models import (
     VenueBooking,
 )
 from .forms import ContactRequestForm, CourseEnrollmentRequestForm, VenueBookingRequestForm
+from .payment_tokens import make_payment_token, read_payment_token
 
 logger = logging.getLogger(__name__)
 
@@ -155,7 +157,7 @@ class VenueBookingCreateView(View):
         return JsonResponse({
             "ok": True,
             "id": booking.id,
-            "payment_url": f"/paiement/reservation/{booking.id}/",
+            "payment_url": f"/paiement/reservation/{make_payment_token('reservation', booking.id)}/",
         }, status=201)
 
 
@@ -191,7 +193,7 @@ class CourseEnrollmentCreateView(View):
         return JsonResponse({
             "ok": True,
             "id": enrollment.id,
-            "payment_url": f"/paiement/cours/{enrollment.id}/",
+            "payment_url": f"/paiement/cours/{make_payment_token('cours', enrollment.id)}/",
         }, status=201)
 
 
@@ -212,7 +214,13 @@ class PaymentPageView(TemplateView):
         )), cls=DjangoJSONEncoder)
 
         payment_type = kwargs.get("type")
-        payment_id = kwargs.get("id")
+        # Le jeton signé remplace l'id séquentiel : illisible/infalsifiable sans SECRET_KEY.
+        try:
+            payment_id = read_payment_token(payment_type, kwargs.get("token") or "")
+        except (BadSignature, ValueError, TypeError):
+            raise Http404("Lien de paiement invalide.")
+        # Le template rejoue le POST vers l'API avec ce même jeton (jamais l'id brut).
+        context["payment_token"] = kwargs.get("token")
 
         context["payment_purpose"] = "other"
         context["payment_label"] = "Paiement"
@@ -243,7 +251,7 @@ class PaymentPageView(TemplateView):
             context["payment_purpose"] = "course"
             context["payment_label"] = f"Inscription - {enrollment.course.title if enrollment.course else 'Cours'}"
             context["amount_htg"] = enrollment.course.price_htg if enrollment.course else 0
-            context["payer_name"] = enrollment.member.get_full_name() or enrollment.member.first_name
+            context["payer_name"] = f"{enrollment.member.first_name} {enrollment.member.last_name}".strip()
             context["payer_phone"] = enrollment.member.phone
             context["payer_email"] = enrollment.member.email
             context["enrollment_id"] = enrollment.id
@@ -263,7 +271,12 @@ class PaymentPageView(TemplateView):
 
 class PaymentProcessView(View):
     @method_decorator(ratelimit(key='ip', rate='10/m', method='POST', block=True))
-    def post(self, request: HttpRequest, type: str, id: int) -> JsonResponse:
+    def post(self, request: HttpRequest, type: str, token: str) -> JsonResponse:
+        # Jeton signé -> id d'origine (empêche l'énumération/l'usurpation d'un autre dossier).
+        try:
+            id = read_payment_token(type, token)
+        except (BadSignature, ValueError, TypeError):
+            return JsonResponse({"ok": False, "error": "Lien de paiement invalide"}, status=404)
         # Handle both JSON and multipart form data
         if request.content_type and "multipart/form-data" in request.content_type:
             data = request.POST.dict()
@@ -304,7 +317,7 @@ class PaymentProcessView(View):
             )
             purpose = Payment.Purpose.COURSE
             amount = enrollment.course.price_htg if enrollment.course else 0
-            payer_name = payer_name or enrollment.member.get_full_name() or enrollment.member.first_name
+            payer_name = payer_name or f"{enrollment.member.first_name} {enrollment.member.last_name}".strip()
             payer_phone = payer_phone or enrollment.member.phone
             payer_email = payer_email or enrollment.member.email
         elif type == "commande":
@@ -540,7 +553,7 @@ class OrderCreateView(View):
                 "id": order.id,
                 "reference": order.reference,
                 "total_htg": order.total_htg,
-                "payment_url": f"/paiement/commande/{order.id}/",
+                "payment_url": f"/paiement/commande/{make_payment_token('commande', order.id)}/",
             },
             status=201,
         )

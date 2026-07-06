@@ -301,17 +301,16 @@ const DATA = {
   payerName: '{{ payer_name|escapejs }}',
   payerPhone: '{{ payer_phone|escapejs }}',
   payerEmail: '{{ payer_email|escapejs }}',
-  bookingId: {{ booking_id|default:"null" }},
-  enrollmentId: {{ enrollment_id|default:"null" }},
-  orderId: {{ order_id|default:"null" }},
+  // Jeton signé opaque (jamais l'id séquentiel) — repris tel quel dans les appels API.
+  token: '{{ payment_token|escapejs }}',
   providers: {{ providers_json|safe }}
 };
 
-// Associe le type de paiement au chemin d'URL et à l'identifiant correspondant.
+// Associe le type de paiement au chemin d'URL ; l'identifiant est porté par le jeton.
 function paymentTarget() {
-  if (DATA.type === 'venue') return { path: 'reservation', id: DATA.bookingId };
-  if (DATA.type === 'product') return { path: 'commande', id: DATA.orderId };
-  return { path: 'cours', id: DATA.enrollmentId };
+  if (DATA.type === 'venue') return { path: 'reservation', token: DATA.token };
+  if (DATA.type === 'product') return { path: 'commande', token: DATA.token };
+  return { path: 'cours', token: DATA.token };
 }
 
 function formatMoney(n) {
@@ -476,7 +475,7 @@ async function processPayment() {
   try {
     const target = paymentTarget();
 
-    const res = await fetch('/api/paiement/' + target.path + '/' + target.id + '/', {
+    const res = await fetch('/api/paiement/' + target.path + '/' + target.token + '/', {
       method: 'POST',
       headers: { 'Content-Type': 'application/json', 'X-CSRFToken': '{{ csrf_token }}' },
       body: JSON.stringify({
@@ -528,7 +527,7 @@ async function confirmManualPayment() {
     if (manualPaymentData.transactionId) formData.append('transaction_id', manualPaymentData.transactionId);
     if (manualPaymentData.screenshot) formData.append('screenshot', manualPaymentData.screenshot);
 
-    const res = await fetch('/api/paiement/' + target.path + '/' + target.id + '/', {
+    const res = await fetch('/api/paiement/' + target.path + '/' + target.token + '/', {
       method: 'POST',
       headers: { 'X-CSRFToken': '{{ csrf_token }}' },
       body: formData,

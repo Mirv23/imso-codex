@@ -161,6 +161,32 @@ class TestPublicAPI:
         data = response.json()
         assert data["reference"] == payment.reference
 
+    def test_payment_link_uses_signed_token_not_sequential_id(self):
+        """La page de paiement n'accepte plus l'id séquentiel (fuite de PII par
+        énumération) : seul un jeton signé résout, et jamais pour un autre type."""
+        from apps.core.payment_tokens import make_payment_token
+
+        member = Member.objects.create(
+            first_name="Jean", last_name="Privé", email="j@ex.com", phone="+50911112222"
+        )
+        course = Course.objects.create(title="Cours", price_htg=500)
+        enr = Enrollment.objects.create(
+            member=member, course=course, status=Enrollment.Status.PENDING
+        )
+        client = Client()
+        # id brut -> 404 (plus énumérable)
+        assert client.get(f"/paiement/cours/{enr.id}/").status_code == 404
+        # jeton falsifié -> 404
+        assert client.get("/paiement/cours/nimportequoi/").status_code == 404
+        # jeton signé pour un AUTRE type -> 404
+        other = make_payment_token("reservation", enr.id)
+        assert client.get(f"/paiement/cours/{other}/").status_code == 404
+        # jeton valide -> 200 et pré-remplit le nom
+        good = make_payment_token("cours", enr.id)
+        resp = client.get(f"/paiement/cours/{good}/")
+        assert resp.status_code == 200
+        assert b"Jean" in resp.content
+
     def test_rate_limit_after_11_requests(self):
         client = Client(REMOTE_ADDR="192.0.2.1")
         url = reverse("core:contact_request_create")
