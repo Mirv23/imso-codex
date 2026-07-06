@@ -1780,6 +1780,10 @@ def get_dashboard_summary(request: HttpRequest | None = None) -> dict[str, Any]:
             total=Sum("amount_htg")
         )["total"] or 0,
         "pending_enrollments": Enrollment.objects.filter(status=Enrollment.Status.PENDING).count(),
+        # File de travail « À traiter » du tableau de bord (actions en attente).
+        "pending_payments": Payment.objects.filter(status=Payment.Status.PENDING).count(),
+        "bookings_to_review": VenueBooking.objects.filter(status=VenueBooking.Status.ADMIN_REVIEW).count(),
+        "pending_formation": CourseEnrollment.objects.filter(status=CourseEnrollment.Status.PENDING_PAYMENT).count(),
         "recent_bookings": recent_bookings,
         "recent_payments_count": recent_payments_count,
         "recent_payments_sum": recent_payments_sum,

@@ -198,6 +198,19 @@ textarea { resize: vertical; min-height: 80px; }
   input, select, textarea { font-size: 16px !important; }
 }
 /* ===== Tableau de bord — refonte (cartes + graphiques animés) ===== */
+/* File de travail « À traiter » */
+.worklist { margin-bottom:18px; }
+.worklist__title { font-size:13px; font-weight:700; color:var(--muted); text-transform:uppercase; letter-spacing:.04em; margin-bottom:10px; display:flex; align-items:center; gap:8px; }
+.worklist__badge { background:#EF4444; color:#fff; font-size:12px; font-weight:700; padding:1px 9px; border-radius:999px; }
+.worklist__ok { color:#10B981; font-weight:600; text-transform:none; letter-spacing:0; }
+.worklist__row { display:flex; flex-wrap:wrap; gap:10px; }
+.wchip { display:inline-flex; align-items:center; gap:10px; padding:10px 14px; border-radius:12px; border:1px solid var(--border); background:var(--card); cursor:pointer; box-shadow:var(--shadow-sm); transition:transform .15s, box-shadow .15s; border-left:4px solid var(--wc, #999); font:inherit; }
+.wchip:hover { transform:translateY(-2px); box-shadow:var(--shadow-md); }
+.wchip__n { font-size:20px; font-weight:800; color:var(--wc, var(--text)); min-width:22px; text-align:center; }
+.wchip__l { font-size:13.5px; font-weight:600; color:var(--text); }
+.wchip__go { color:var(--wc); font-weight:800; margin-left:2px; }
+.wchip--done { cursor:default; opacity:.55; border-left-color:var(--border); box-shadow:none; }
+.wchip--done .wchip__n { color:var(--muted); }
 .stat-grid { display:grid; grid-template-columns:repeat(auto-fit,minmax(205px,1fr)); gap:16px; margin-bottom:20px; }
 .stat { position:relative; background:var(--card); border:1px solid var(--border); border-radius:var(--radius-lg); padding:18px; overflow:hidden; box-shadow:var(--shadow-sm); transition:transform .25s ease, box-shadow .25s ease; opacity:0; transform:translateY(12px); animation:dashIn .5s cubic-bezier(.4,0,.2,1) forwards; }
 .stat:hover { transform:translateY(-4px); box-shadow:var(--shadow-lg); }
@@ -531,6 +544,7 @@ textarea { resize: vertical; min-height: 80px; }
     <div class="content">
       <!-- Dashboard -->
       <div class="section active" id="section-dashboard">
+        <div class="worklist" id="worklistStrip"></div>
         <div class="stat-grid" id="statGrid"></div>
         <div class="chart-grid">
           <div class="chart-card chart-card--wide" style="animation-delay:60ms">
@@ -667,6 +681,9 @@ function navigateTo(section, resetPage = true) {
   if (secEl) secEl.classList.add('active');
   if (navEl) navEl.classList.add('active');
   currentSection.name = section;
+  // Navigation « normale » (menu) : on efface le filtre applique par une carte
+  // « À traiter ». gotoFiltered arme _keepFilter pour le conserver.
+  if (!_keepFilter) delete tableFilters[section];
   if (resetPage) { currentSection.page = 1; currentSection.search = ''; }
   const titles = { dashboard:'Tableau de bord', members:'Membres', geis:'GEIs', courses:'Cours', payments:'Paiements', bookings:'Réservations', enrollments:'Inscriptions', contacts:'Contacts', testimonials:'Témoignages', providers:'Moyens de paiement', products:'Produits', orders:'Commandes', blog:'Blog', students:'Étudiants (formation)', teachers:'Professeurs', formationEnrollments:'Inscriptions formation', settings:'Paramètres', admins:'Administrateurs', export:'Export CSV' };
   document.getElementById('pageTitle').textContent = titles[section] || section;
@@ -727,8 +744,31 @@ function loadMetrics() {
     const grid = document.getElementById('statGrid');
     grid.innerHTML = items.map((it, i) => `<div class="stat" style="--stat-c:${it.color};animation-delay:${i * 55}ms"><div class="stat__top"><span class="stat__icon" style="background:${hexA(it.color, 0.14)};color:${it.color}">${STAT_ICONS[it.k] || ''}</span></div><div class="stat__value">0</div><div class="stat__label">${esc(it.label)}</div></div>`).join('');
     grid.querySelectorAll('.stat__value').forEach((el, i) => countUp(el, items[i].value, items[i].fmt));
+    renderWorklist(s);
     renderRecent(s);
   }).catch(e => toast(e.message, 'error'));
+}
+
+// File de travail « À traiter » : cartes actionnables qui ouvrent la section
+// concernee deja filtree sur ce qu'il reste a faire.
+function renderWorklist(s) {
+  const host = document.getElementById('worklistStrip');
+  if (!host) return;
+  const wl = [
+    { label:'Contacts à traiter',            n:s.pending_contacts || 0,  go:['contacts','processed','0'],                 c:'#EF4444' },
+    { label:'Paiements en attente',          n:s.pending_payments || 0,  go:['payments','status','pending'],              c:'#F59E0B' },
+    { label:'Réservations à valider',        n:s.bookings_to_review || 0,go:['bookings','status','admin_review'],          c:'#2563EB' },
+    { label:'Nouvelles réservations',        n:s.pending_bookings || 0,  go:['bookings','status','requested'],             c:'#0EA5E9' },
+    { label:'Accès formation à débloquer',   n:s.pending_formation || 0, go:['formationEnrollments','status','pending_payment'], c:'#8E44AD' },
+  ];
+  const total = wl.reduce((a, w) => a + w.n, 0);
+  host.innerHTML =
+    `<div class="worklist__title">À traiter ${total ? `<span class="worklist__badge">${total}</span>` : '<span class="worklist__ok">tout est à jour ✓</span>'}</div>`
+    + `<div class="worklist__row">` + wl.map(w =>
+      w.n > 0
+        ? `<button class="wchip" style="--wc:${w.c}" onclick="gotoFiltered('${w.go[0]}','${w.go[1]}','${w.go[2]}')"><span class="wchip__n">${w.n}</span><span class="wchip__l">${esc(w.label)}</span><span class="wchip__go">→</span></button>`
+        : `<div class="wchip wchip--done"><span class="wchip__n">0</span><span class="wchip__l">${esc(w.label)}</span></div>`
+    ).join('') + `</div>`;
 }
 
 function renderRecent(s) {
@@ -1261,6 +1301,25 @@ let modalSection = null;
 // données (potentiellement piégées) dans le HTML : on n'embarque que l'id.
 const _rowCache = {};
 
+// Filtres actifs par section (ex. depuis la file « À traiter » du tableau de bord
+// ou les puces de statut d'une section). Transmis a l'API par loadTable.
+const tableFilters = {};
+let _keepFilter = false;
+
+// Navigue vers une section EN appliquant un filtre (ex. paiements en attente).
+function gotoFiltered(section, key, val) {
+  tableFilters[section] = { [key]: val };
+  _keepFilter = true;
+  navigateTo(section);
+  _keepFilter = false;
+}
+
+// Retire le filtre actif d'une section et recharge la liste complete.
+function clearTableFilter(section) {
+  delete tableFilters[section];
+  loadTable(section, 1);
+}
+
 function loadTable(sectionKey, page, search) {
   const cfg = SECTIONS[sectionKey];
   if (!cfg) return;
@@ -1270,6 +1329,8 @@ function loadTable(sectionKey, page, search) {
   if (search !== undefined) currentSection.search = search;
   const params = new URLSearchParams({ page: p, per_page: 20 });
   if (s) params.set('search', s);
+  const _f = tableFilters[sectionKey];
+  if (_f) Object.entries(_f).forEach(([k, v]) => { if (v != null && v !== '') params.set(k, v); });
 
   // Header actions
   const actions = document.getElementById('headerActions');
@@ -1303,6 +1364,9 @@ function renderTable(sectionKey, data) {
   let html = '<div class="toolbar">';
   html += '<div class="search-wrap"><svg class="search-icon" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="11" cy="11" r="8"/><line x1="21" y1="21" x2="16.65" y2="16.65"/></svg>';
   html += '<input type="text" placeholder="Rechercher..." value="' + esc(currentSection.search) + '" onkeyup="if(event.key===\'Enter\')searchTable(\'' + sectionKey + '\',this.value)"></div>';
+  if (tableFilters[sectionKey]) {
+    html += '<button class="btn btn-sm" style="background:var(--primary);color:#fff;border-color:var(--primary)" onclick="clearTableFilter(\'' + sectionKey + '\')" title="Retirer le filtre">Filtre actif · tout afficher ✕</button>';
+  }
   html += '<div class="spacer"></div>';
   html += '<div class="pagination"><span>' + total + ' résultat(s)</span>';
   if (totalPages > 1) {
