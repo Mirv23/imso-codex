@@ -23,7 +23,10 @@ class GEISerializer(serializers.ModelSerializer):
         read_only_fields = ["id", "created_at", "updated_at"]
 
     def get_member_count(self, obj):
-        return obj.members.count()
+        # Consomme l'annotation Count du ViewSet si presente (evite un COUNT par
+        # ligne = N+1) ; repli sur .count() si l'objet n'est pas annote.
+        val = getattr(obj, "member_count", None)
+        return val if val is not None else obj.members.count()
 
 
 class MemberSerializer(serializers.ModelSerializer):
@@ -44,7 +47,9 @@ class CourseSerializer(serializers.ModelSerializer):
         read_only_fields = ["id", "created_at", "updated_at"]
 
     def get_enrollment_count(self, obj):
-        return obj.enrollments.count()
+        # Idem : consomme l'annotation Count du ViewSet, repli sur .count().
+        val = getattr(obj, "enrollment_count", None)
+        return val if val is not None else obj.enrollments.count()
 
 
 class MemberNestedSerializer(serializers.ModelSerializer):

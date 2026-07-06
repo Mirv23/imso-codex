@@ -182,7 +182,11 @@ def _serialize_members_for_react() -> list[dict[str, Any]]:
 
 
 def _serialize_payments_for_react() -> list[dict[str, Any]]:
-    qs = Payment.objects.select_related("provider", "enrollment__member", "enrollment__course").all()[:20]
+    # venue_booking inclus : la boucle y accede (l.192) -> sans lui, 1 requete
+    # par paiement de reservation (N+1).
+    qs = Payment.objects.select_related(
+        "provider", "enrollment__member", "enrollment__course", "venue_booking"
+    ).all()[:20]
     result = []
     for p in qs:
         member_name = p.payer_name
@@ -293,7 +297,9 @@ def _get_page_params(request: HttpRequest) -> tuple[int, int, int]:
         per_page = int(request.GET.get("per_page", 20))
     except (ValueError, TypeError):
         per_page = 20
-    per_page = min(per_page, 100)
+    # Borne basse a 1 : per_page=0 (ou negatif) donnerait une ZeroDivisionError
+    # au calcul de total_pages -> 500.
+    per_page = max(1, min(per_page, 100))
     page = max(page, 1)
     offset = (page - 1) * per_page
     return page, per_page, offset
@@ -2451,7 +2457,10 @@ def _export_fields(model_class) -> list[str]:
             continue
         if isinstance(f, EncryptedCharField):
             continue
-        fields.append(f.name)
+        # Pour une cle etrangere, exporter la colonne locale (attname, ex.
+        # 'provider_id') au lieu du nom de relation : getattr(obj, 'provider')
+        # chargerait l'objet lie -> 1 requete DB par FK et par ligne (N+1).
+        fields.append(f.attname if f.is_relation else f.name)
     return fields
 
 
