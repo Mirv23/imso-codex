@@ -586,7 +586,17 @@ textarea { resize: vertical; min-height: 80px; }
 .tkyc-ok:hover { background:#128a3d; }
 .tkyc-no { background:#fff; border-color:#DC2626; color:#DC2626; }
 .tkyc-no:hover { background:rgba(220,38,38,0.06); }
-/* ===== SECTION SETTINGS — onglets + toggles + save bar (a ajouter avant </style>) ===== */
+/* ===== SECTION SETTINGS — onglets + toggles + save bar (a ajouter avant .audit-list { display:flex; flex-direction:column; }
+.audit-item { display:flex; gap:12px; padding:11px 2px; border-bottom:1px solid var(--border); }
+.audit-item:last-child { border-bottom:0; }
+.audit-dot { width:9px; height:9px; border-radius:50%; margin-top:6px; flex:none; }
+.audit-body { min-width:0; flex:1; }
+.audit-line { font-size:13.5px; color:var(--text); }
+.audit-tgt { color:var(--muted); font-size:12px; text-transform:uppercase; letter-spacing:.03em; }
+.audit-detail { font-size:12.5px; color:var(--muted); margin-top:2px; }
+.audit-when { font-size:11.5px; color:var(--muted); margin-top:3px; }
+
+</style>) ===== */
 .settings-card { padding: 0; overflow: visible; }
 .settings-tabs { display:flex; flex-wrap:wrap; gap:4px; padding:12px 16px; border-bottom:1px solid var(--border); position:sticky; top:0; background:var(--card); z-index:6; border-radius:var(--radius) var(--radius) 0 0; }
 .settings-tab { padding:8px 16px; border-radius:999px; border:1px solid transparent; background:transparent; color:var(--muted); font:inherit; font-size:13px; font-weight:600; cursor:pointer; transition:all .15s; white-space:nowrap; }
@@ -772,7 +782,7 @@ textarea { resize: vertical; min-height: 80px; }
       <div class="section" id="section-students"><div class="card" id="card-students"></div></div>
       <div class="section" id="section-teachers"><div class="card" id="card-teachers"></div></div>
       <div class="section" id="section-formationEnrollments"><div class="card" id="card-formationEnrollments"></div></div>
-      <div class="section" id="section-admins"><div class="card" id="card-admins"></div></div>
+      <div class="section" id="section-admins"><div class="card" id="card-admins"></div><div id="auditPanel"></div></div>
       <div class="section" id="section-settings"><div id="card-settings"></div></div>
       <div class="section" id="section-export"><div class="card"><div class="card-head"><div class="card-title">Export CSV</div></div><div style="padding:18px 22px 22px"><p style="color:var(--muted);margin-bottom:16px">Téléchargez les données de chaque modèle au format CSV.</p><div id="exportButtons" style="display:flex;flex-wrap:wrap;gap:10px"></div></div></div></div>
     </div>
@@ -886,6 +896,7 @@ function navigateTo(section, resetPage = true) {
   else if (section === 'products') loadProducts();
   else if (section === 'orders') loadOrders();
   else if (section === 'bookings') loadBookings();
+  else if (section === 'admins') { loadTable('admins'); loadAuditPanel(); }
   else loadTable(section);
 }
 
@@ -2704,6 +2715,42 @@ function renderOrderDrawer(o, payments) {
 document.addEventListener('keydown', function (e) {
   if (e.key === 'Escape' && _orderDrawerId !== null && !document.getElementById('modalOverlay').classList.contains('open')) closeOrderDrawer();
 });
+
+// ============= JOURNAL D'AUDIT (activite recente des admins) =============
+const AUDIT_META = { create:['#16A34A','a créé'], update:['#F59E0B','a modifié'], delete:['#DC2626','a supprimé'] };
+function loadAuditPanel(page) {
+  const host = document.getElementById('auditPanel');
+  if (!host) return;
+  const p = page || 1;
+  if (!host.querySelector('.audit-item')) host.innerHTML = '<div class="card" style="margin-top:16px"><div class="card-head"><div class="card-title">Activité récente</div></div><div class="mloading" style="padding:30px"><span class="mspin"></span> Chargement du journal…</div></div>';
+  api('/dashboard/api/audit-log/?page=' + p + '&per_page=15').then(d => {
+    const items = d.items || [];
+    let h = '<div class="card" style="margin-top:16px"><div class="card-head"><div class="card-title">Activité récente</div><span style="font-size:12px;color:var(--muted)">' + (d.total || 0) + ' action(s) tracée(s)</span></div><div style="padding:8px 20px 16px">';
+    if (!items.length) {
+      h += '<div style="padding:24px;color:var(--muted);text-align:center">Aucune action enregistrée pour le moment.</div>';
+    } else {
+      h += '<div class="audit-list">' + items.map(a => {
+        const m = AUDIT_META[a.action] || ['#64748B', a.action_label || a.action];
+        const when = new Date(a.created_at).toLocaleString('fr-FR', { day:'2-digit', month:'short', hour:'2-digit', minute:'2-digit' });
+        const label = a.object_label || (a.model_name + (a.object_id ? ' #' + a.object_id : ''));
+        return '<div class="audit-item"><span class="audit-dot" style="background:' + m[0] + '"></span>'
+          + '<div class="audit-body"><div class="audit-line"><b>' + esc(a.username) + '</b> ' + esc(m[1]) + ' <span class="audit-tgt">' + esc(a.model_name) + '</span> ' + esc(label) + '</div>'
+          + (a.detail ? '<div class="audit-detail">' + esc(a.detail) + '</div>' : '')
+          + '<div class="audit-when">' + esc(when) + '</div></div></div>';
+      }).join('') + '</div>';
+      const tp = d.total_pages || 1;
+      if (tp > 1) {
+        h += '<div class="pagination" style="justify-content:center;margin-top:12px">';
+        if (p > 1) h += '<button class="btn btn-sm" onclick="loadAuditPanel(' + (p-1) + ')">‹</button>';
+        h += '<span style="padding:0 6px;font-weight:600">' + p + '/' + tp + '</span>';
+        if (p < tp) h += '<button class="btn btn-sm" onclick="loadAuditPanel(' + (p+1) + ')">›</button>';
+        h += '</div>';
+      }
+    }
+    h += '</div></div>';
+    host.innerHTML = h;
+  }).catch(e => { host.innerHTML = '<div class="card" style="margin-top:16px"><div style="padding:20px;color:var(--danger)">' + esc(e.message) + '</div></div>'; });
+}
 
 function searchTable(sectionKey, val) {
   loadTable(sectionKey, 1, val);
