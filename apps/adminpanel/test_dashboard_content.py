@@ -127,7 +127,7 @@ class TestDashboardCharts:
         r = client.get(reverse("adminpanel:charts"))
         assert r.status_code == 200
         data = r.json()
-        assert set(data) == {"revenue", "payments_by_status", "members_by_status", "categories"}
+        assert set(data) == {"revenue", "payments_by_status", "members_by_status", "categories", "top_geis"}
         assert len(data["revenue"]) == 6
         assert {"key": "paid", "value": 1} in data["payments_by_status"]
 
