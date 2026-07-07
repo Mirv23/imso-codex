@@ -716,6 +716,44 @@ textarea { resize: vertical; min-height: 80px; }
 .audit-detail { font-size:12.5px; color:var(--muted); margin-top:2px; }
 .audit-when { font-size:11.5px; color:var(--muted); margin-top:3px; }
 
+/* ── SECTION enrollments : bandeau d'aide + bouton d'action « Confirmer » ──
+   À AJOUTER à la fin du bloc <style> existant. Réutilise les variables et
+   classes déjà présentes (.btn, .btn-sm, .btn-danger, .actions). CSP-safe. */
+
+/* Bandeau d'aide générique (activé par cfg.helpBanner) */
+.help-banner {
+  display: flex;
+  gap: 10px;
+  align-items: flex-start;
+  margin: 0 0 14px;
+  padding: 12px 14px;
+  border: 1px solid var(--border);
+  border-left: 3px solid var(--primary);
+  border-radius: 10px;
+  background: var(--surface-2, rgba(45,106,79,0.06));
+  color: var(--text);
+  font-size: 13px;
+  line-height: 1.5;
+}
+.help-banner::before {
+  content: 'ℹ';
+  flex: 0 0 auto;
+  font-size: 14px;
+  color: var(--primary);
+  font-weight: 700;
+  line-height: 1.4;
+}
+.help-banner strong { color: var(--text); }
+.help-banner em { font-style: normal; font-weight: 600; color: var(--primary); }
+.help-banner a { color: var(--primary); text-decoration: underline; cursor: pointer; }
+
+/* Bouton de confirmation en ligne (vert), pendant du .btn-danger existant */
+.btn-ok {
+  background: #2D6A4F;
+  border-color: #2D6A4F;
+  color: #fff;
+}
+.btn-ok:hover { background: #245a42; border-color: #245a42; }
 </style>) ===== */
 .settings-card { padding: 0; overflow: visible; }
 .settings-tabs { display:flex; flex-wrap:wrap; gap:4px; padding:12px 16px; border-bottom:1px solid var(--border); position:sticky; top:0; background:var(--card); z-index:6; border-radius:var(--radius) var(--radius) 0 0; }
@@ -1368,6 +1406,18 @@ const SECTIONS = {
     statusChips: [
       { v:'', l:'Toutes' }, { v:'pending', l:'En attente' }, { v:'confirmed', l:'Confirmées' }, { v:'cancelled', l:'Annulées' },
     ],
+    helpBanner:
+      '<div class="help-banner"><div>'
+      + '<strong>Inscriptions mutuelle.</strong> Adhésions des <em>membres</em> de la mutuelle aux cours et activités IMSO. '
+      + 'Confirmez ou annulez directement les demandes <em>en attente</em> ci-dessous. '
+      + 'Les inscriptions des <em>étudiants</em> à la plateforme de formation (LMS) sont gérées dans '
+      + '<a onclick="navigateTo(\'formationEnrollments\');return false;">Inscriptions formation</a>.'
+      + '</div></div>',
+    // Actions en ligne : uniquement sur les inscriptions en attente.
+    rowActions: r => r.status === 'pending'
+      ? '<button class="btn btn-sm btn-ok" onclick="setEnrollmentStatus(' + r.id + ',\'confirmed\')" title="Confirmer l\'inscription">Confirmer</button>'
+        + '<button class="btn btn-sm btn-danger" onclick="setEnrollmentStatus(' + r.id + ',\'cancelled\')" title="Annuler l\'inscription">Annuler</button>'
+      : '',
     columns: [
       { key:'member', label:'Membre', render: r => r.member ? esc(r.member.first_name + ' ' + r.member.last_name) : '<span style="color:var(--muted)">—</span>' },
       { key:'course', label:'Cours', render: r => r.course ? esc(r.course.title) : '<span style="color:var(--muted)">—</span>' },
@@ -1645,6 +1695,16 @@ function statusBadge(status) {
   return `<span class="pill pill-sm ${color}">${label}</span>`;
 }
 
+function setEnrollmentStatus(id, status) {
+  api('/dashboard/api/enrollments/' + id + '/', {
+    method: 'PUT',
+    body: JSON.stringify({ status: status }),
+  }).then(() => {
+    toast(status === 'confirmed' ? 'Inscription confirmée.' : 'Inscription annulée.', 'success');
+    refreshSection('enrollments');   // -> else loadTable('enrollments'), conserve page/recherche
+  }).catch(e => toast(e.message, 'error'));
+}
+
 // ============= TABLE RENDERING =============
 let modalRecord = null;
 let modalSection = null;
@@ -1742,19 +1802,21 @@ function renderTable(sectionKey, data) {
     ).join('') + '</div>';
   }
 
+  if (cfg.helpBanner) html += cfg.helpBanner;
   html += '<div class="table-wrap"><table class="table"><thead><tr>';
   cfg.columns.forEach(c => { html += '<th>' + c.label + '</th>'; });
-  if (cfg.canEdit || cfg.canDelete) html += '<th style="text-align:right">Actions</th>';
+  if (cfg.canEdit || cfg.canDelete || cfg.rowActions) html += '<th style="text-align:right">Actions</th>';
   html += '</tr></thead><tbody>';
 
   if (items.length === 0) {
-    html += '<tr><td class="empty" colspan="' + (cfg.columns.length + (cfg.canEdit || cfg.canDelete ? 1 : 0)) + '">Aucune donnée</td></tr>';
+    html += '<tr><td class="empty" colspan="' + (cfg.columns.length + (cfg.canEdit || cfg.canDelete || cfg.rowActions ? 1 : 0)) + '">Aucune donnée</td></tr>';
   } else {
     items.forEach(r => {
       html += '<tr data-id="' + r.id + '">';
       cfg.columns.forEach(c => { html += '<td>' + (c.render ? c.render(r) : esc(r[c.key])) + '</td>'; });
-      if (cfg.canEdit || cfg.canDelete) {
+      if (cfg.canEdit || cfg.canDelete || cfg.rowActions) {
         html += '<td class="actions">';
+        if (cfg.rowActions) html += cfg.rowActions(r);
         if (cfg.canEdit) html += '<button class="btn btn-sm" onclick="editRow(\'' + sectionKey + '\',' + r.id + ')" title="Modifier"><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M11 4H4a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-7"/><path d="M18.5 2.5a2.121 2.121 0 0 1 3 3L12 15l-4 1 1-4 9.5-9.5z"/></svg></button>';
         if (cfg.canDelete) html += '<button class="btn btn-sm btn-danger" onclick="confirmDelete(\'' + sectionKey + '\',' + r.id + ')" title="Supprimer"><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="3 6 5 6 21 6"/><path d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6m3 0V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2"/></svg></button>';
         html += '</td>';
