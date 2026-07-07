@@ -1659,6 +1659,9 @@ def _serialize_payment(p: Payment) -> dict[str, Any]:
         "notes": p.notes,
         "venue_booking_id": p.venue_booking_id,
         "enrollment_id": p.enrollment_id,
+        # Preuve de paiement (capture mobile money) : URL signée du bucket privé,
+        # pour que l'admin valide sur pièce au lieu de basculer le statut à l'aveugle.
+        "screenshot": p.screenshot.url if p.screenshot else "",
         "created_at": p.created_at.isoformat(),
     }
 

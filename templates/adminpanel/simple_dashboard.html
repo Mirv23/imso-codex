@@ -15,7 +15,7 @@
   --text: #111827; --muted: #6B7280; --card: #FFFFFF; --border: #E5E7EB;
   --bg: #F7F8FA; --sidebar: #1A2332; --sidebar-hover: #243044; --sb-w: 240px;
   --hd-h: 64px; --radius: 9px; --radius-lg: 16px;
-  --shadow-sm: 0 1px 2px rgba(17,24,39,0.04);
+  --shadow-sm: 0 1px 3px rgba(17,24,39,0.06), 0 1px 2px rgba(17,24,39,0.04);
   --shadow-md: 0 4px 14px -2px rgba(17,24,39,0.06);
   --shadow-lg: 0 12px 40px -8px rgba(17,24,39,0.12);
 }
@@ -88,7 +88,7 @@ textarea { resize: vertical; min-height: 80px; }
 /* Dashboard metrics */
 .metric-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(200px, 1fr)); gap: 14px; }
 .metric {
-  background: var(--card); border: 1px solid var(--border);
+  background: var(--card);
   border-radius: var(--radius-lg); padding: 18px 20px;
   box-shadow: var(--shadow-sm); transition: box-shadow .15s;
 }
@@ -99,7 +99,7 @@ textarea { resize: vertical; min-height: 80px; }
 
 /* Card */
 .card {
-  background: var(--card); border: 1px solid var(--border);
+  background: var(--card);
   border-radius: var(--radius-lg); box-shadow: var(--shadow-sm);
 }
 .card-head { padding: 18px 22px 12px; display: flex; align-items: center; justify-content: space-between; flex-wrap: wrap; gap: 10px; }
@@ -370,7 +370,7 @@ textarea { resize: vertical; min-height: 80px; }
 .ct-done:hover { background:#16A34A; color:#fff; }
 .ct-done svg { width:14px; height:14px; vertical-align:-2px; }
 .stat-grid { display:grid; grid-template-columns:repeat(auto-fit,minmax(205px,1fr)); gap:16px; margin-bottom:20px; }
-.stat { position:relative; background:var(--card); border:1px solid var(--border); border-radius:var(--radius-lg); padding:18px; overflow:hidden; box-shadow:var(--shadow-sm); transition:transform .25s ease, box-shadow .25s ease; opacity:0; transform:translateY(12px); animation:dashIn .5s cubic-bezier(.4,0,.2,1) forwards; }
+.stat { position:relative; background:var(--card); border-radius:var(--radius-lg); padding:18px; overflow:hidden; box-shadow:var(--shadow-sm); transition:transform .25s ease, box-shadow .25s ease; opacity:0; transform:translateY(12px); animation:dashIn .5s cubic-bezier(.4,0,.2,1) forwards; }
 .stat:hover { transform:translateY(-4px); box-shadow:var(--shadow-lg); }
 .stat::before { content:''; position:absolute; left:0; top:0; bottom:0; width:4px; background:var(--stat-c,var(--primary)); }
 .stat__top { display:flex; align-items:center; justify-content:space-between; margin-bottom:14px; }
@@ -388,7 +388,7 @@ textarea { resize: vertical; min-height: 80px; }
 @keyframes dashIn { to { opacity:1; transform:none; } }
 
 .chart-grid { display:grid; grid-template-columns:repeat(auto-fit,minmax(310px,1fr)); gap:16px; }
-.chart-card { background:var(--card); border:1px solid var(--border); border-radius:var(--radius-lg); padding:18px 20px 20px; box-shadow:var(--shadow-sm); opacity:0; transform:translateY(12px); animation:dashIn .5s cubic-bezier(.4,0,.2,1) forwards; }
+.chart-card { background:var(--card); border-radius:var(--radius-lg); padding:18px 20px 20px; box-shadow:var(--shadow-sm); opacity:0; transform:translateY(12px); animation:dashIn .5s cubic-bezier(.4,0,.2,1) forwards; }
 .chart-card--wide { grid-column:span 2; }
 @media (max-width:920px){ .chart-card--wide { grid-column:span 1; } }
 .chart-head { display:flex; align-items:center; justify-content:space-between; margin-bottom:14px; gap:12px; }
@@ -446,7 +446,7 @@ textarea { resize: vertical; min-height: 80px; }
 
 /* ===== Section Membres — refonte premium ===== */
 .mstats { display:grid; grid-template-columns:repeat(auto-fit,minmax(180px,1fr)); gap:14px; margin-bottom:18px; }
-.mstat { background:var(--card); border:1px solid var(--border); border-radius:var(--radius-lg); padding:15px 17px; box-shadow:var(--shadow-sm); position:relative; overflow:hidden; opacity:0; transform:translateY(10px); animation:dashIn .45s cubic-bezier(.4,0,.2,1) forwards; }
+.mstat { background:var(--card); border-radius:var(--radius-lg); padding:15px 17px; box-shadow:var(--shadow-sm); position:relative; overflow:hidden; opacity:0; transform:translateY(10px); animation:dashIn .45s cubic-bezier(.4,0,.2,1) forwards; }
 .mstat::after { content:''; position:absolute; right:-14px; top:-14px; width:56px; height:56px; border-radius:50%; background:var(--mc,var(--primary)); opacity:.09; }
 .mstat__v { font-size:24px; font-weight:800; letter-spacing:-.02em; color:var(--text); font-variant-numeric:tabular-nums; line-height:1; }
 .mstat__l { font-size:12px; color:var(--muted); margin-top:6px; font-weight:500; }
@@ -467,7 +467,7 @@ textarea { resize: vertical; min-height: 80px; }
 .mchip.active .mchip__n { background:rgba(255,255,255,.25); color:#fff; }
 
 .mlist { display:flex; flex-direction:column; gap:10px; }
-.mcard { display:flex; align-items:center; gap:14px; background:var(--card); border:1px solid var(--border); border-radius:14px; padding:13px 16px; box-shadow:var(--shadow-sm); opacity:0; transform:translateY(10px); animation:dashIn .4s cubic-bezier(.4,0,.2,1) forwards; transition:transform .2s ease, box-shadow .2s ease, border-color .2s ease; }
+.mcard { display:flex; align-items:center; gap:14px; background:var(--card); border-radius:14px; padding:13px 16px; box-shadow:var(--shadow-sm); opacity:0; transform:translateY(10px); animation:dashIn .4s cubic-bezier(.4,0,.2,1) forwards; transition:transform .2s ease, box-shadow .2s ease, border-color .2s ease; }
 .mcard:hover { transform:translateY(-2px); box-shadow:var(--shadow-lg); border-color:var(--primary); }
 .mcard__av { width:46px; height:46px; border-radius:14px; display:grid; place-items:center; font-weight:800; font-size:15px; flex-shrink:0; letter-spacing:.02em; }
 .mcard__main { min-width:0; flex:1 1 190px; }
@@ -496,13 +496,13 @@ textarea { resize: vertical; min-height: 80px; }
 @keyframes mspin { to { transform:rotate(360deg); } }
 /* ===== Moyens de paiement — grille de cartes ===== */
 .pm-grid { display:grid; grid-template-columns:repeat(auto-fill,minmax(320px,1fr)); gap:16px; }
-.pm-card { background:var(--card); border:1px solid var(--border); border-radius:15px; padding:16px 17px; box-shadow:var(--shadow-sm); display:flex; flex-direction:column; opacity:0; transform:translateY(10px); animation:dashIn .45s cubic-bezier(.4,0,.2,1) forwards; transition:transform .2s, box-shadow .2s; }
+.pm-card { background:var(--card); border-radius:15px; padding:16px 17px; box-shadow:var(--shadow-sm); display:flex; flex-direction:column; opacity:0; transform:translateY(10px); animation:dashIn .45s cubic-bezier(.4,0,.2,1) forwards; transition:transform .2s, box-shadow .2s; }
 .pm-card:hover { transform:translateY(-3px); box-shadow:var(--shadow-lg); }
 /* ===== SECTION TEMOIGNAGES — galerie de cartes (prefixe tst-) =====
    A inserer dans le <style> inline, JUSTE APRES la regle `.pm-card:hover { ... }`
    (actuellement ligne 434), avant le commentaire `/* ===== SECTION PRODUITS ... */
 .tst-grid { display:grid; grid-template-columns:repeat(auto-fill,minmax(320px,1fr)); gap:16px; }
-.tst-card { position:relative; background:var(--card); border:1px solid var(--border); border-radius:15px; box-shadow:var(--shadow-sm); display:flex; flex-direction:column; opacity:0; transform:translateY(10px); animation:dashIn .45s cubic-bezier(.4,0,.2,1) forwards; transition:transform .2s, box-shadow .2s, opacity .2s; }
+.tst-card { position:relative; background:var(--card); border-radius:15px; box-shadow:var(--shadow-sm); display:flex; flex-direction:column; opacity:0; transform:translateY(10px); animation:dashIn .45s cubic-bezier(.4,0,.2,1) forwards; transition:transform .2s, box-shadow .2s, opacity .2s; }
 .tst-card:hover { transform:translateY(-3px); box-shadow:var(--shadow-lg); }
 .tst-card.is-off { opacity:.6; }
 .tst-card.is-off:hover { opacity:1; }
@@ -598,7 +598,7 @@ textarea { resize: vertical; min-height: 80px; }
 
 /* ===== Section GEIs — identité visuelle distincte (grille de tuiles) ===== */
 .gei-grid { display:grid; grid-template-columns:repeat(auto-fill,minmax(248px,1fr)); gap:16px; }
-.gei-tile { background:var(--card); border:1px solid var(--border); border-radius:16px; overflow:hidden; box-shadow:var(--shadow-sm); display:flex; flex-direction:column; opacity:0; transform:translateY(12px); animation:dashIn .5s cubic-bezier(.4,0,.2,1) forwards; transition:transform .2s ease, box-shadow .2s ease; }
+.gei-tile { background:var(--card); border-radius:16px; overflow:hidden; box-shadow:var(--shadow-sm); display:flex; flex-direction:column; opacity:0; transform:translateY(12px); animation:dashIn .5s cubic-bezier(.4,0,.2,1) forwards; transition:transform .2s ease, box-shadow .2s ease; }
 .gei-tile:hover { transform:translateY(-5px); box-shadow:var(--shadow-lg); }
 .gei-tile__band { height:78px; position:relative; display:flex; align-items:center; justify-content:center; background-image:linear-gradient(135deg, rgba(255,255,255,.20), rgba(0,0,0,.14)); }
 .gei-tile__band svg { width:30px; height:30px; color:#fff; }
@@ -692,7 +692,7 @@ textarea { resize: vertical; min-height: 80px; }
 .stu-prog__fill { height:100%; border-radius:5px; width:0; transition:width .8s cubic-bezier(.55,.1,.25,1); }
 .stu-course__act { margin-top:12px; }
 .tkyc-grid { display:grid; grid-template-columns:repeat(auto-fill,minmax(340px,1fr)); gap:16px; }
-.tkyc-card { display:flex; flex-direction:column; gap:12px; padding:16px; border:1px solid var(--border); border-radius:14px; background:var(--card); }
+.tkyc-card { display:flex; flex-direction:column; gap:12px; padding:16px; border-radius:14px; background:var(--card); box-shadow:var(--shadow-sm); }
 .tkyc-card.is-submitted { border-color:#F59E0B; box-shadow:0 0 0 1px rgba(245,158,11,0.25); }
 .tkyc-card__top { display:flex; align-items:center; gap:12px; }
 .tkyc-av { width:42px; height:42px; flex:none; border-radius:50%; display:flex; align-items:center; justify-content:center; color:#fff; font-weight:700; font-size:15px; }
@@ -1442,10 +1442,14 @@ const SECTIONS = {
       { key:'amount_htg', label:'Montant', render: r => fmt(r.amount_htg) + ' HTG' },
       { key:'provider_name', label:'Mode', render: r => r.provider_name ? esc(r.provider_name) : '<span style="color:var(--muted)">—</span>' },
       { key:'status', label:'Statut', render: r => statusBadge(r.status) },
+      { key:'screenshot', label:'Preuve', render: r => r.screenshot ? `<a href="${esc(r.screenshot)}" target="_blank" rel="noopener" title="Voir la preuve" style="color:var(--primary);font-weight:600">Voir ↗</a>` : '<span style="color:var(--muted)">—</span>' },
       { key:'paid_at', label:'Payé le', render: r => r.paid_at ? new Date(r.paid_at).toLocaleDateString('fr-FR') : '<span style="color:var(--muted)">—</span>' },
     ],
     formTitle: () => 'Modifier le paiement',
     formFields: r => [
+      { name:'_proof', label:'Preuve de paiement', type:'static', html: (r && r.screenshot)
+        ? '<a href="' + esc(r.screenshot) + '" target="_blank" rel="noopener" style="display:inline-flex;align-items:center;gap:10px;color:var(--primary);font-weight:600;text-decoration:none"><img src="' + esc(r.screenshot) + '" alt="preuve" style="width:76px;height:76px;object-fit:cover;border-radius:10px;box-shadow:var(--shadow-sm)"> Ouvrir la capture en grand ↗</a>'
+        : '<span style="color:var(--muted);font-size:13px">Aucune preuve téléversée par le payeur.</span>' },
       { name:'payer_name', label:'Payeur', type:'text', value: r?.payer_name || '' },
       { name:'status', label:'Statut', type:'select', options:[{v:'pending',l:'En attente'},{v:'paid',l:'Payé'},{v:'failed',l:'Échoué'},{v:'cancelled',l:'Annulé'},{v:'refunded',l:'Remboursé'}], value: r?.status || 'pending' },
       { name:'notes', label:'Notes', type:'textarea', value: r?.notes || '' },
@@ -4129,7 +4133,10 @@ function openModal(sectionKey, record) {
   fields.forEach(f => {
     body += '<div class="form-group">';
     body += '<label class="form-label">' + f.label + (f.required ? ' <span style="color:var(--danger)">*</span>' : '') + '</label>';
-    if (f.type === 'checkbox') {
+    if (f.type === 'static') {
+      // Champ lecture seule (aucune saisie envoyee) : affiche du HTML fourni tel quel.
+      body += '<div style="padding:2px 0">' + (f.html || '') + '</div>';
+    } else if (f.type === 'checkbox') {
       body += '<label style="display:flex;align-items:center;gap:8px;cursor:pointer;padding:4px 0"><input type="checkbox" name="' + f.name + '" ' + (f.value ? 'checked' : '') + ' style="width:auto"> ' + f.label + '</label>';
     } else if (f.type === 'select') {
       body += '<select name="' + f.name + '">';

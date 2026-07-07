@@ -5,12 +5,12 @@
       <div class="reveal">
         <span class="label"><span class="label__bullet"></span>Notre mission</span>
         <h2 class="section__title">
-          Bâtir une <span class="section__title-underline">économie solidaire</span> portée par les communautés.
+          {% if site.about_title %}{{ site.about_title }}{% else %}Bâtir une <span class="section__title-underline">économie solidaire</span> portée par les communautés.{% endif %}
         </h2>
         <p class="section__intro">
-          IMSO accompagne les Haïtiennes et Haïtiens dans la création de richesse
+          {% if site.about_text %}{{ site.about_text }}{% else %}IMSO accompagne les Haïtiennes et Haïtiens dans la création de richesse
           collective grâce à l'épargne mutualisée, à la formation entrepreneuriale
-          et à un microcrédit éthique adapté aux réalités locales.
+          et à un microcrédit éthique adapté aux réalités locales.{% endif %}
         </p>
         <ul class="mission__list">
           <li>

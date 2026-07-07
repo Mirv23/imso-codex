@@ -24,7 +24,7 @@
           {% if kit %}{{ kit.name }}{% else %}Apprenez à maîtriser votre argent.{% endif %}
         </h2>
         <p class="section__intro">
-          {% if kit and kit.description %}{{ kit.description }}{% else %}Un livre et un cahier pratique pour maîtriser l'épargne, le budget et l'entrepreneuriat. Commandez en ligne, payez via nos moyens locaux ; nous vous livrons après confirmation du paiement.{% endif %}
+          {% if site.shop_intro %}{{ site.shop_intro }}{% elif kit and kit.description %}{{ kit.description }}{% else %}Un livre et un cahier pratique pour maîtriser l'épargne, le budget et l'entrepreneuriat. Commandez en ligne, payez via nos moyens locaux ; nous vous livrons après confirmation du paiement.{% endif %}
         </p>
         <ul class="kit__points">
           <li><span class="check"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3" stroke-linecap="round" stroke-linejoin="round"><polyline points="20 6 9 17 4 12"></polyline></svg></span><span>Méthode d'épargne mutualisée expliquée pas à pas.</span></li>
