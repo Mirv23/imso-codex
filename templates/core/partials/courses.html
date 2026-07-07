@@ -36,7 +36,10 @@
             </div>
             <div class="course-card__meta">
               <div class="course-card__price">{{ course.price_htg }}  <small>HTG</small></div>
-              <button class="btn btn--ghost btn--small">S'inscrire</button>
+              <button class="btn btn--ghost btn--small js-enroll"
+                      data-id="{{ course.id }}"
+                      data-name="{{ course.title }}"
+                      data-price="{{ course.price_htg }}">S'inscrire</button>
             </div>
           </div>
         </article>
@@ -47,3 +50,118 @@
     </div>
   </div>
 </section>
+
+<!-- Modal inscription à un cours -->
+<div class="modal-scrim" id="enrollModal" aria-hidden="true">
+  <div class="modal" role="dialog" aria-modal="true" aria-labelledby="enrollModalTitle">
+    <div class="modal__head">
+      <h3 class="modal__title" id="enrollModalTitle">S'inscrire</h3>
+      <button class="modal__close" id="enrollModalClose" aria-label="Fermer">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><path d="M18 6L6 18M6 6l12 12"></path></svg>
+      </button>
+    </div>
+    <p class="modal__sub" id="enrollModalSub">Renseignez vos coordonnées. Le paiement se fait à l'étape suivante.</p>
+    <form class="modal__form" id="enrollForm" novalidate="">
+      {% csrf_token %}
+      <input type="hidden" name="course_id" id="eCourseId">
+      <div class="field">
+        <label for="eName">Nom complet</label>
+        <input id="eName" name="full_name" type="text" required="" placeholder="Marie-Claire Pierre">
+      </div>
+      <div class="field">
+        <label for="ePhone">Téléphone</label>
+        <input id="ePhone" name="phone" type="tel" required="" placeholder="+509 38 22 18 04">
+      </div>
+      <div class="field">
+        <label for="eEmail">Email (optionnel)</label>
+        <input id="eEmail" name="email" type="email" placeholder="exemple@email.com">
+      </div>
+      <p class="modal__sub" id="enrollTotal" style="font-weight:600;color:var(--text);"></p>
+      <p class="modal__error" id="enrollError" style="display:none;color:var(--danger,#EF4444);font-size:13px;"></p>
+      <button type="submit" class="btn btn--primary btn--block" id="enrollSubmit" style="margin-top:8px;">Continuer vers le paiement</button>
+    </form>
+  </div>
+</div>
+
+<script>
+(function () {
+  function getCookie(name) {
+    var m = document.cookie.match(new RegExp('(^|; )' + name + '=([^;]+)'));
+    return m ? decodeURIComponent(m[2]) : '';
+  }
+  var modal = document.getElementById('enrollModal');
+  var form = document.getElementById('enrollForm');
+  if (!modal || !form) return;
+  var totalEl = document.getElementById('enrollTotal');
+  var errorEl = document.getElementById('enrollError');
+  var submitBtn = document.getElementById('enrollSubmit');
+
+  function fmt(n) { return Number(n).toLocaleString('fr-FR'); }
+  function openModal(id, name, price) {
+    document.getElementById('eCourseId').value = id;
+    document.getElementById('enrollModalTitle').textContent = "S'inscrire — " + name;
+    var p = Number(price) || 0;
+    totalEl.textContent = p > 0 ? 'Montant : ' + fmt(p) + ' HTG' : '';
+    errorEl.style.display = 'none';
+    submitBtn.disabled = false;
+    modal.setAttribute('aria-hidden', 'false');
+    modal.classList.add('open');
+    setTimeout(function () { document.getElementById('eName').focus(); }, 60);
+  }
+  function closeModal() {
+    modal.setAttribute('aria-hidden', 'true');
+    modal.classList.remove('open');
+  }
+
+  document.querySelectorAll('.js-enroll').forEach(function (btn) {
+    btn.addEventListener('click', function () {
+      openModal(btn.dataset.id, btn.dataset.name, btn.dataset.price);
+    });
+  });
+  document.getElementById('enrollModalClose').addEventListener('click', closeModal);
+  modal.addEventListener('click', function (e) { if (e.target === modal) closeModal(); });
+  document.addEventListener('keydown', function (e) {
+    if (e.key === 'Escape' && modal.classList.contains('open')) closeModal();
+  });
+
+  form.addEventListener('submit', function (e) {
+    e.preventDefault();
+    errorEl.style.display = 'none';
+    submitBtn.disabled = true;
+    var payload = {
+      course_id: parseInt(document.getElementById('eCourseId').value, 10),
+      full_name: document.getElementById('eName').value.trim(),
+      phone: document.getElementById('ePhone').value.trim(),
+      email: document.getElementById('eEmail').value.trim()
+    };
+    fetch('/api/course-enrollments/', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json', 'X-CSRFToken': getCookie('csrftoken') },
+      credentials: 'same-origin',
+      body: JSON.stringify(payload)
+    }).then(function (r) {
+      return r.json().then(function (data) { return { ok: r.ok, data: data }; });
+    }).then(function (res) {
+      if (res.ok && res.data.payment_url) {
+        window.location.href = res.data.payment_url;
+      } else {
+        var msg = 'Impossible de finaliser l\'inscription. Vérifiez vos informations.';
+        if (res.data && res.data.errors) {
+          var first = Object.keys(res.data.errors)[0];
+          if (first) {
+            var val = res.data.errors[first];
+            msg = Array.isArray(val) ? val[0] : String(val);
+          }
+        }
+        errorEl.textContent = msg;
+        errorEl.style.display = 'block';
+        submitBtn.disabled = false;
+      }
+    }).catch(function () {
+      errorEl.textContent = 'Erreur réseau. Réessayez.';
+      errorEl.style.display = 'block';
+      submitBtn.disabled = false;
+    });
+  });
+})();
+</script>

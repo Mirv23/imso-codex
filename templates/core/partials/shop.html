@@ -1,51 +1,58 @@
 {% load static %}
-<!-- Boutique : kit d'éducation financière -->
+<!-- Kit d'éducation financière : image + grand titre & texte à côté -->
 <section class="section" id="boutique">
   <div class="container">
-    <div class="section__head reveal">
-      <span class="label"><span class="label__bullet"></span>Boutique</span>
-      <h2 class="section__title">Commandez votre kit d'éducation financière.</h2>
-      <p class="section__intro">
-        Un livre et un cahier pratique pour maîtriser l'épargne, le budget et
-        l'entrepreneuriat. Commandez en ligne et payez via nos moyens locaux ;
-        nous vous livrons après confirmation du paiement.
-      </p>
-    </div>
-
-    <div class="courses__grid" id="shopGrid">
-      {% for product in products %}
-      <article class="course-card reveal" data-delay="{{ forloop.counter|default:1 }}">
-        {% if product.image %}
-        <div class="course-card__band course-card__band--g" style="height:150px;padding:0">
-          <img src="{{ product.image.url }}" alt="{{ product.name }}" style="width:100%;height:100%;object-fit:cover" loading="lazy">
-        </div>
+    {% with kit=products.first %}
+    <div class="kit__grid">
+      <!-- Visuel du kit -->
+      <div class="kit__media reveal">
+        {% if kit and kit.image %}
+        <img src="{{ kit.image.url }}" alt="{{ kit.name }}" loading="lazy">
         {% else %}
-        <div class="course-card__band course-card__band--{% cycle 'g' 'a' 't' 'g' 'a' 't' %}">
-          <span class="course-card__tag">{{ product.get_kind_display }}</span>
+        <div class="kit__media-placeholder">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.4" stroke-linecap="round" stroke-linejoin="round"><path d="M4 19.5A2.5 2.5 0 0 1 6.5 17H20"></path><path d="M6.5 2H20v20H6.5A2.5 2.5 0 0 1 4 19.5v-15A2.5 2.5 0 0 1 6.5 2z"></path></svg>
+          <span>Kit d'éducation financière</span>
         </div>
         {% endif %}
-        <div class="course-card__body">
-          <h3 class="course-card__title">{{ product.name }}</h3>
-          <p class="course-card__desc" style="color:var(--muted);font-size:14px;margin:6px 0 12px;">{{ product.description|truncatewords:24 }}</p>
-          <div class="course-card__meta">
-            <div class="course-card__price">{{ product.price_htg }} <small>HTG</small></div>
-            {% if product.stock > 0 %}
-            <button class="btn btn--primary btn--small js-order"
-                    data-id="{{ product.id }}"
-                    data-name="{{ product.name }}"
-                    data-price="{{ product.price_htg }}">Commander</button>
-            {% else %}
-            <button class="btn btn--ghost btn--small" disabled>Rupture de stock</button>
-            {% endif %}
-          </div>
+        <span class="kit__media-badge">Édition IMSO</span>
+      </div>
+
+      <!-- Grand titre + petit texte à côté -->
+      <div class="kit__body reveal" data-delay="2">
+        <span class="label"><span class="label__bullet"></span>Kit d'éducation financière</span>
+        <h2 class="section__title">
+          {% if kit %}{{ kit.name }}{% else %}Apprenez à maîtriser votre argent.{% endif %}
+        </h2>
+        <p class="section__intro">
+          {% if kit and kit.description %}{{ kit.description }}{% else %}Un livre et un cahier pratique pour maîtriser l'épargne, le budget et l'entrepreneuriat. Commandez en ligne, payez via nos moyens locaux ; nous vous livrons après confirmation du paiement.{% endif %}
+        </p>
+        <ul class="kit__points">
+          <li><span class="check"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3" stroke-linecap="round" stroke-linejoin="round"><polyline points="20 6 9 17 4 12"></polyline></svg></span><span>Méthode d'épargne mutualisée expliquée pas à pas.</span></li>
+          <li><span class="check"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3" stroke-linecap="round" stroke-linejoin="round"><polyline points="20 6 9 17 4 12"></polyline></svg></span><span>Cahier d'exercices pour bâtir votre budget familial.</span></li>
+          <li><span class="check"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3" stroke-linecap="round" stroke-linejoin="round"><polyline points="20 6 9 17 4 12"></polyline></svg></span><span>Livraison après confirmation du paiement local.</span></li>
+        </ul>
+
+        {% if kit %}
+        <div class="kit__cta">
+          <div class="kit__price">{{ kit.price_htg }} <small>HTG</small></div>
+          {% if kit.stock > 0 %}
+          <button class="btn btn--primary js-order"
+                  data-id="{{ kit.id }}"
+                  data-name="{{ kit.name }}"
+                  data-price="{{ kit.price_htg }}">Commander le kit</button>
+          {% else %}
+          <button class="btn btn--ghost" disabled>Rupture de stock</button>
+          {% endif %}
         </div>
-      </article>
-      {% empty %}
-      <p style="grid-column: 1 / -1; text-align: center; color: var(--muted); padding: 40px 0;">
-        Le kit sera bientôt disponible à la commande. Revenez très vite !
-      </p>
-      {% endfor %}
+        {% else %}
+        <div class="kit__cta">
+          <button class="btn btn--ghost" disabled>Bientôt disponible</button>
+          <span style="color:var(--muted);font-size:14px;">Le kit arrive très vite — revenez le commander.</span>
+        </div>
+        {% endif %}
+      </div>
     </div>
+    {% endwith %}
   </div>
 </section>
 
