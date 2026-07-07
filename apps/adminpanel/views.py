@@ -243,20 +243,27 @@ def _serialize_courses_for_react() -> list[dict[str, Any]]:
 
 def _serialize_revenue_for_react() -> list[dict[str, Any]]:
     now = timezone.now()
+    # Reculer mois par mois sur le calendrier reel. Un pas de 30 jours duplique
+    # ou saute des mois (fevrier, mois de 31 jours) -> labels dupliques dans le
+    # graphique et delta mois-sur-mois errone (compare parfois un mois a lui-meme).
     months = []
-    for i in range(6):
-        dt = now - timedelta(days=30 * (5 - i))
-        months.append(dt)
+    y, m = now.year, now.month
+    for _ in range(6):
+        months.append((y, m))
+        m -= 1
+        if m == 0:
+            m, y = 12, y - 1
+    months.reverse()
 
     result = []
-    for dt in months:
+    for (yy, mm) in months:
         total = Payment.objects.filter(
             status=Payment.Status.PAID,
-            created_at__year=dt.year,
-            created_at__month=dt.month,
+            created_at__year=yy,
+            created_at__month=mm,
         ).aggregate(total=Sum("amount_htg"))["total"] or 0
         result.append({
-            "m": _month_abbr(dt),
+            "m": _month_abbr(now.replace(year=yy, month=mm, day=1)),
             "v": total,
         })
     return result

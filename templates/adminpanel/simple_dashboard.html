@@ -1520,7 +1520,6 @@ const SECTIONS = {
     formTitle: () => 'Modifier le contact',
     formFields: r => [
       { name:'is_processed', label:'Traité', type:'checkbox', value: r?.is_processed || false },
-      { name:'notes', label:'Notes (interne)', type:'textarea', value: r?.notes || '' },
     ],
     detailUrl: r => '/dashboard/api/contacts/' + r.id + '/',
   },
@@ -2044,7 +2043,7 @@ function renderMembers(d) {
   }
 
   h += '<div class="mpager"><span>' + total + ' membre' + (total > 1 ? 's' : '') + '</span>';
-  if (memberFilters.view !== 'gei' && totalPages > 1) {
+  if (totalPages > 1) {
     h += '<div class="mpager__nav">';
     h += '<button class="btn btn-sm" ' + (page <= 1 ? 'disabled' : '') + ' onclick="loadMembers(' + (page - 1) + ')">‹ Précédent</button>';
     h += '<span style="font-weight:700;color:var(--text)">' + page + ' / ' + totalPages + '</span>';
@@ -2674,6 +2673,10 @@ function providerMove(id, dir) {
   const changed = [];
   order.forEach((pid, idx) => { if ((cache[pid] || {}).sort_order !== idx) changed.push({ id: pid, so: idx }); });
   if (!changed.length) return;
+  // Maj optimiste de l'etat : un second clic rapide doit repartir du NOUVEL ordre
+  // (sinon le deplacement suivant est recalcule sur un ordre perime et perdu).
+  _providersOrder = order;
+  changed.forEach(u => { if (cache[u.id]) cache[u.id].sort_order = u.so; });
 
   // Reordonne le DOM immediatement (optimiste) sans tout repeindre.
   const grid = document.querySelector('#card-providers .pm-grid');
@@ -3020,11 +3023,11 @@ function teacherReject(id) {
 // A inserer AVANT le commentaire "// ============= SECTION PRODUITS" (~ligne 2396)
 // =====================================================================
 const studentSeg = { access: '', search: '' };
-let _studentSearchTimer;
+let _studentSearchTimer, _studentSearchFocus = false;
 const STU_SEARCH_ICON = '<svg class="search-icon" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="11" cy="11" r="8"/><line x1="21" y1="21" x2="16.65" y2="16.65"/></svg>';
 const STU_DL_ICON = '<svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="7 10 12 15 17 10"/><line x1="12" y1="15" x2="12" y2="3"/></svg>';
 
-function studentSearchInput(v) { studentSeg.search = v; clearTimeout(_studentSearchTimer); _studentSearchTimer = setTimeout(() => loadStudents(), 260); }
+function studentSearchInput(v) { studentSeg.search = v; _studentSearchFocus = true; clearTimeout(_studentSearchTimer); _studentSearchTimer = setTimeout(() => loadStudents(), 260); }
 function setStudentAccess(v) { studentSeg.access = v; loadStudents(); }
 
 function loadStudents() {
@@ -3071,7 +3074,7 @@ function renderStudents(d) {
   if (studentSeg.search) exp.set('search', studentSeg.search);
   const expUrl = '/dashboard/api/students/export/' + (exp.toString() ? '?' + exp.toString() : '');
   h += '<div class="toolbar tkyc-toolbar"><div class="search-wrap">' + STU_SEARCH_ICON
-    + '<input type="text" placeholder="Rechercher un étudiant…" value="' + esc(studentSeg.search) + '" oninput="studentSearchInput(this.value)"></div>'
+    + '<input type="text" id="studentSearch" placeholder="Rechercher un étudiant…" value="' + esc(studentSeg.search) + '" oninput="studentSearchInput(this.value)"></div>'
     + '<div class="spacer"></div>'
     + '<a class="btn" href="' + esc(expUrl) + '" target="_blank" rel="noopener">' + STU_DL_ICON + ' Exporter CSV</a></div>';
 
@@ -3096,6 +3099,11 @@ function renderStudents(d) {
     }).join('') + '</div>';
   }
   host.innerHTML = h;
+  if (_studentSearchFocus) {
+    const si = document.getElementById('studentSearch');
+    if (si) { si.focus(); const v = si.value; si.value = ''; si.value = v; }
+    _studentSearchFocus = false;
+  }
 }
 
 // ---- Fiche étudiant : drawer latéral (reutilise #courseEditorOverlay/#courseEditorPanel) ----
@@ -3929,10 +3937,10 @@ function renderBlogEditor(r) {
   // Colonne formulaire
   h += '<div class="be-form">';
   h += '<div class="form-group"><label class="form-label">Titre' + req + '</label>'
-     + '<input type="text" id="be_title" value="' + esc((r && r.title) || '') + '" oninput="blogPreviewUpdate()"></div>';
+     + '<input type="text" id="be_title" maxlength="200" value="' + esc((r && r.title) || '') + '" oninput="blogPreviewUpdate()"></div>';
   h += '<div class="be-row">'
      + '<div class="form-group"><label class="form-label">Auteur</label>'
-     + '<input type="text" id="be_author" value="' + esc((r && r.author) || '') + '" oninput="blogPreviewUpdate()"></div>'
+     + '<input type="text" id="be_author" maxlength="120" value="' + esc((r && r.author) || '') + '" oninput="blogPreviewUpdate()"></div>'
      + '<div class="form-group"><label class="form-label">Statut</label>'
      + '<select id="be_status" onchange="blogStatusChange()">' + opt('draft', 'Brouillon') + opt('scheduled', 'Programmé') + opt('published', 'Publié') + '</select></div>'
      + '</div>';
@@ -3940,7 +3948,7 @@ function renderBlogEditor(r) {
      + '<label class="form-label">Date de programmation' + req + '</label>'
      + '<input type="datetime-local" id="be_scheduled_for" value="' + esc(schedVal) + '" oninput="blogPreviewUpdate()"></div>';
   h += '<div class="form-group"><label class="form-label">Résumé (extrait)</label>'
-     + '<textarea id="be_excerpt" oninput="blogPreviewUpdate()">' + esc((r && r.excerpt) || '') + '</textarea></div>';
+     + '<textarea id="be_excerpt" maxlength="300" oninput="blogPreviewUpdate()">' + esc((r && r.excerpt) || '') + '</textarea></div>';
   h += '<div class="form-group"><label class="form-label">Contenu' + req + '</label>'
      + '<textarea id="be_body" style="min-height:160px" oninput="blogPreviewUpdate()">' + esc((r && r.body) || '') + '</textarea></div>';
   h += '<div class="form-group"><label class="form-label">Image de couverture</label>'
