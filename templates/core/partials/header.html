@@ -4,7 +4,7 @@
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
 <title>{% if page_title %}{{ page_title }} — {{ site.site_name|default:"IMSO" }}{% else %}{{ site.site_name|default:"IMSO" }} — {{ site.tagline|default:"Impact Mutuelle de Solidarité" }}{% endif %}</title>
-{% with metadesc=site.metametadescription|default:"IMSO Haiti — Impact Mutuelle de Solidarité : mutuelle solidaire, formations, boutique solidaire et réservation de salle en Haïti." %}
+{% with metadesc=site.metametadescription|default:"IMSO Haiti — Impact Mutuelle de Solidarité : mutuelle solidaire, formations, kit d'éducation financière et réservation de salle en Haïti." %}
 <meta name="description" content="{{ metadesc }}">
 {% if site.meta_keywords %}<meta name="keywords" content="{{ site.meta_keywords }}">{% endif %}
 {% if site.logo %}<link rel="icon" href="{{ site.logo.url }}">{% else %}<link rel="icon" href="{% static 'website/assets/9f2647f0-409d-40a1-969b-7969601ef459.png' %}">{% endif %}
