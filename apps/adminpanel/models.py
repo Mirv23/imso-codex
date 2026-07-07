@@ -585,6 +585,7 @@ class SiteSetting(models.Model):
     twitter_url = models.URLField(blank=True)
     linkedin_url = models.URLField(blank=True)
     youtube_url = models.URLField(blank=True)
+    tiktok_url = models.URLField(blank=True)
 
     # ── Couleurs (thème) ──
     color_primary = models.CharField(max_length=9, blank=True, default="#3C9626", help_text="Couleur principale (hex)")

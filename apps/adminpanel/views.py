@@ -2664,7 +2664,7 @@ def blog_detail(request: HttpRequest, pk: int) -> JsonResponse:
 
 SETTINGS_TEXT_FIELDS = [
     "site_name", "tagline", "contact_phone", "contact_whatsapp", "contact_email", "contact_address",
-    "facebook_url", "instagram_url", "twitter_url", "linkedin_url", "youtube_url",
+    "facebook_url", "instagram_url", "twitter_url", "linkedin_url", "youtube_url", "tiktok_url",
     "color_primary", "color_primary_dark", "color_accent", "color_highlight",
     "hero_title", "hero_subtitle", "hero_cta_text", "about_title", "about_text", "shop_intro", "footer_text",
     "meta_description", "meta_keywords",
