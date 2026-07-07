@@ -564,6 +564,20 @@ textarea { resize: vertical; min-height: 80px; }
 .tkyc-chipn { display:inline-block; min-width:18px; padding:0 6px; margin-left:4px; border-radius:999px; background:rgba(0,0,0,0.08); font-size:11px; font-weight:700; line-height:17px; text-align:center; }
 .fchip--on .tkyc-chipn { background:rgba(255,255,255,0.28); }
 .tkyc-toolbar { margin-bottom:14px; }
+/* ===== SECTION ETUDIANTS (fiche drawer + progression) ===== */
+/* A inserer dans le <style>, juste APRES la ligne .tkyc-toolbar { margin-bottom:14px; } (~ligne 566) */
+.stu-row { cursor:pointer; }
+.stu-row:hover { border-color:var(--primary); box-shadow:var(--shadow); }
+.stu-courses { display:flex; flex-direction:column; gap:12px; }
+.stu-course { border:1px solid var(--border); border-radius:12px; padding:14px 16px; background:var(--card); }
+.stu-course__hd { display:flex; align-items:center; justify-content:space-between; gap:10px; margin-bottom:3px; }
+.stu-course__t { font-size:14px; font-weight:700; color:var(--text); }
+.stu-course__meta { font-size:12px; color:var(--muted); margin-bottom:10px; }
+.stu-prog__top { display:flex; justify-content:space-between; font-size:11px; color:var(--muted); margin-bottom:4px; }
+.stu-prog__top b { color:var(--text); font-variant-numeric:tabular-nums; }
+.stu-prog__track { height:8px; background:var(--bg); border-radius:5px; overflow:hidden; }
+.stu-prog__fill { height:100%; border-radius:5px; width:0; transition:width .8s cubic-bezier(.55,.1,.25,1); }
+.stu-course__act { margin-top:12px; }
 .tkyc-grid { display:grid; grid-template-columns:repeat(auto-fill,minmax(340px,1fr)); gap:16px; }
 .tkyc-card { display:flex; flex-direction:column; gap:12px; padding:16px; border:1px solid var(--border); border-radius:14px; background:var(--card); }
 .tkyc-card.is-submitted { border-color:#F59E0B; box-shadow:0 0 0 1px rgba(245,158,11,0.25); }
@@ -897,6 +911,7 @@ function navigateTo(section, resetPage = true) {
   else if (section === 'orders') loadOrders();
   else if (section === 'bookings') loadBookings();
   else if (section === 'admins') { loadTable('admins'); loadAuditPanel(); }
+  else if (section === 'students') loadStudents();
   else loadTable(section);
 }
 
@@ -1650,6 +1665,7 @@ function refreshSection(sectionKey) {
   else if (sectionKey === 'products') loadProducts();
   else if (sectionKey === 'orders') loadOrders();
   else if (sectionKey === 'bookings') loadBookings();
+  else if (sectionKey === 'students') loadStudents();
   else loadTable(sectionKey);
 }
 
@@ -2390,6 +2406,163 @@ function teacherReject(id) {
   if (reason === null) return; // annulé
   api('/dashboard/api/learners/' + id + '/', { method:'PUT', body: JSON.stringify({ kyc_status:'rejected', kyc_note: reason }) })
     .then(() => { toast('Vérification rejetée', 'info'); loadTeachers(); })
+    .catch(e => toast(e.message, 'error'));
+}
+
+// =====================================================================
+// SECTION ETUDIANTS — segmentation + fiche drawer (overlay partage)
+// A inserer AVANT le commentaire "// ============= SECTION PRODUITS" (~ligne 2396)
+// =====================================================================
+const studentSeg = { access: '', search: '' };
+let _studentSearchTimer;
+const STU_SEARCH_ICON = '<svg class="search-icon" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="11" cy="11" r="8"/><line x1="21" y1="21" x2="16.65" y2="16.65"/></svg>';
+const STU_DL_ICON = '<svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="7 10 12 15 17 10"/><line x1="12" y1="15" x2="12" y2="3"/></svg>';
+
+function studentSearchInput(v) { studentSeg.search = v; clearTimeout(_studentSearchTimer); _studentSearchTimer = setTimeout(() => loadStudents(), 260); }
+function setStudentAccess(v) { studentSeg.access = v; loadStudents(); }
+
+function loadStudents() {
+  currentSection.name = 'students';
+  _headerNewButton('Nouvel étudiant', 'students');
+  const host = document.getElementById('card-students');
+  if (!host.querySelector('.stu-list') && !host.querySelector('.mempty') && !host.querySelector('.tkyc-chips'))
+    host.innerHTML = '<div class="mloading"><span class="mspin"></span> Chargement des étudiants…</div>';
+  const params = new URLSearchParams();
+  if (studentSeg.access) params.set('access', studentSeg.access);
+  if (studentSeg.search) params.set('search', studentSeg.search);
+  const q = params.toString();
+  api('/dashboard/api/students/overview/' + (q ? '?' + q : ''))
+    .then(d => renderStudents(d))
+    .catch(e => { host.innerHTML = '<div style="padding:24px;color:var(--danger)">' + esc(e.message) + '</div>'; });
+}
+
+function renderStudents(d) {
+  const host = document.getElementById('card-students');
+  const items = d.items || [];
+  const c = d.counts || {};
+  // Cache pour confirmDelete('students',id) + ouverture du drawer sans re-fetch de la ligne.
+  _rowCache['students'] = {};
+  items.forEach(r => { _rowCache['students'][r.id] = r; });
+
+  let h = statsHtml([
+    { l:'Étudiants', v: fmt(c.all || 0), c:'#2D6A4F' },
+    { l:'Accès actif', v: fmt(c.active || 0), c:'#16A34A' },
+    { l:'Paiement en attente', v: fmt(c.pending || 0), c:'#F59E0B' },
+  ]);
+
+  const chips = [
+    { v:'', l:'Tous', n:c.all },
+    { v:'active', l:'Accès actif', n:c.active },
+    { v:'pending', l:'Paiement en attente', n:c.pending },
+  ];
+  h += '<div class="tkyc-chips">' + chips.map(ch =>
+    `<button class="fchip${ch.v === studentSeg.access ? ' fchip--on' : ''}" onclick="setStudentAccess('${ch.v}')">${esc(ch.l)}<span class="tkyc-chipn">${fmt(ch.n || 0)}</span></button>`
+  ).join('') + '</div>';
+
+  // Toolbar : recherche + export CSV (respecte le filtre/segment courant).
+  const exp = new URLSearchParams();
+  if (studentSeg.access) exp.set('access', studentSeg.access);
+  if (studentSeg.search) exp.set('search', studentSeg.search);
+  const expUrl = '/dashboard/api/students/export/' + (exp.toString() ? '?' + exp.toString() : '');
+  h += '<div class="toolbar tkyc-toolbar"><div class="search-wrap">' + STU_SEARCH_ICON
+    + '<input type="text" placeholder="Rechercher un étudiant…" value="' + esc(studentSeg.search) + '" oninput="studentSearchInput(this.value)"></div>'
+    + '<div class="spacer"></div>'
+    + '<a class="btn" href="' + esc(expUrl) + '" target="_blank" rel="noopener">' + STU_DL_ICON + ' Exporter CSV</a></div>';
+
+  if (!items.length) {
+    h += '<div class="mempty"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6"><path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2"/><circle cx="12" cy="7" r="4"/></svg>'
+      + '<h4>Aucun étudiant</h4><div>' + ((studentSeg.search || studentSeg.access) ? 'Ajustez la recherche ou le segment.' : 'Créez un compte avec « Nouvel étudiant ».') + '</div></div>';
+  } else {
+    h += '<div class="mlist stu-list">' + items.map((r, i) => {
+      const col = avatarColor(r.name || String(r.id));
+      const initial = esc((r.name || '?').trim().charAt(0).toUpperCase());
+      let badge;
+      if ((r.pending_count || 0) > 0) badge = '<span class="pill pill-sm amber">Paiement en attente</span>';
+      else if ((r.active_count || 0) > 0) badge = '<span class="pill pill-sm green">Accès actif</span>';
+      else badge = '<span class="pill pill-sm gray">Aucun cours</span>';
+      return '<div class="mcard stu-row" data-id="' + r.id + '" style="animation-delay:' + Math.min(i * 30, 300) + 'ms" onclick="openStudentPanel(' + r.id + ')">'
+        + '<div class="mcard__av" style="background:' + hexA(col, 0.15) + ';color:' + col + '">' + initial + '</div>'
+        + '<div class="mcard__main"><div class="mcard__name"><span class="nm">' + esc(r.name || '—') + '</span>' + badge + '</div>'
+        + '<div class="mcard__meta">' + esc(r.email || '—') + ' · ' + fmt(r.enrollments || 0) + ' cours suivi(s)</div></div>'
+        + '<div class="mcard__sav"><b>' + fmt(r.active_count || 0) + '</b><small>accès actif(s)</small></div>'
+        + '<div class="mcard__act"><button class="membtn danger" title="Supprimer" onclick="event.stopPropagation();confirmDelete(\'students\',' + r.id + ')">' + DEL_ICON + '</button></div>'
+        + '</div>';
+    }).join('') + '</div>';
+  }
+  host.innerHTML = h;
+}
+
+// ---- Fiche étudiant : drawer latéral (reutilise #courseEditorOverlay/#courseEditorPanel) ----
+function openStudentPanel(id) {
+  const s = (_rowCache['students'] && _rowCache['students'][id]) || { id: id, name: 'Étudiant' };
+  const panel = document.getElementById('courseEditorPanel');
+  document.getElementById('courseEditorOverlay').classList.add('open');
+  panel.innerHTML = '<div class="ce-banner" style="background-color:' + avatarColor(s.name || String(id)) + '">'
+    + '<button class="ce-close" onclick="closeCourseEditor()">✕</button>'
+    + '<div class="ce-banner__title">' + esc(s.name || 'Étudiant') + '</div></div>'
+    + '<div class="mloading" style="padding:60px 20px"><span class="mspin"></span> Chargement de la fiche…</div>';
+  api('/dashboard/api/students/' + id + '/')
+    .then(d => renderStudentPanel(d))
+    .catch(e => { panel.innerHTML = '<div style="padding:24px;color:var(--danger)">' + esc(e.message) + '</div>'; });
+}
+
+function renderStudentPanel(d) {
+  const panel = document.getElementById('courseEditorPanel');
+  const col = avatarColor(d.name || String(d.id));
+  const courses = d.courses || [];
+
+  let h = '<div class="ce-banner" style="background-color:' + col + '">'
+    + '<button class="ce-close" onclick="closeCourseEditor()">✕</button>'
+    + '<div class="ce-banner__title">' + esc(d.name || 'Étudiant') + '</div></div>';
+  h += '<div class="ce-body">';
+
+  h += '<div class="ce-meta">';
+  if (d.email) h += '<span class="pill gray">' + esc(d.email) + '</span>';
+  if (d.phone) h += '<span class="pill blue">' + esc(d.phone) + '</span>';
+  if ((d.pending_count || 0) > 0) h += '<span class="pill amber">Paiement en attente</span>';
+  else if ((d.active_count || 0) > 0) h += '<span class="pill green">Accès actif</span>';
+  h += '</div>';
+
+  h += '<div class="gei-kpis">'
+    + '<div class="gei-kpi"><div class="gei-kpi__v">' + fmt(courses.length) + '</div><div class="gei-kpi__l">Cours suivis</div></div>'
+    + '<div class="gei-kpi"><div class="gei-kpi__v">' + fmt(d.active_count || 0) + '</div><div class="gei-kpi__l">Accès actifs</div></div>'
+    + '<div class="gei-kpi"><div class="gei-kpi__v">' + fmt(d.pending_count || 0) + '</div><div class="gei-kpi__l">Paiement en attente</div></div>'
+    + '</div>';
+
+  h += '<div class="ce-sec"><h3>Cours suivis</h3></div>';
+
+  if (!courses.length) {
+    h += '<div class="mempty">' + COURSE_ICON.replace('<svg', '<svg width="46" height="46"')
+      + '<h4>Aucun cours</h4><div>Cet étudiant n\'est inscrit à aucun cours pour le moment.</div></div>';
+  } else {
+    h += '<div class="stu-courses">' + courses.map(c => {
+      const paid = c.status === 'active';
+      const pill = paid ? '<span class="pill green">Payé · accès actif</span>' : '<span class="pill amber">Paiement en attente</span>';
+      const pct = c.progress || 0;
+      const pcol = pct >= 100 ? '#16A34A' : (pct >= 50 ? '#F59E0B' : '#635BFF');
+      const act = paid
+        ? '<button class="btn btn-sm" onclick="studentSetEnrollment(' + c.enrollment_id + ',\'pending_payment\',' + d.id + ')">Repasser en attente</button>'
+        : '<button class="btn btn-sm tkyc-ok" onclick="studentSetEnrollment(' + c.enrollment_id + ',\'active\',' + d.id + ')">✓ Activer l\'accès</button>';
+      return '<div class="stu-course">'
+        + '<div class="stu-course__hd"><div class="stu-course__t">' + esc(c.course_title) + '</div>' + pill + '</div>'
+        + '<div class="stu-course__meta">' + fmt(c.price_htg || 0) + ' HTG</div>'
+        + '<div class="stu-prog"><div class="stu-prog__top"><span>Progression</span><b>' + fmt(c.chapters_done || 0) + '/' + fmt(c.chapters_total || 0) + ' chap. · ' + pct + '%</b></div>'
+        + '<div class="stu-prog__track"><div class="stu-prog__fill" data-w="' + pct + '" style="background:' + pcol + '"></div></div></div>'
+        + '<div class="stu-course__act">' + act + '</div>'
+        + '</div>';
+    }).join('') + '</div>';
+  }
+  h += '</div>';
+  panel.innerHTML = h;
+  // Anime les barres de progression apres insertion.
+  requestAnimationFrame(() => requestAnimationFrame(() =>
+    panel.querySelectorAll('.stu-prog__fill').forEach(el => el.style.width = (el.getAttribute('data-w') || 0) + '%')));
+}
+
+// Change le statut de paiement d'une inscription (reutilise course_enrollment_detail PUT).
+function studentSetEnrollment(enrId, status, studentId) {
+  api('/dashboard/api/course-enrollments/' + enrId + '/', { method:'PUT', body: JSON.stringify({ status: status }) })
+    .then(() => { toast(status === 'active' ? 'Accès activé' : 'Repassé en attente de paiement', 'success'); openStudentPanel(studentId); loadStudents(); })
     .catch(e => toast(e.message, 'error'));
 }
 

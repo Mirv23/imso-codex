@@ -32,6 +32,7 @@ from .models import (
     AuditLog,
     BlogPost,
     Chapter,
+    ChapterCompletion,
     ContactRequest,
     Course,
     EncryptedCharField,
@@ -1200,6 +1201,167 @@ def course_enrollment_detail(request: HttpRequest, pk: int) -> JsonResponse:
         return JsonResponse(_serialize_course_enrollment(e))
     e.delete()
     return _ok()
+
+
+# ── Étudiants (formation) : segmentation d'accès + fiche détaillée ──
+
+@staff_required
+def student_overview(request: HttpRequest) -> JsonResponse:
+    """Liste des étudiants segmentée par statut d'accès : compteurs globaux
+    (tous / accès actif / paiement en attente) + items avec le nombre
+    d'inscriptions actives et en attente par étudiant. Sert la barre de
+    segmentation et la liste de la section « Étudiants »."""
+    ACTIVE = CourseEnrollment.Status.ACTIVE
+    PENDING = CourseEnrollment.Status.PENDING_PAYMENT
+    base = Profile.objects.filter(role=Profile.Role.STUDENT)
+
+    # Compteurs par segment (distinct : un étudiant a plusieurs inscriptions).
+    counts = base.aggregate(
+        all=Count("id", distinct=True),
+        active=Count("id", filter=Q(user__course_enrollments__status=ACTIVE), distinct=True),
+        pending=Count("id", filter=Q(user__course_enrollments__status=PENDING), distinct=True),
+    )
+
+    qs = base.select_related("user").annotate(
+        enroll_count=Count("user__course_enrollments", distinct=True),
+        active_count=Count("user__course_enrollments",
+                           filter=Q(user__course_enrollments__status=ACTIVE), distinct=True),
+        pending_count=Count("user__course_enrollments",
+                            filter=Q(user__course_enrollments__status=PENDING), distinct=True),
+    )
+    # Filtre segment : on filtre sur l'annotation (HAVING) pour éviter la
+    # duplication de lignes qu'entraînerait un filtre sur la jointure inverse.
+    access = request.GET.get("access")
+    if access == "active":
+        qs = qs.filter(active_count__gt=0)
+    elif access == "pending":
+        qs = qs.filter(pending_count__gt=0)
+
+    search = request.GET.get("search")
+    if search:
+        qs = qs.filter(
+            Q(user__username__icontains=search)
+            | Q(user__first_name__icontains=search)
+            | Q(user__last_name__icontains=search)
+            | Q(user__email__icontains=search)
+        )
+
+    items = []
+    for p in qs.order_by("-created_at")[:300]:
+        row = _serialize_profile(p)
+        row["active_count"] = getattr(p, "active_count", 0)
+        row["pending_count"] = getattr(p, "pending_count", 0)
+        items.append(row)
+    return JsonResponse({"counts": counts, "items": items})
+
+
+@staff_required
+def student_detail(request: HttpRequest, pk: int) -> JsonResponse:
+    """Fiche étudiant (drawer admin) : ses cours suivis avec, par cours, le
+    statut de paiement (actif / paiement en attente) et la progression
+    (chapitres terminés / total)."""
+    try:
+        p = Profile.objects.select_related("user").get(pk=pk, role=Profile.Role.STUDENT)
+    except Profile.DoesNotExist:
+        return _error("Étudiant introuvable", 404)
+
+    user = p.user
+    enrollments = list(
+        CourseEnrollment.objects.filter(student=user)
+        .select_related("course").order_by("-created_at")
+    )
+    course_ids = [e.course_id for e in enrollments]
+
+    # Total de chapitres par cours + chapitres terminés par CET étudiant
+    # (2 requêtes agrégées : pas de N+1).
+    chap_totals = dict(
+        Chapter.objects.filter(course_id__in=course_ids)
+        .values("course_id").annotate(n=Count("id"))
+        .values_list("course_id", "n")
+    )
+    done = dict(
+        ChapterCompletion.objects.filter(student=user, chapter__course_id__in=course_ids)
+        .values("chapter__course_id").annotate(n=Count("id"))
+        .values_list("chapter__course_id", "n")
+    )
+
+    courses = []
+    for e in enrollments:
+        total = chap_totals.get(e.course_id, 0)
+        completed = done.get(e.course_id, 0)
+        pct = round(completed / total * 100) if total else 0
+        courses.append({
+            "enrollment_id": e.pk,
+            "course_id": e.course_id,
+            "course_title": e.course.title,
+            "price_htg": e.course.price_htg,
+            "status": e.status,
+            "status_label": e.get_status_display(),
+            "chapters_total": total,
+            "chapters_done": completed,
+            "progress": pct,
+            "created_at": e.created_at.isoformat(),
+        })
+
+    data = _serialize_profile(p)
+    active = sum(1 for e in enrollments if e.status == CourseEnrollment.Status.ACTIVE)
+    data["active_count"] = active
+    data["pending_count"] = len(enrollments) - active
+    data["courses"] = courses
+    return JsonResponse(data)
+
+
+@staff_required
+def student_export(request: HttpRequest) -> StreamingHttpResponse:
+    """Export CSV de la liste des étudiants (respecte le segment ?access et la
+    ?search courants). Colonnes lisibles (nom, email, tél, compteurs)."""
+    ACTIVE = CourseEnrollment.Status.ACTIVE
+    PENDING = CourseEnrollment.Status.PENDING_PAYMENT
+    qs = Profile.objects.filter(role=Profile.Role.STUDENT).select_related("user").annotate(
+        enroll_count=Count("user__course_enrollments", distinct=True),
+        active_count=Count("user__course_enrollments",
+                           filter=Q(user__course_enrollments__status=ACTIVE), distinct=True),
+        pending_count=Count("user__course_enrollments",
+                            filter=Q(user__course_enrollments__status=PENDING), distinct=True),
+    )
+    access = request.GET.get("access")
+    if access == "active":
+        qs = qs.filter(active_count__gt=0)
+    elif access == "pending":
+        qs = qs.filter(pending_count__gt=0)
+    search = request.GET.get("search")
+    if search:
+        qs = qs.filter(
+            Q(user__username__icontains=search)
+            | Q(user__first_name__icontains=search)
+            | Q(user__last_name__icontains=search)
+            | Q(user__email__icontains=search)
+        )
+    qs = qs.order_by("-created_at")
+    header = ["Nom", "Email", "Téléphone", "Cours suivis",
+              "Accès actifs", "Paiements en attente", "Inscrit le"]
+
+    def _rows() -> Generator[str, None, None]:
+        import csv, io
+        yield "﻿"  # BOM UTF-8 (Excel FR)
+        buf = io.StringIO()
+        w = csv.writer(buf, delimiter=";")
+        w.writerow(header)
+        yield buf.getvalue(); buf.seek(0); buf.truncate(0)
+        for p in qs.iterator():
+            u = p.user
+            w.writerow([
+                _csv_safe(u.get_full_name() or u.username),
+                _csv_safe(u.email or ""),
+                _csv_safe(p.phone or ""),
+                p.enroll_count, p.active_count, p.pending_count,
+                p.created_at.strftime("%Y-%m-%d"),
+            ])
+            yield buf.getvalue(); buf.seek(0); buf.truncate(0)
+
+    resp = StreamingHttpResponse(_rows(), content_type="text/csv; charset=utf-8")
+    resp["Content-Disposition"] = 'attachment; filename="etudiants.csv"'
+    return resp
 
 
 # ── Bookings ─────────────────────────────────────────────
