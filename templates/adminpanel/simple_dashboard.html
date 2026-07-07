@@ -378,6 +378,13 @@ textarea { resize: vertical; min-height: 80px; }
 .stat__icon svg { width:20px; height:20px; }
 .stat__value { font-size:27px; font-weight:800; letter-spacing:-.02em; line-height:1; color:var(--text); font-variant-numeric:tabular-nums; }
 .stat__label { font-size:12.5px; color:var(--muted); margin-top:7px; font-weight:500; }
+/* === Badge delta mois-sur-mois sur la carte Revenus (dashboard) === */
+/* ANCRE: coller ces regles juste APRES la ligne 321 (.stat__label { ... }) dans le <style> */
+.stat__delta { display:inline-flex; align-items:center; gap:3px; font-size:11.5px; font-weight:700; padding:3px 8px; border-radius:999px; line-height:1; font-variant-numeric:tabular-nums; white-space:nowrap; }
+.stat__delta:empty { display:none; }
+.stat__delta[data-dir="up"] { color:#16A34A; background:rgba(22,163,74,.12); }
+.stat__delta[data-dir="down"] { color:#EF4444; background:rgba(239,68,68,.12); }
+.stat__delta-ar { font-size:9px; line-height:1; }
 @keyframes dashIn { to { opacity:1; transform:none; } }
 
 .chart-grid { display:grid; grid-template-columns:repeat(auto-fit,minmax(310px,1fr)); gap:16px; }
@@ -921,6 +928,7 @@ textarea { resize: vertical; min-height: 80px; }
             <div class="chart-head"><h3>Activité récente (7 jours)</h3></div>
             <div class="chart-body" id="recentActivity"></div>
           </div>
+          <div class="chart-card chart-card--wide" style="animation-delay:360ms"><div class="chart-head"><h3>Top GEI par membres</h3></div><div class="chart-body" id="geiBars"></div></div>
         </div>
       </div>
 
@@ -1106,8 +1114,9 @@ function loadMetrics() {
       { k:'contacts', label:'Contacts en attente', value:s.pending_contacts || 0, color:'#EF4444', fmt:fmt },
     ];
     const grid = document.getElementById('statGrid');
-    grid.innerHTML = items.map((it, i) => `<div class="stat" style="--stat-c:${it.color};animation-delay:${i * 55}ms"><div class="stat__top"><span class="stat__icon" style="background:${hexA(it.color, 0.14)};color:${it.color}">${STAT_ICONS[it.k] || ''}</span></div><div class="stat__value">0</div><div class="stat__label">${esc(it.label)}</div></div>`).join('');
+    grid.innerHTML = items.map((it, i) => `<div class="stat" style="--stat-c:${it.color};animation-delay:${i * 55}ms"><div class="stat__top"><span class="stat__icon" style="background:${hexA(it.color, 0.14)};color:${it.color}">${STAT_ICONS[it.k] || ''}</span><span class="stat__delta" data-k="${it.k}"></span></div><div class="stat__value">0</div><div class="stat__label">${esc(it.label)}</div></div>`).join('');
     grid.querySelectorAll('.stat__value').forEach((el, i) => countUp(el, items[i].value, items[i].fmt));
+    applyRevDelta();
     renderWorklist(s);
     renderRecent(s);
   }).catch(e => toast(e.message, 'error'));
@@ -1152,15 +1161,38 @@ const PAY_STATUS = { paid:{l:'Payé',c:'#16A34A'}, pending:{l:'En attente',c:'#F
 const MEM_STATUS = { active:{l:'Actif',c:'#16A34A'}, prospect:{l:'Prospect',c:'#2563EB'}, paused:{l:'En pause',c:'#F59E0B'}, alumni:{l:'Ancien',c:'#94A3B8'} };
 const CAT_PALETTE = ['#2D6A4F','#2563EB','#F59E0B','#EF4444','#8E44AD','#16A085','#E67E22'];
 
+let _revDelta = null;
+function computeRevDelta(rev) {
+  if (!Array.isArray(rev) || rev.length < 2) return null;
+  const cur = Number(rev[rev.length - 1].v) || 0;
+  const prev = Number(rev[rev.length - 2].v) || 0;
+  if (prev > 0) return { pc: Math.round((cur - prev) / prev * 100), isNew: false };
+  if (cur > 0) return { isNew: true };
+  return null;
+}
+function applyRevDelta() {
+  const slot = document.querySelector('#statGrid .stat__delta[data-k="revenue"]');
+  if (!slot) return;
+  if (_revDelta == null) { slot.innerHTML = ''; slot.removeAttribute('data-dir'); return; }
+  if (_revDelta.isNew) { slot.dataset.dir = 'up'; slot.innerHTML = '<span class="stat__delta-ar">▲</span>nouveau'; slot.title = 'Nouveau revenu ce mois-ci'; return; }
+  const up = _revDelta.pc >= 0;
+  slot.dataset.dir = up ? 'up' : 'down';
+  slot.innerHTML = `<span class="stat__delta-ar">${up ? '▲' : '▼'}</span>${up ? '+' : ''}${_revDelta.pc}%`;
+  slot.title = 'Variation vs mois précédent';
+}
+
 function loadCharts() {
   api('/dashboard/api/charts/').then(d => {
     renderRevenue(d.revenue || []);
     renderDonut('payDonut', (d.payments_by_status || []).filter(r => r.value > 0).map(r => ({ label:(PAY_STATUS[r.key]||{}).l||r.key, color:(PAY_STATUS[r.key]||{}).c||'#94A3B8', value:r.value })));
     renderDonut('catDonut', (d.categories || []).map((r, i) => ({ label:r.name, color:CAT_PALETTE[i % CAT_PALETTE.length], value:r.value })));
     renderBars('memBars', (d.members_by_status || []).filter(r => r.value > 0).map(r => ({ label:(MEM_STATUS[r.key]||{}).l||r.key, color:(MEM_STATUS[r.key]||{}).c||'#94A3B8', value:r.value })));
+    _revDelta = computeRevDelta(d.revenue || []);
+    applyRevDelta();
+    renderBars('geiBars', (d.top_geis || []).map((r, i) => ({ label:r.name, color:CAT_PALETTE[i % CAT_PALETTE.length], value:r.value })));
   }).catch(e => {
     // Ne plus avaler l'erreur en silence : montrer un message + permettre de reessayer.
-    ['revChart', 'payDonut', 'catDonut', 'memBars', 'recentActivity'].forEach(id => {
+    ['revChart', 'payDonut', 'catDonut', 'memBars', 'geiBars', 'recentActivity'].forEach(id => {
       const el = document.getElementById(id);
       if (el) el.innerHTML = '<div style="color:var(--muted);padding:18px 0;font-size:13px">Impossible de charger les données. <a href="#" onclick="loadCharts();return false" style="color:var(--primary);font-weight:600">Réessayer</a></div>';
     });

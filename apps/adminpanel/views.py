@@ -2076,11 +2076,17 @@ def dashboard_charts(request: HttpRequest) -> JsonResponse:
     pay_status = list(Payment.objects.values("status").annotate(c=Count("id")))
     mem_status = list(Member.objects.values("status").annotate(c=Count("id")))
     cats = Course.objects.values("category").annotate(c=Count("id")).order_by("-c")
+    # Top GEI par nombre de membres (widget « Top GEI par membres »).
+    top_geis = list(
+        GEI.objects.annotate(c=Count("members")).filter(c__gt=0)
+        .order_by("-c").values("name", "c")[:6]
+    )
     return JsonResponse({
         "revenue": _serialize_revenue_for_react(),
         "payments_by_status": [{"key": r["status"], "value": r["c"]} for r in pay_status],
         "members_by_status": [{"key": r["status"], "value": r["c"]} for r in mem_status],
         "categories": [{"name": r["category"] or "Autre", "value": r["c"]} for r in cats if r["category"]],
+        "top_geis": [{"name": r["name"], "value": r["c"]} for r in top_geis],
     })
 
 
