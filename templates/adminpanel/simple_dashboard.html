@@ -491,6 +491,37 @@ textarea { resize: vertical; min-height: 80px; }
 .pm-grid { display:grid; grid-template-columns:repeat(auto-fill,minmax(320px,1fr)); gap:16px; }
 .pm-card { background:var(--card); border:1px solid var(--border); border-radius:15px; padding:16px 17px; box-shadow:var(--shadow-sm); display:flex; flex-direction:column; opacity:0; transform:translateY(10px); animation:dashIn .45s cubic-bezier(.4,0,.2,1) forwards; transition:transform .2s, box-shadow .2s; }
 .pm-card:hover { transform:translateY(-3px); box-shadow:var(--shadow-lg); }
+/* ===== SECTION TEMOIGNAGES — galerie de cartes (prefixe tst-) =====
+   A inserer dans le <style> inline, JUSTE APRES la regle `.pm-card:hover { ... }`
+   (actuellement ligne 434), avant le commentaire `/* ===== SECTION PRODUITS ... */
+.tst-grid { display:grid; grid-template-columns:repeat(auto-fill,minmax(320px,1fr)); gap:16px; }
+.tst-card { position:relative; background:var(--card); border:1px solid var(--border); border-radius:15px; box-shadow:var(--shadow-sm); display:flex; flex-direction:column; opacity:0; transform:translateY(10px); animation:dashIn .45s cubic-bezier(.4,0,.2,1) forwards; transition:transform .2s, box-shadow .2s, opacity .2s; }
+.tst-card:hover { transform:translateY(-3px); box-shadow:var(--shadow-lg); }
+.tst-card.is-off { opacity:.6; }
+.tst-card.is-off:hover { opacity:1; }
+.tst-reorder { position:absolute; top:10px; right:10px; display:flex; flex-direction:column; align-items:center; gap:2px; z-index:2; }
+.tst-arrow { width:26px; height:22px; border:1px solid var(--border); background:var(--card); border-radius:7px; color:var(--muted); cursor:pointer; display:grid; place-items:center; padding:0; transition:background .15s, border-color .15s, color .15s; }
+.tst-arrow svg { width:14px; height:14px; }
+.tst-arrow:hover { background:var(--primary-light); border-color:var(--primary); color:var(--primary-600); }
+.tst-arrow:disabled { opacity:.35; cursor:not-allowed; }
+.tst-arrow:disabled:hover { background:var(--card); border-color:var(--border); color:var(--muted); }
+.tst-rank { font-size:10.5px; font-weight:700; color:var(--muted); line-height:1; padding:1px 0; }
+.tst-body { padding:18px 18px 8px; flex:1; display:flex; flex-direction:column; }
+.tst-quote { font-family:Georgia,'Times New Roman',serif; font-size:44px; line-height:.6; color:var(--primary); opacity:.32; height:22px; user-select:none; }
+.tst-text { margin:6px 0 16px; font-size:13.5px; line-height:1.6; color:var(--text); white-space:pre-line; }
+.tst-person { display:flex; align-items:center; gap:11px; margin-top:auto; }
+.tst-av { position:relative; width:44px; height:44px; border-radius:50%; flex-shrink:0; display:grid; place-items:center; color:#fff; font-weight:700; font-size:15px; overflow:hidden; }
+.tst-av img { position:absolute; inset:0; width:100%; height:100%; object-fit:cover; }
+.tst-who { min-width:0; }
+.tst-name { font-weight:700; font-size:13.5px; color:var(--text); display:flex; align-items:center; gap:7px; flex-wrap:wrap; }
+.tst-loc { font-size:11.5px; color:var(--muted); margin-top:1px; word-break:break-word; }
+.tst-badge { font-size:10px; font-weight:700; padding:1px 8px; border-radius:999px; letter-spacing:.2px; white-space:nowrap; }
+.tst-badge.on { background:rgba(16,185,129,0.12); color:#047857; }
+.tst-badge.off { background:rgba(148,163,184,0.18); color:#64748B; }
+.tst-act { display:flex; align-items:center; gap:8px; padding:10px 14px 13px; border-top:1px solid var(--border); }
+.tst-sw { width:44px; height:24px; }
+.tst-sw-lbl { font-size:12px; font-weight:600; color:var(--muted); }
+.tst-spacer { flex:1; }
 /* ===== SECTION PRODUITS — grille d'inventaire (prefixe pinv-) ===== */
 .pinv-grid { display:grid; grid-template-columns:repeat(auto-fill,minmax(240px,1fr)); gap:16px; }
 .pinv-card { background:var(--card); border:1px solid var(--border); border-radius:15px; overflow:hidden; box-shadow:var(--shadow-sm); display:flex; flex-direction:column; opacity:0; transform:translateY(10px); animation:dashIn .45s cubic-bezier(.4,0,.2,1) forwards; transition:transform .2s, box-shadow .2s; }
@@ -863,7 +894,7 @@ textarea { resize: vertical; min-height: 80px; }
       <div class="section" id="section-bookings"><div class="card" id="card-bookings"></div></div>
       <div class="section" id="section-enrollments"><div class="card" id="card-enrollments"></div></div>
       <div class="section" id="section-contacts"><div class="card" id="card-contacts"></div></div>
-      <div class="section" id="section-testimonials"><div class="card" id="card-testimonials"></div></div>
+      <div class="section" id="section-testimonials"><div id="card-testimonials"></div></div>
       <div class="section" id="section-providers"><div id="card-providers"></div></div>
       <div class="section" id="section-products"><div class="card" id="card-products"></div></div>
       <div class="section" id="section-orders"><div class="card" id="card-orders"></div></div>
@@ -989,6 +1020,7 @@ function navigateTo(section, resetPage = true) {
   else if (section === 'students') loadStudents();
   else if (section === 'blog') loadBlog();
   else if (section === 'formationEnrollments') loadFormationEnrollments();
+  else if (section === 'testimonials') loadTestimonials();
   else loadTable(section);
 }
 
@@ -1370,22 +1402,26 @@ const SECTIONS = {
     title: 'Témoignages',
     endpoint: '/dashboard/api/testimonials/',
     createEndpoint: '/dashboard/api/testimonials/create/',
-    canCreate: true, canEdit: true, canDelete: true,
+    canCreate: true, canEdit: true, canDelete: true, uploadTarget: 'testimonial',
     columns: [
       { key:'author_name', label:'Auteur', render: r => `<strong>${esc(r.author_name)}</strong><br><span style="font-size:11px;color:var(--muted)">${esc(r.location || '')}</span>` },
-      { key:'text', label:'Texte', render: r => esc(r.text).slice(0,100) + (r.text.length > 100 ? '…' : '') },
+      { key:'text', label:'Texte', render: r => esc(r.text).slice(0,100) + ((r.text || '').length > 100 ? '…' : '') },
       { key:'sort_order', label:'Ordre', render: r => r.sort_order },
       { key:'is_active', label:'Actif', render: r => r.is_active ? '<span class="pill green">Oui</span>' : '<span class="pill red">Non</span>' },
     ],
     formTitle: r => r ? 'Modifier le témoignage' : 'Nouveau témoignage',
     formFields: r => [
       { name:'author_name', label:'Nom de l\'auteur', type:'text', value: r?.author_name || '', required: true },
-      { name:'location', label:'Localisation', type:'text', value: r?.location || '' },
+      { name:'location', label:'Localisation (ex. « GEI Pétion-Ville · 2 ans »)', type:'text', value: r?.location || '' },
       { name:'text', label:'Témoignage', type:'textarea', value: r?.text || '', required: true },
-      { name:'sort_order', label:'Ordre d\'affichage', type:'number', value: r?.sort_order || 0 },
-      { name:'is_active', label:'Actif', type:'checkbox', value: r?.is_active ?? true },
+      { name:'photo', label:'Photo (optionnel — sinon les initiales sont affichées)', type:'image', value: r?.photo || '' },
+      { name:'author_initials', label:'Initiales de secours (si pas de photo — ex. « MJ »)', type:'text', value: r?.author_initials || '', maxLength: 6 },
+      { name:'sort_order', label:'Ordre d\'affichage', type:'number', value: r?.sort_order || 0, min: 0 },
+      { name:'is_active', label:'Actif (visible sur le site)', type:'checkbox', value: r?.is_active ?? true },
     ],
-    serializeForm: d => ({ ...d, author_initials: '' }),
+    // Les initiales alimentent l'avatar du site public ; si l'admin ne les saisit
+    // pas, on les derive du nom (testiInitials est defini plus bas dans le script).
+    serializeForm: d => ({ ...d, author_initials: String(d.author_initials || '').trim() || testiInitials(d.author_name) }),
     detailUrl: r => '/dashboard/api/testimonials/' + r.id + '/',
   },
   providers: {
@@ -1745,6 +1781,7 @@ function refreshSection(sectionKey) {
   else if (sectionKey === 'students') loadStudents();
   else if (sectionKey === 'blog') loadBlog();
   else if (sectionKey === 'formationEnrollments') loadFormationEnrollments();
+  else if (sectionKey === 'testimonials') loadTestimonials();
   else loadTable(sectionKey);
 }
 
@@ -2362,6 +2399,124 @@ function _providerCopyFallback(val, done) {
     document.body.removeChild(ta);
     if (ok) done(); else toast('Copie impossible', 'error');
   } catch (e) { toast('Copie impossible', 'error'); }
+}
+
+// ============= SECTION TEMOIGNAGES — galerie de cartes (vue premium) =============
+// Rendu proche du site public (photo/initiales, nom, localisation, texte).
+// Fleches monter/descendre => reordonne via PUT sort_order (renumerotation
+// sequentielle, seuls les enregistrements modifies sont persistes).
+// Interrupteur en ligne => PUT is_active. Creation/edition/suppression et
+// upload photo reutilisent la config SECTIONS.testimonials (openModal/editRow/
+// confirmDelete/uploadPendingImage).
+const testiState = { items: [], total: 0, busy: false };
+
+// Initiales a partir d'un nom complet (2 lettres max), fallback '?'.
+function testiInitials(name) {
+  const p = String(name || '').trim().split(/\s+/).filter(Boolean);
+  const ini = ((p[0] || '')[0] || '') + ((p[1] || '')[0] || '');
+  return (ini || (p[0] || '?')[0] || '?').toUpperCase();
+}
+
+function loadTestimonials() {
+  currentSection.name = 'testimonials';
+  _headerNewButton('Nouveau témoignage', 'testimonials');
+  const host = document.getElementById('card-testimonials');
+  if (!host.querySelector('.tst-grid')) host.innerHTML = '<div class="mloading"><span class="mspin"></span> Chargement des témoignages…</div>';
+  // per_page=100 (borne serveur) : la galerie tient sur une page pour permettre
+  // le reordonnancement ; suffisant pour le volume de temoignages.
+  api('/dashboard/api/testimonials/?per_page=100')
+    .then(d => renderTestimonials(d))
+    .catch(e => { host.innerHTML = '<div style="padding:24px;color:var(--danger)">' + esc(e.message) + '</div>'; });
+}
+
+function renderTestimonials(d) {
+  const host = document.getElementById('card-testimonials');
+  const items = (d.items || []).slice();
+  testiState.items = items;
+  testiState.total = (d.total != null) ? d.total : items.length;
+  _rowCache['testimonials'] = {}; // pour editRow / confirmDelete
+  items.forEach(r => { _rowCache['testimonials'][r.id] = r; });
+  const active = items.filter(r => r.is_active).length;
+
+  let h = statsHtml([
+    { l:'Témoignages', v: fmt(testiState.total), c:'#2D6A4F' },
+    { l:'Affichés sur le site', v: fmt(active), c:'#16A34A' },
+    { l:'Masqués', v: fmt(items.length - active), c:'#DC2626' },
+  ]);
+
+  if (!items.length) {
+    h += '<div class="mempty"><svg viewBox="0 0 24 24" width="46" height="46" fill="none" stroke="currentColor" stroke-width="1.6"><path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z"/></svg><h4>Aucun témoignage</h4><div>Ajoutez le premier avis d\'un parent ou d\'un élève avec « Nouveau témoignage ».</div></div>';
+  } else {
+    h += '<div class="tst-grid">' + items.map((r, i) => {
+      const initials = esc(r.author_initials || testiInitials(r.author_name));
+      const bg = avatarColor(r.author_name || '?');
+      // Avatar : fond colore + initiales toujours presents ; la photo (si fournie)
+      // les recouvre, et retombe sur les initiales si l'image casse (onerror).
+      const av = r.photo
+        ? `<span class="tst-av" style="background:${bg}">${initials}<img src="${esc(r.photo)}" alt="" onerror="this.remove()"></span>`
+        : `<span class="tst-av" style="background:${bg}">${initials}</span>`;
+      const status = r.is_active ? '<span class="tst-badge on">Affiché</span>' : '<span class="tst-badge off">Masqué</span>';
+      const upDis = i === 0 ? ' disabled' : '';
+      const dnDis = i === items.length - 1 ? ' disabled' : '';
+      return `<article class="tst-card${r.is_active ? '' : ' is-off'}" data-id="${r.id}">`
+        + `<div class="tst-reorder">`
+        +   `<button class="tst-arrow" title="Monter"${upDis} onclick="moveTestimonial(${r.id},-1)"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2"><polyline points="18 15 12 9 6 15"/></svg></button>`
+        +   `<span class="tst-rank">${i + 1}</span>`
+        +   `<button class="tst-arrow" title="Descendre"${dnDis} onclick="moveTestimonial(${r.id},1)"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2"><polyline points="6 9 12 15 18 9"/></svg></button>`
+        + `</div>`
+        + `<div class="tst-body">`
+        +   `<div class="tst-quote">&ldquo;</div>`
+        +   `<p class="tst-text">${esc(r.text || '')}</p>`
+        +   `<div class="tst-person">${av}<div class="tst-who"><div class="tst-name">${esc(r.author_name || '')} ${status}</div><div class="tst-loc">${esc(r.location || '')}</div></div></div>`
+        + `</div>`
+        + `<div class="tst-act">`
+        +   `<label class="switch tst-sw" title="Afficher / masquer sur le site"><input type="checkbox" ${r.is_active ? 'checked' : ''} onchange="toggleTestimonial(${r.id}, this.checked)"><span class="switch__track"></span></label>`
+        +   `<span class="tst-sw-lbl">Actif</span>`
+        +   `<span class="tst-spacer"></span>`
+        +   `<button class="btn btn-sm" onclick="editRow('testimonials',${r.id})">Modifier</button>`
+        +   `<button class="btn btn-sm btn-danger" onclick="confirmDelete('testimonials',${r.id})">Supprimer</button>`
+        + `</div>`
+        + `</article>`;
+    }).join('') + '</div>';
+  }
+  host.innerHTML = h;
+}
+
+// Interrupteur actif/inactif en ligne (PUT is_active), re-rendu local (badge + stats).
+function toggleTestimonial(id, checked) {
+  api('/dashboard/api/testimonials/' + id + '/', { method: 'PUT', body: JSON.stringify({ is_active: checked }) })
+    .then(() => {
+      const r = _rowCache['testimonials'][id]; if (r) r.is_active = checked;
+      const it = testiState.items.find(x => x.id === id); if (it) it.is_active = checked;
+      renderTestimonials({ items: testiState.items, total: testiState.total });
+      toast(checked ? 'Témoignage affiché sur le site' : 'Témoignage masqué', 'success');
+    })
+    .catch(e => { toast(e.message, 'error'); loadTestimonials(); });
+}
+
+// Reordonne : echange l'element avec son voisin, renumerote sequentiellement
+// (sort_order = index) et ne persiste (PUT) que les lignes reellement modifiees.
+function moveTestimonial(id, dir) {
+  if (testiState.busy) return;
+  const items = testiState.items.slice();
+  const i = items.findIndex(x => x.id === id);
+  const j = i + dir;
+  if (i < 0 || j < 0 || j >= items.length) return;
+  const tmp = items[i]; items[i] = items[j]; items[j] = tmp;
+  const puts = [];
+  items.forEach((it, idx) => {
+    if (it.sort_order !== idx) {
+      it.sort_order = idx;
+      puts.push(api('/dashboard/api/testimonials/' + it.id + '/', { method: 'PUT', body: JSON.stringify({ sort_order: idx }) }));
+    }
+  });
+  testiState.items = items;
+  renderTestimonials({ items: items, total: testiState.total }); // re-rendu optimiste
+  if (!puts.length) return;
+  testiState.busy = true;
+  Promise.all(puts)
+    .then(() => { testiState.busy = false; toast('Ordre mis à jour', 'success'); })
+    .catch(e => { testiState.busy = false; toast(e.message, 'error'); loadTestimonials(); });
 }
 
 // ============= SECTION CONTACTS (boite de triage — rendu custom) =============
