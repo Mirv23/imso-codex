@@ -281,6 +281,54 @@ textarea { resize: vertical; min-height: 80px; }
 .okb-next svg { width:13px; height:13px; }
 .okb-empty { color:var(--muted); font-size:12.5px; text-align:center; padding:16px 8px; }
 .okb-more { text-align:center; font-size:12px; color:var(--muted); padding:2px; }
+/* ============ SECTION BLOG — kanban editorial (.bk) + editeur/apercu (.be/.bp) ============ */
+/* Colonnes: on REUTILISE le shell kanban existant .okb-col / .okb-col__hd / __dot / __ttl / __ct / __body / .okb-empty / .okb-more (lecture seule, aucune surcharge). */
+.bk-card { background:var(--card); border:1px solid var(--border); border-left:3px solid var(--border); border-radius:11px; padding:11px 12px; cursor:pointer; transition:box-shadow .15s, transform .05s; }
+.bk-card:hover { box-shadow:0 6px 18px rgba(15,23,42,.10); }
+.bk-card:active { transform:scale(.995); }
+.bk-card__cover { width:100%; height:96px; border-radius:8px; object-fit:cover; background:var(--bg); display:block; margin-bottom:9px; }
+.bk-card__cover--ph { display:flex; align-items:center; justify-content:center; color:var(--muted); border:1px dashed var(--border); }
+.bk-card__cover--ph svg { width:22px; height:22px; }
+.bk-card__title { font-weight:700; font-size:14px; color:var(--text); line-height:1.3; margin-bottom:4px; }
+.bk-card__excerpt { font-size:12px; color:var(--muted); line-height:1.4; margin-bottom:8px; display:-webkit-box; -webkit-line-clamp:2; -webkit-box-orient:vertical; overflow:hidden; }
+.bk-card__foot { display:flex; align-items:center; justify-content:space-between; gap:8px; }
+.bk-card__author { font-size:11.5px; color:var(--muted); min-width:0; white-space:nowrap; overflow:hidden; text-overflow:ellipsis; }
+.bk-card__author b { color:var(--text); font-weight:600; }
+.bk-card__date { font-size:11px; color:var(--muted); white-space:nowrap; flex:none; }
+
+/* ── Editeur lateral (overlay dedie, propre z-index au-dessus des autres) ── */
+.be-overlay { position:fixed; inset:0; background:rgba(15,23,42,.55); backdrop-filter:blur(3px); z-index:210; display:none; align-items:flex-start; justify-content:center; padding:28px 16px; overflow-y:auto; }
+.be-overlay.open { display:flex; }
+.be-panel { background:var(--card); border-radius:18px; width:100%; max-width:1000px; box-shadow:0 24px 60px rgba(0,0,0,.35); overflow:hidden; animation:ceIn .3s cubic-bezier(.4,0,.2,1); } /* ceIn: keyframe existant */
+.be-head { display:flex; align-items:center; justify-content:space-between; padding:15px 20px; border-bottom:1px solid var(--border); }
+.be-head__t { font-size:16px; font-weight:800; color:var(--text); letter-spacing:-.01em; }
+.be-close { width:34px; height:34px; border-radius:10px; border:1px solid var(--border); background:var(--bg); color:var(--muted); font-size:16px; cursor:pointer; display:grid; place-items:center; transition:all .15s; }
+.be-close:hover { color:var(--danger); border-color:var(--danger); }
+.be-split { display:grid; grid-template-columns:1fr 1fr; align-items:stretch; }
+.be-form { padding:18px 20px 16px; border-right:1px solid var(--border); }
+.be-row { display:grid; grid-template-columns:1fr 1fr; gap:12px; }
+.be-actions { display:flex; align-items:center; gap:8px; margin-top:6px; padding-top:14px; border-top:1px solid var(--border); }
+.be-actions .btn-danger { margin-right:auto; }
+.be-preview { padding:18px 20px 22px; background:var(--bg); max-height:calc(100vh - 160px); overflow-y:auto; }
+.be-preview__label { font-size:11px; font-weight:700; text-transform:uppercase; letter-spacing:.05em; color:var(--muted); margin-bottom:12px; }
+
+/* ── Apercu (article rendu) ── */
+.bp { }
+.bp__cover { width:100%; height:180px; border-radius:12px; object-fit:cover; display:block; margin-bottom:14px; }
+.bp__cover--ph { display:flex; align-items:center; justify-content:center; color:rgba(255,255,255,.92); background:linear-gradient(135deg,var(--primary),#0EA5E9); }
+.bp__cover--ph svg { width:34px; height:34px; }
+.bp__title { font-size:24px; font-weight:800; letter-spacing:-.02em; color:var(--text); line-height:1.2; margin:8px 0; word-break:break-word; }
+.bp__title--empty { color:var(--muted); font-weight:600; }
+.bp__meta { font-size:12.5px; color:var(--muted); margin-bottom:14px; display:flex; align-items:center; gap:8px; flex-wrap:wrap; }
+.bp__excerpt { font-size:14.5px; color:var(--text); font-weight:600; line-height:1.5; margin:0 0 14px; padding-left:12px; border-left:3px solid var(--primary); }
+.bp__body { font-size:13.5px; color:var(--text); line-height:1.7; word-break:break-word; }
+
+@media (max-width:820px) {
+  .be-split { grid-template-columns:1fr; }
+  .be-form { border-right:none; border-bottom:1px solid var(--border); }
+  .be-row { grid-template-columns:1fr; }
+  .be-preview { max-height:none; }
+}
 
 /* Drawer latéral de détail (z-index 90 : SOUS le modal d'édition à 100, AU-DESSUS du contenu/sidebar) */
 #orderDrawerRoot { position:fixed; inset:0; z-index:90; pointer-events:none; }
@@ -474,6 +522,22 @@ textarea { resize: vertical; min-height: 80px; }
 .pm-line code { font-variant-numeric:tabular-nums; }
 .pm-card__act { display:flex; gap:7px; }
 .pm-card__act .btn { flex:1; justify-content:center; }
+/* ===== SECTION providers : additifs reorder + copier =====
+   A coller a la suite du bloc .pm-card__act (juste apres la ligne
+   `.pm-card__act .btn { flex:1; justify-content:center; }`, ~ligne 476). */
+
+/* Fleches monter/descendre (pile verticale, au bout de .pm-card__top) */
+.pm-reorder { display:flex; flex-direction:column; gap:3px; flex-shrink:0; margin-left:2px; }
+.pm-arrow { width:24px; height:20px; padding:0; border:1px solid var(--border); background:var(--card); border-radius:6px; color:var(--muted); cursor:pointer; display:flex; align-items:center; justify-content:center; transition:background .15s, border-color .15s, color .15s; }
+.pm-arrow svg { width:13px; height:13px; }
+.pm-arrow:hover:not(:disabled) { background:var(--primary-light); border-color:var(--primary); color:var(--primary-600); }
+.pm-arrow:disabled { opacity:.32; cursor:not-allowed; }
+
+/* Bouton Copier a cote du numero de compte */
+.pm-copy { margin-left:2px; width:26px; height:24px; padding:0; border:1px solid var(--border); background:var(--card); border-radius:7px; color:var(--muted); cursor:pointer; display:inline-flex; align-items:center; justify-content:center; flex-shrink:0; transition:background .15s, border-color .15s, color .15s; }
+.pm-copy svg { width:14px; height:14px; }
+.pm-copy:hover { background:var(--primary-light); border-color:var(--primary); color:var(--primary-600); }
+.pm-copy--done { background:#dcfce7; border-color:#16A34A; color:#16A34A; }
 .mcard__av svg { width:22px; height:22px; }
 .mtag { display:inline-block; padding:2px 9px; border-radius:6px; font-size:11px; font-weight:600; background:var(--bg); color:var(--muted); }
 .mcap { flex:0 0 auto; min-width:118px; }
@@ -912,6 +976,7 @@ function navigateTo(section, resetPage = true) {
   else if (section === 'bookings') loadBookings();
   else if (section === 'admins') { loadTable('admins'); loadAuditPanel(); }
   else if (section === 'students') loadStudents();
+  else if (section === 'blog') loadBlog();
   else loadTable(section);
 }
 
@@ -1666,6 +1731,7 @@ function refreshSection(sectionKey) {
   else if (sectionKey === 'orders') loadOrders();
   else if (sectionKey === 'bookings') loadBookings();
   else if (sectionKey === 'students') loadStudents();
+  else if (sectionKey === 'blog') loadBlog();
   else loadTable(sectionKey);
 }
 
@@ -2189,7 +2255,7 @@ function loadProviders() {
 }
 function renderProviders(d) {
   const host = document.getElementById('card-providers');
-  const items = d.items || []; _rowCache['providers'] = {}; items.forEach(r => _rowCache['providers'][r.id] = r);
+  const items = d.items || []; _rowCache['providers'] = {}; items.forEach(r => _rowCache['providers'][r.id] = r); _providersOrder = items.map(r => r.id);
   const s = d.stats || {};
   let h = statsHtml([
     { l:'Moyens de paiement', v: fmt(s.total || 0), c:'#2D6A4F' },
@@ -2200,17 +2266,22 @@ function renderProviders(d) {
   if (!items.length) {
     h += '<div class="mempty"><svg viewBox="0 0 24 24" width="46" height="46" fill="none" stroke="currentColor" stroke-width="1.6"><rect x="1" y="4" width="22" height="16" rx="2"/><line x1="1" y1="10" x2="23" y2="10"/></svg><h4>Aucun moyen de paiement</h4><div>Ajoutez MonCash, NatCash, une banque locale, Stripe, PayPal… avec le bouton « Nouveau moyen de paiement ».</div></div>';
   } else {
-    h += '<div class="pm-grid">' + items.map((p) => {
+    h += '<div class="pm-grid">' + items.map((p, i) => {
       const m = PM_META[p.provider_type] || { c:'#64748B', l:p.provider_type };
+      const isFirst = i === 0, isLast = i === items.length - 1;
+      const reorder = '<div class="pm-reorder">'
+        + '<button type="button" class="pm-arrow" onclick="providerMove(' + p.id + ',-1)"' + (isFirst ? ' disabled' : '') + ' title="Monter" aria-label="Monter"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4"><polyline points="18 15 12 9 6 15"/></svg></button>'
+        + '<button type="button" class="pm-arrow" onclick="providerMove(' + p.id + ',1)"' + (isLast ? ' disabled' : '') + ' title="Descendre" aria-label="Descendre"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4"><polyline points="6 9 12 15 18 9"/></svg></button>'
+        + '</div>';
       const logo = p.logo ? `<img src="${esc(p.logo)}" alt="">` : `<span style="background:${hexA(m.c,0.14)};color:${m.c}">${esc((p.name || '?').trim().charAt(0).toUpperCase())}</span>`;
       const modeBadge = p.mode === 'api' ? '<span class="pm-badge api">API</span>' : '<span class="pm-badge manual">Manuel</span>';
       const status = p.is_active ? '<span class="pm-dot on"></span>Activé' : '<span class="pm-dot off"></span>Désactivé';
       let lines = '';
-      if (p.account_number) lines += `<div class="pm-line"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="2" y="4" width="20" height="16" rx="2"/><path d="M2 10h20"/></svg><code>${esc(p.account_number)}</code>${p.account_name ? ' · ' + esc(p.account_name) : ''}</div>`;
+      if (p.account_number) lines += `<div class="pm-line"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="2" y="4" width="20" height="16" rx="2"/><path d="M2 10h20"/></svg><code>${esc(p.account_number)}</code>${p.account_name ? ' · ' + esc(p.account_name) : ''}<button type="button" class="pm-copy" data-copy="${esc(p.account_number)}" onclick="providerCopy(this)" title="Copier le numero" aria-label="Copier le numero"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="9" y="9" width="12" height="12" rx="2"/><path d="M5 15H4a2 2 0 0 1-2-2V4a2 2 0 0 1 2-2h9a2 2 0 0 1 2 2v1"/></svg></button></div>`;
       if (p.has_secret || p.api_public_key) lines += `<div class="pm-line"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M21 2l-2 2m-7.6 7.6a5 5 0 1 1-7 7 5 5 0 0 1 7-7zm0 0L15 8m0 0l3 3 3-3-3-3"/></svg>Identifiants API ${p.has_secret ? 'enregistrés' : '(clé publique seule)'}</div>`;
       if (p.checkout_url) lines += `<div class="pm-line"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M10 13a5 5 0 0 0 7 0l3-3a5 5 0 0 0-7-7l-1 1"/><path d="M14 11a5 5 0 0 0-7 0l-3 3a5 5 0 0 0 7 7l1-1"/></svg>Lien de paiement externe</div>`;
       const testBtn = (p.mode === 'api' && p.has_secret) ? `<button class="btn btn-sm" onclick="testProvider(${p.id})">Tester</button>` : '';
-      return `<div class="pm-card" data-id="${p.id}"><div class="pm-card__top"><div class="pm-logo">${logo}</div><div class="pm-card__ttl"><div class="pm-name">${esc(p.name)} ${modeBadge}</div><div class="pm-type" style="color:${m.c}">${esc(m.l)}</div></div><div class="pm-status">${status}</div></div><div class="pm-card__meta">${lines || '<span style="color:var(--muted);font-size:13px">Aucune coordonnée renseignée</span>'}</div><div class="pm-card__act">${testBtn}<button class="btn btn-sm" onclick="editRow('providers',${p.id})">Modifier</button><button class="btn btn-sm btn-danger" onclick="confirmDelete('providers',${p.id})">Supprimer</button></div></div>`;
+      return `<div class="pm-card" data-id="${p.id}"><div class="pm-card__top"><div class="pm-logo">${logo}</div><div class="pm-card__ttl"><div class="pm-name">${esc(p.name)} ${modeBadge}</div><div class="pm-type" style="color:${m.c}">${esc(m.l)}</div></div><div class="pm-status">${status}</div>${reorder}</div><div class="pm-card__meta">${lines || '<span style="color:var(--muted);font-size:13px">Aucune coordonnée renseignée</span>'}</div><div class="pm-card__act">${testBtn}<button class="btn btn-sm" onclick="editRow('providers',${p.id})">Modifier</button><button class="btn btn-sm btn-danger" onclick="confirmDelete('providers',${p.id})">Supprimer</button></div></div>`;
     }).join('') + '</div>';
   }
   host.innerHTML = h;
@@ -2220,6 +2291,64 @@ function testProvider(id) {
   api('/dashboard/api/providers/' + id + '/test/', { method:'POST', body:'{}' })
     .then(d => toast(d.message || (d.ok ? 'Connexion réussie' : 'Échec'), d.ok ? 'success' : 'error'))
     .catch(e => toast(e.message, 'error'));
+}
+
+// ===== SECTION providers : reorder (sort_order via provider_detail PUT) + copier =====
+// A coller apres la fonction testProvider() (avant le commentaire
+// "// ============= SECTION CONTACTS ..." ~ligne 2209). Vanilla, helpers reutilises.
+
+// Ordre d'affichage courant (ids), alimente par renderProviders — sert au reordonnancement.
+let _providersOrder = [];
+
+// Deplace un moyen de paiement d'un cran (dir = -1 monter, +1 descendre).
+// Reindexe sort_order = position ; ne PUT que les cartes dont l'ordre a change
+// (robuste meme si tous les sort_order valent 0 : la liste se normalise).
+function providerMove(id, dir) {
+  const order = _providersOrder.slice();
+  const i = order.indexOf(id);
+  if (i < 0) return;
+  const j = i + dir;
+  if (j < 0 || j >= order.length) return; // deja tout en haut / tout en bas
+  order.splice(j, 0, order.splice(i, 1)[0]); // deplace l'element a sa nouvelle position
+
+  const cache = _rowCache['providers'] || {};
+  const changed = [];
+  order.forEach((pid, idx) => { if ((cache[pid] || {}).sort_order !== idx) changed.push({ id: pid, so: idx }); });
+  if (!changed.length) return;
+
+  // Reordonne le DOM immediatement (optimiste) sans tout repeindre.
+  const grid = document.querySelector('#card-providers .pm-grid');
+  if (grid) order.forEach(pid => { const c = grid.querySelector('.pm-card[data-id="' + pid + '"]'); if (c) grid.appendChild(c); });
+
+  Promise.all(changed.map(u => api('/dashboard/api/providers/' + u.id + '/', { method: 'PUT', body: JSON.stringify({ sort_order: u.so }) })))
+    .then(() => { toast('Ordre mis a jour', 'success'); loadProviders(); }) // recharge = etats fleches (1er/dernier) a jour
+    .catch(e => { toast(e.message, 'error'); loadProviders(); });           // resync en cas d'echec
+}
+
+// Copie le numero de compte dans le presse-papier (lu depuis data-copy, deja esc()).
+function providerCopy(btn) {
+  const val = btn.getAttribute('data-copy') || '';
+  if (!val) return;
+  const done = () => {
+    toast('Numero copie : ' + val, 'success');
+    btn.classList.add('pm-copy--done');
+    setTimeout(() => btn.classList.remove('pm-copy--done'), 1200);
+  };
+  if (navigator.clipboard && navigator.clipboard.writeText) {
+    navigator.clipboard.writeText(val).then(done).catch(() => _providerCopyFallback(val, done));
+  } else {
+    _providerCopyFallback(val, done); // contexte non securise (http) : clipboard API indisponible
+  }
+}
+function _providerCopyFallback(val, done) {
+  try {
+    const ta = document.createElement('textarea');
+    ta.value = val; ta.style.position = 'fixed'; ta.style.top = '-1000px'; ta.style.opacity = '0';
+    document.body.appendChild(ta); ta.focus(); ta.select();
+    const ok = document.execCommand('copy');
+    document.body.removeChild(ta);
+    if (ok) done(); else toast('Copie impossible', 'error');
+  } catch (e) { toast('Copie impossible', 'error'); }
 }
 
 // ============= SECTION CONTACTS (boite de triage — rendu custom) =============
@@ -3060,6 +3189,327 @@ function bkDayListHtml(iso){
 
 // ============= MODAL =============
 // Ouvre le formulaire d'édition à partir de l'id (l'enregistrement vient du cache).
+// ============= SECTION BLOG (kanban editorial + editeur avec apercu live) =============
+const BLOG_COLUMNS = [
+  { v:'draft',     l:'Brouillon',  color:'#F59E0B', dot:'#F59E0B' },
+  { v:'scheduled', l:'Programmé',  color:'#2563EB', dot:'#2563EB' },
+  { v:'published', l:'Publié',     color:'#16A34A', dot:'#16A34A' },
+];
+const BLOG_STATUS = {
+  draft:     { l:'Brouillon', cls:'amber' },
+  scheduled: { l:'Programmé', cls:'blue'  },
+  published: { l:'Publié',    cls:'green' },
+};
+const BLOG_COVER_PH = '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6"><rect x="3" y="3" width="18" height="18" rx="2"/><circle cx="8.5" cy="8.5" r="1.5"/><path d="M21 15l-5-5L5 21"/></svg>';
+
+// Compte a rebours pour un article programme -> {label, cls(pill)}.
+function blogCountdown(iso) {
+  if (!iso) return { label:'Date non définie', cls:'gray' };
+  const diff = new Date(iso).getTime() - Date.now();
+  if (isNaN(diff)) return { label:'Date invalide', cls:'gray' };
+  if (diff <= 0) return { label:'Publication imminente', cls:'amber' };
+  const days = Math.floor(diff / 86400000);
+  if (days >= 1) return { label:'Publié dans ' + days + ' j', cls:'blue' };
+  const hours = Math.floor(diff / 3600000);
+  if (hours >= 1) return { label:'Publié dans ' + hours + ' h', cls:'blue' };
+  const mins = Math.max(1, Math.floor(diff / 60000));
+  return { label:'Publié dans ' + mins + ' min', cls:'amber' };
+}
+
+function loadBlog() {
+  currentSection.name = 'blog';
+  const actions = document.getElementById('headerActions');
+  actions.innerHTML = '';
+  const nb = document.createElement('button');
+  nb.className = 'btn btn-primary';
+  nb.innerHTML = PLUS_ICON + ' Nouvel article';
+  nb.onclick = () => openBlogEditor(null);
+  const rb = document.createElement('button');
+  rb.className = 'btn btn-sm';
+  rb.innerHTML = '<svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="23 4 23 10 17 10"/><path d="M20.49 15a9 9 0 1 1-2.12-9.36L23 10"/></svg> Actualiser';
+  rb.onclick = () => loadBlog();
+  actions.appendChild(nb); actions.appendChild(rb);
+
+  const host = document.getElementById('card-blog');
+  if (!host.querySelector('.okb')) host.innerHTML = '<div class="mloading"><span class="mspin"></span> Chargement du tableau éditorial…</div>';
+
+  Promise.all(BLOG_COLUMNS.map(col =>
+    api('/dashboard/api/blog/?status=' + col.v + '&per_page=100')
+      .then(d => ({ col, items: d.items || [], total: d.total || 0 }))
+  )).then(cols => {
+    _rowCache['blog'] = {};
+    cols.forEach(c => c.items.forEach(p => { _rowCache['blog'][p.id] = p; }));
+    renderBlogKanban(cols);
+  }).catch(e => {
+    host.innerHTML = '<div style="padding:24px;color:var(--danger)">' + esc(e.message) + '</div>';
+  });
+}
+
+function renderBlogKanban(cols) {
+  let h = '<div class="okb">';
+  cols.forEach(({ col, items, total }) => {
+    h += '<div class="okb-col"><div class="okb-col__hd">'
+       + '<span class="okb-col__dot" style="background:' + col.dot + '"></span>'
+       + '<span class="okb-col__ttl">' + esc(col.l) + '</span>'
+       + '<span class="okb-col__ct">' + fmt(total) + '</span></div>'
+       + '<div class="okb-col__body">';
+    if (!items.length) {
+      h += '<div class="okb-empty">Aucun article</div>';
+    } else {
+      items.forEach(p => { h += blogCard(p, col); });
+      if (total > items.length) h += '<div class="okb-more">+ ' + fmt(total - items.length) + ' autre(s)…</div>';
+    }
+    h += '</div></div>';
+  });
+  h += '</div>';
+  document.getElementById('card-blog').innerHTML = h;
+}
+
+function blogCard(p, col) {
+  const cover = p.cover_image
+    ? '<img class="bk-card__cover" src="' + esc(p.cover_image) + '" alt="">'
+    : '<div class="bk-card__cover bk-card__cover--ph">' + BLOG_COVER_PH + '</div>';
+
+  let foot;
+  if (col.v === 'scheduled') {
+    const cd = blogCountdown(p.scheduled_for);
+    foot = '<span class="pill pill-sm ' + cd.cls + '">' + esc(cd.label) + '</span>';
+  } else if (col.v === 'published') {
+    const d = p.published_at ? new Date(p.published_at).toLocaleDateString('fr-FR', { day:'2-digit', month:'short', year:'numeric' }) : '—';
+    foot = '<span class="bk-card__date">Publié le ' + esc(d) + '</span>';
+  } else {
+    const d = p.created_at ? new Date(p.created_at).toLocaleDateString('fr-FR', { day:'2-digit', month:'short' }) : '';
+    foot = '<span class="bk-card__date">Créé le ' + esc(d) + '</span>';
+  }
+
+  return '<div class="bk-card" style="border-left-color:' + col.color + '" onclick="openBlogEditor(' + p.id + ')">'
+    + cover
+    + '<div class="bk-card__title">' + esc(p.title || 'Sans titre') + '</div>'
+    + (p.excerpt ? '<div class="bk-card__excerpt">' + esc(p.excerpt) + '</div>' : '')
+    + '<div class="bk-card__foot"><span class="bk-card__author">'
+    + (p.author ? '<b>' + esc(p.author) + '</b>' : 'Anonyme') + '</span>' + foot + '</div>'
+    + '</div>';
+}
+
+// ── Editeur lateral avec volet apercu ──
+let _beId = null, _beRecord = null, _beCoverURL = null;
+
+function ensureBlogEditor() {
+  let root = document.getElementById('blogEditorOverlay');
+  if (root) return root;
+  root = document.createElement('div');
+  root.id = 'blogEditorOverlay';
+  root.className = 'be-overlay';
+  root.innerHTML = '<div class="be-panel" id="blogEditorPanel"></div>';
+  root.addEventListener('click', function (e) { if (e.target === this) closeBlogEditor(); });
+  document.body.appendChild(root);
+  return root;
+}
+
+function openBlogEditor(id) {
+  _beId = id || null;
+  _beRecord = null;
+  if (_beCoverURL) { URL.revokeObjectURL(_beCoverURL); _beCoverURL = null; }
+  const overlay = ensureBlogEditor();
+  overlay.classList.add('open');
+  document.getElementById('blogEditorPanel').innerHTML = '<div class="mloading" style="padding:44px"><span class="mspin"></span> Chargement…</div>';
+  if (id) {
+    api('/dashboard/api/blog/' + id + '/')
+      .then(r => { _beRecord = r; renderBlogEditor(r); })
+      .catch(e => { toast(e.message, 'error'); closeBlogEditor(); });
+  } else {
+    renderBlogEditor(null);
+  }
+}
+
+function closeBlogEditor() {
+  const root = document.getElementById('blogEditorOverlay');
+  if (root) root.classList.remove('open');
+  if (_beCoverURL) { URL.revokeObjectURL(_beCoverURL); _beCoverURL = null; }
+  _beId = null; _beRecord = null;
+}
+
+function renderBlogEditor(r) {
+  const isEdit = !!r;
+  const status = (r && r.status) || 'draft';
+  const schedVal = r && r.scheduled_for ? r.scheduled_for.slice(0, 16) : '';
+  const opt = (v, l) => '<option value="' + v + '"' + (status === v ? ' selected' : '') + '>' + l + '</option>';
+  const req = ' <span style="color:var(--danger)">*</span>';
+
+  let h = '<div class="be-head"><div class="be-head__t">' + (isEdit ? 'Modifier l\'article' : 'Nouvel article')
+        + '</div><button class="be-close" onclick="closeBlogEditor()" aria-label="Fermer">✕</button></div>';
+  h += '<div class="be-split">';
+
+  // Colonne formulaire
+  h += '<div class="be-form">';
+  h += '<div class="form-group"><label class="form-label">Titre' + req + '</label>'
+     + '<input type="text" id="be_title" value="' + esc((r && r.title) || '') + '" oninput="blogPreviewUpdate()"></div>';
+  h += '<div class="be-row">'
+     + '<div class="form-group"><label class="form-label">Auteur</label>'
+     + '<input type="text" id="be_author" value="' + esc((r && r.author) || '') + '" oninput="blogPreviewUpdate()"></div>'
+     + '<div class="form-group"><label class="form-label">Statut</label>'
+     + '<select id="be_status" onchange="blogStatusChange()">' + opt('draft', 'Brouillon') + opt('scheduled', 'Programmé') + opt('published', 'Publié') + '</select></div>'
+     + '</div>';
+  h += '<div class="form-group" id="be_sched_group" style="' + (status === 'scheduled' ? '' : 'display:none') + '">'
+     + '<label class="form-label">Date de programmation' + req + '</label>'
+     + '<input type="datetime-local" id="be_scheduled_for" value="' + esc(schedVal) + '" oninput="blogPreviewUpdate()"></div>';
+  h += '<div class="form-group"><label class="form-label">Résumé (extrait)</label>'
+     + '<textarea id="be_excerpt" oninput="blogPreviewUpdate()">' + esc((r && r.excerpt) || '') + '</textarea></div>';
+  h += '<div class="form-group"><label class="form-label">Contenu' + req + '</label>'
+     + '<textarea id="be_body" style="min-height:160px" oninput="blogPreviewUpdate()">' + esc((r && r.body) || '') + '</textarea></div>';
+  h += '<div class="form-group"><label class="form-label">Image de couverture</label>'
+     + '<input type="file" id="be_cover" accept="image/*" onchange="blogCoverChange(this)">'
+     + '<div style="font-size:11px;color:var(--muted);margin-top:4px">JPG/PNG, max 5 Mo.'
+     + (isEdit ? ' Laisser vide pour garder l\'image actuelle.' : '') + '</div></div>';
+  h += '<div class="be-actions">';
+  if (isEdit) h += '<button class="btn btn-danger btn-sm" onclick="blogDeleteFromEditor()">' + DEL_ICON + ' Supprimer</button>';
+  h += '<button class="btn" onclick="closeBlogEditor()">Annuler</button>'
+     + '<button class="btn btn-primary" id="be_save" onclick="saveBlogEditor()">' + (isEdit ? 'Enregistrer' : 'Créer l\'article') + '</button>';
+  h += '</div></div>';
+
+  // Colonne apercu
+  h += '<div class="be-preview"><div class="be-preview__label">Aperçu de l\'article</div>'
+     + '<article class="bp">'
+     + '<div id="bp_cover"></div>'
+     + '<span id="bp_status"></span>'
+     + '<h1 class="bp__title" id="bp_title"></h1>'
+     + '<div class="bp__meta" id="bp_meta"></div>'
+     + '<p class="bp__excerpt" id="bp_excerpt"></p>'
+     + '<div class="bp__body" id="bp_body"></div>'
+     + '</article></div>';
+
+  h += '</div>';
+  document.getElementById('blogEditorPanel').innerHTML = h;
+  blogPreviewUpdate();
+}
+
+function blogStatusChange() {
+  const st = document.getElementById('be_status').value;
+  const g = document.getElementById('be_sched_group');
+  if (g) g.style.display = st === 'scheduled' ? '' : 'none';
+  blogPreviewUpdate();
+}
+
+function blogCoverChange(inp) {
+  if (_beCoverURL) { URL.revokeObjectURL(_beCoverURL); _beCoverURL = null; }
+  if (inp.files && inp.files[0]) _beCoverURL = URL.createObjectURL(inp.files[0]);
+  blogPreviewUpdate();
+}
+
+function _blogNl2br(s) { return esc(s).replace(/\n/g, '<br>'); }
+
+function blogPreviewUpdate() {
+  const g = id => document.getElementById(id);
+  if (!g('bp_title')) return;
+  const title   = g('be_title')   ? g('be_title').value   : '';
+  const author  = g('be_author')  ? g('be_author').value  : '';
+  const status  = g('be_status')  ? g('be_status').value  : 'draft';
+  const excerpt = g('be_excerpt') ? g('be_excerpt').value : '';
+  const body    = g('be_body')    ? g('be_body').value    : '';
+  const sched   = g('be_scheduled_for') ? g('be_scheduled_for').value : '';
+
+  // Couverture (fichier local prioritaire, sinon image existante, sinon placeholder)
+  const coverUrl = _beCoverURL || (_beRecord && _beRecord.cover_image) || '';
+  g('bp_cover').innerHTML = coverUrl
+    ? '<img class="bp__cover" src="' + esc(coverUrl) + '" alt="">'
+    : '<div class="bp__cover bp__cover--ph">' + BLOG_COVER_PH + '</div>';
+
+  // Statut
+  const st = BLOG_STATUS[status] || BLOG_STATUS.draft;
+  const sEl = g('bp_status');
+  sEl.className = 'pill pill-sm ' + st.cls;
+  sEl.textContent = st.l;
+
+  // Titre
+  const tEl = g('bp_title');
+  if (title.trim()) { tEl.textContent = title; tEl.className = 'bp__title'; }
+  else { tEl.textContent = 'Titre de l\'article'; tEl.className = 'bp__title bp__title--empty'; }
+
+  // Meta (auteur + info temporelle selon statut)
+  let meta = author.trim() ? esc(author) : 'Auteur inconnu';
+  if (status === 'scheduled') {
+    const cd = blogCountdown(sched);
+    meta += ' • <span class="pill pill-sm ' + cd.cls + '">' + esc(cd.label) + '</span>';
+  } else if (status === 'published') {
+    const d = (_beRecord && _beRecord.published_at) ? new Date(_beRecord.published_at) : new Date();
+    meta += ' • Publié le ' + esc(d.toLocaleDateString('fr-FR', { day:'2-digit', month:'long', year:'numeric' }));
+  } else {
+    meta += ' • Brouillon';
+  }
+  g('bp_meta').innerHTML = meta;
+
+  // Extrait
+  const exEl = g('bp_excerpt');
+  if (excerpt.trim()) { exEl.style.display = ''; exEl.innerHTML = _blogNl2br(excerpt); }
+  else exEl.style.display = 'none';
+
+  // Corps
+  g('bp_body').innerHTML = body.trim()
+    ? _blogNl2br(body)
+    : '<span style="color:var(--muted)">Le contenu de l\'article s\'affichera ici…</span>';
+}
+
+function saveBlogEditor() {
+  const g = id => document.getElementById(id);
+  const data = {
+    title:   g('be_title').value.trim(),
+    author:  g('be_author').value,
+    excerpt: g('be_excerpt').value,
+    body:    g('be_body').value,
+    status:  g('be_status').value,
+  };
+  if (!data.title)        { toast('Le titre est obligatoire.', 'error'); return; }
+  if (!data.body.trim())  { toast('Le contenu est obligatoire.', 'error'); return; }
+  if (data.status === 'scheduled') {
+    const sv = g('be_scheduled_for').value;
+    if (!sv) { toast('Une date de programmation est requise.', 'error'); return; }
+    data.scheduled_for = sv;
+  } else {
+    data.scheduled_for = null;
+  }
+
+  const btn = g('be_save'); if (btn) btn.disabled = true;
+  const isEdit = !!_beId;
+  const req = isEdit
+    ? api('/dashboard/api/blog/' + _beId + '/', { method:'PUT', body: JSON.stringify(data) })
+    : api('/dashboard/api/blog/create/', { method:'POST', body: JSON.stringify(data) });
+
+  req.then(saved => blogUploadCover(saved && saved.id).then(() => saved))
+    .then(() => {
+      toast(isEdit ? 'Article enregistré' : 'Article créé', 'success');
+      closeBlogEditor();
+      loadBlog();
+    })
+    .catch(e => { if (btn) btn.disabled = false; toast(e.message, 'error'); });
+}
+
+// Upload de la couverture (endpoint existant /upload/blog/<id>/) apres POST/PUT.
+function blogUploadCover(id) {
+  const inp = document.getElementById('be_cover');
+  if (!id || !inp || !inp.files || !inp.files[0]) return Promise.resolve();
+  const fd = new FormData();
+  fd.append('file', inp.files[0]);
+  return fetch('/dashboard/api/upload/blog/' + id + '/', {
+    method:'POST', headers:{ 'X-CSRFToken': CSRF }, credentials:'same-origin', body: fd,
+  }).then(r => { if (!r.ok) return r.json().then(e => { throw new Error(e.error || 'Upload de la couverture échoué'); }); });
+}
+
+// Suppression: on ferme l'editeur et on reutilise le flux confirmDelete (SECTIONS.blog).
+function blogDeleteFromEditor() {
+  const id = _beId;
+  if (!id) return;
+  closeBlogEditor();
+  confirmDelete('blog', id);
+}
+
+// Fermeture au clavier (Echap). Enregistre une seule fois au chargement du script.
+document.addEventListener('keydown', function (e) {
+  if (e.key === 'Escape') {
+    const o = document.getElementById('blogEditorOverlay');
+    if (o && o.classList.contains('open')) closeBlogEditor();
+  }
+});
+
 function editRow(sectionKey, id) {
   const record = (_rowCache[sectionKey] || {})[id] || null;
   openModal(sectionKey, record);
