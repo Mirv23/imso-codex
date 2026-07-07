@@ -761,6 +761,19 @@ textarea { resize: vertical; min-height: 80px; }
   color: #fff;
 }
 .btn-ok:hover { background: #245a42; border-color: #245a42; }
+/* ===== Onglets editeur de cours + liste etudiants (a coller apres .ce-note, vers la ligne 546) ===== */
+.ce-tabs { display:flex; gap:0; border-bottom:1px solid var(--border); margin-bottom:16px; }
+.ce-tab { border:none; background:none; padding:8px 4px; margin-right:18px; font-size:13.5px; font-weight:600; color:var(--muted); cursor:pointer; border-bottom:2px solid transparent; margin-bottom:-1px; transition:color .15s, border-color .15s; }
+.ce-tab:hover { color:var(--text); }
+.ce-tab.active { color:var(--primary); border-bottom-color:var(--primary); }
+.ce-students { display:flex; flex-direction:column; gap:8px; }
+.ce-student { display:flex; align-items:center; gap:12px; background:var(--bg); border:1px solid var(--border); border-radius:11px; padding:10px 13px; }
+.ce-student__av { width:34px; height:34px; border-radius:50%; display:grid; place-items:center; font-size:12px; font-weight:800; flex-shrink:0; }
+.ce-student__main { flex:1; min-width:0; }
+.ce-student__name { font-weight:600; font-size:13.5px; color:var(--text); display:flex; align-items:center; gap:7px; }
+.ce-student__mail { font-size:11.5px; color:var(--muted); margin-top:2px; overflow:hidden; text-overflow:ellipsis; white-space:nowrap; }
+.ce-student__prog { flex:0 0 auto; min-width:140px; }
+@media (max-width:520px){ .ce-student__prog { min-width:104px; } .ce-student__mail { max-width:150px; } }
 </style>) ===== */
 .settings-card { padding: 0; overflow: visible; }
 .settings-tabs { display:flex; flex-wrap:wrap; gap:4px; padding:12px 16px; border-bottom:1px solid var(--border); position:sticky; top:0; background:var(--card); z-index:6; border-radius:var(--radius) var(--radius) 0 0; }
@@ -2190,8 +2203,9 @@ function renderCourses(d) {
   let h = statsHtml([
     { l:'Total cours', v: fmt(s.total || 0), c:'#2D6A4F' },
     { l:'Cours actifs', v: fmt(s.active || 0), c:'#16A34A' },
-    { l:'Inscriptions', v: fmt(s.enrollments || 0), c:'#F59E0B' },
-    { l:'Catégories', v: fmt(cats.length), c:'#8E44AD' },
+    { l:'Étudiants plateforme', v: fmt(s.students || 0), c:'#F59E0B' },
+    { l:'Accès actifs', v: fmt(s.active_access || 0), c:'#3B82F6' },
+    { l:'Revenu confirmé (HTG)', v: fmt(s.revenue_confirmed || 0), c:'#8E44AD' },
   ]);
   h += '<div class="mtoolbar"><div class="msearch">' + SEARCH_ICON + '<input id="courseSearch" type="text" placeholder="Rechercher un cours (titre, formateur)…" value="' + esc(courseFilters.search) + '" oninput="courseSearchInput(this.value)"></div>';
   h += '<select class="mselect" onchange="setCourseCategory(this.value)"><option value="">Toutes catégories</option>' + cats.map(ct => `<option value="${esc(ct)}" ${courseFilters.category===ct?'selected':''}>${esc(ct)}</option>`).join('') + '</select>';
@@ -2222,10 +2236,11 @@ function renderCourses(d) {
 
 // ============= ÉDITEUR DE COURS (chapitres) =============
 let _ceCourseId = null, _ceChapters = [], _ceEditingId = null, _ceAdding = false;
+let _ceTab = 'content', _ceStudents = null, _ceStudentsMeta = null, _ceStudentsErr = '';
 const LEVEL_LABELS = { beginner:'Débutant', intermediate:'Intermédiaire', advanced:'Avancé' };
 
 function openCourseEditor(id) {
-  _ceCourseId = id; _ceEditingId = null; _ceAdding = false;
+  _ceCourseId = id; _ceEditingId = null; _ceAdding = false; _ceTab = 'content'; _ceStudents = null; _ceStudentsMeta = null; _ceStudentsErr = '';
   const course = (_rowCache['courses'] || {})[id];
   document.getElementById('courseEditorOverlay').classList.add('open');
   document.getElementById('courseEditorPanel').innerHTML = '<div class="mloading" style="padding:80px 20px"><span class="mspin"></span> Chargement du cours…</div>';
@@ -2236,7 +2251,47 @@ function openCourseEditor(id) {
     .catch(e => { document.getElementById('courseEditorPanel').innerHTML = '<div style="padding:24px;color:var(--danger)">' + esc(e.message) + '</div>'; });
 }
 
-function closeCourseEditor() { document.getElementById('courseEditorOverlay').classList.remove('open'); _ceCourseId = null; _ceChapters = []; }
+function closeCourseEditor() { document.getElementById('courseEditorOverlay').classList.remove('open'); _ceCourseId = null; _ceChapters = []; _ceTab = 'content'; _ceStudents = null; _ceStudentsMeta = null; }
+
+function setCeTab(tab) {
+  _ceTab = tab; _ceReload();
+  if (tab === 'students' && _ceStudents === null && _ceCourseId) loadCeStudents();
+}
+function loadCeStudents() {
+  const id = _ceCourseId;
+  api('/dashboard/api/courses/' + id + '/students/')
+    .then(d => { if (_ceCourseId !== id) return; _ceStudents = d.items || []; _ceStudentsMeta = { total: d.total, active: d.active, total_chapters: d.total_chapters, price_htg: d.price_htg }; _ceStudentsErr = ''; _ceReload(); })
+    .catch(e => { if (_ceCourseId !== id) return; _ceStudents = []; _ceStudentsMeta = { total:0, active:0, total_chapters:0, price_htg:0 }; _ceStudentsErr = e.message; _ceReload(); });
+}
+function ceStatusPill(st) {
+  return st === 'active' ? '<span class="pill pill-sm green">Actif</span>' : '<span class="pill pill-sm amber">Paiement en attente</span>';
+}
+function renderCeStudents() {
+  if (_ceStudents === null) return '<div class="mloading" style="padding:44px 20px"><span class="mspin"></span> Chargement des étudiants…</div>';
+  if (_ceStudentsErr) return '<div class="ce-empty" style="color:var(--danger)">' + esc(_ceStudentsErr) + '</div>';
+  const m = _ceStudentsMeta || { total:0, active:0, price_htg:0 };
+  const revenue = (m.active || 0) * (m.price_htg || 0);
+  let h = '<div class="gei-kpis" style="margin-bottom:16px">'
+    + `<div class="gei-kpi"><div class="gei-kpi__v">${fmt(m.total||0)}</div><div class="gei-kpi__l">Inscrits</div></div>`
+    + `<div class="gei-kpi"><div class="gei-kpi__v">${fmt(m.active||0)}</div><div class="gei-kpi__l">Accès actifs</div></div>`
+    + `<div class="gei-kpi"><div class="gei-kpi__v">${fmt(revenue)}</div><div class="gei-kpi__l">Revenu confirmé (HTG)</div></div>`
+    + '</div>';
+  if (!_ceStudents.length) return h + '<div class="ce-empty">Aucun étudiant inscrit à ce cours pour le moment.</div>';
+  h += '<div class="ce-students">';
+  _ceStudents.forEach(st => {
+    const col = avatarColor(st.student_name || String(st.id));
+    const parts = (st.student_name || '').trim().split(/\s+/);
+    const initials = (((parts[0] || '')[0] || '') + ((parts[1] || '')[0] || '')).toUpperCase() || '?';
+    const pct = st.progress_pct || 0;
+    const pcol = pct >= 100 ? '#16A34A' : (pct >= 40 ? '#F59E0B' : '#3B82F6');
+    h += `<div class="ce-student"><div class="ce-student__av" style="background:${hexA(col,0.15)};color:${col}">${esc(initials)}</div>`
+      + `<div class="ce-student__main"><div class="ce-student__name"><span>${esc(st.student_name)}</span>${ceStatusPill(st.status)}</div>`
+      + `<div class="ce-student__mail">${esc(st.student_email || '—')}</div></div>`
+      + `<div class="ce-student__prog"><div class="mcap__top"><span>Progression</span><b>${st.completed_chapters}/${st.total_chapters} chap.</b></div>`
+      + `<div class="mcap__track"><div class="mcap__fill" style="width:${pct}%;background:${pcol}"></div></div></div></div>`;
+  });
+  return h + '</div>';
+}
 
 function renderCourseEditor(c) {
   const col = avatarColor(c.title || 'x');
@@ -2247,6 +2302,9 @@ function renderCourseEditor(c) {
   if (!c.banner) h += '<div class="ce-banner__ph"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="3" y="3" width="18" height="18" rx="2"/><circle cx="8.5" cy="8.5" r="1.5"/><path d="M21 15l-5-5L5 21"/></svg> Bannière (activée avec le stockage)</div>';
   h += `<div class="ce-banner__title">${esc(c.title)}</div><button class="ce-banner-btn" onclick="pickCourseBanner(${c.id})"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M23 19a2 2 0 0 1-2 2H3a2 2 0 0 1-2-2V8a2 2 0 0 1 2-2h4l2-3h6l2 3h4a2 2 0 0 1 2 2z"/><circle cx="12" cy="13" r="4"/></svg> ${c.banner ? 'Changer la bannière' : 'Ajouter une bannière'}</button></div><div class="ce-body">`;
   h += `<div class="ce-meta"><span class="mtag">${esc(c.category)}</span><span class="mtag">${esc(c.instructor)}</span>${c.level ? '<span class="mtag">' + esc(LEVEL_LABELS[c.level] || c.level) + '</span>' : ''}<span class="mtag">${chapters.length} chapitre(s)</span><span class="mtag">${totalMin} min</span></div>`;
+  h += `<div class="ce-tabs"><button class="ce-tab ${_ceTab==='content'?'active':''}" onclick="setCeTab('content')">Contenu${chapters.length?' ('+chapters.length+')':''}</button><button class="ce-tab ${_ceTab==='students'?'active':''}" onclick="setCeTab('students')">Étudiants${_ceStudentsMeta?' ('+_ceStudentsMeta.total+')':''}</button></div>`;
+  if (_ceTab === 'students') { h += renderCeStudents() + '</div>'; }
+  else {
   h += `<div class="ce-sec"><h3>Contenu du cours</h3>${(_ceAdding||_ceEditingId!==null)?'':'<button class="btn btn-primary btn-sm" onclick="showChapterForm(null)">'+PLUS_ICON+' Ajouter un chapitre</button>'}</div>`;
   if (_ceAdding && _ceEditingId === null) h += chapterFormHtml(null);
   if (!chapters.length && !_ceAdding) {
@@ -2260,6 +2318,7 @@ function renderCourseEditor(c) {
     h += '</div>';
   }
   h += `<div class="ce-note"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="10"/><line x1="12" y1="16" x2="12" y2="12"/><line x1="12" y1="8" x2="12.01" y2="8"/></svg><div><b>Astuce :</b> ajoutez une vidéo à chaque chapitre (mp4, webm, mov). L'envoi se fait directement vers le stockage — vous pouvez donc mettre de gros fichiers sans limite serveur.</div></div></div>`;
+  }
   document.getElementById('courseEditorPanel').innerHTML = h;
 }
 

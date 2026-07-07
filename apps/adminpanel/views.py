@@ -678,10 +678,60 @@ def course_overview(request: HttpRequest) -> JsonResponse:
             "active": all_courses.filter(is_active=True).count(),
             "inactive": all_courses.filter(is_active=False).count(),
             "enrollments": Enrollment.objects.count(),
+            # KPI plateforme formation (CourseEnrollment).
+            "students": CourseEnrollment.objects.count(),
+            "active_access": CourseEnrollment.objects.filter(
+                status=CourseEnrollment.Status.ACTIVE
+            ).count(),
+            "revenue_confirmed": CourseEnrollment.objects.filter(
+                status=CourseEnrollment.Status.ACTIVE
+            ).aggregate(s=Sum("course__price_htg"))["s"] or 0,
         },
         "categories": sorted(
             {c for c in all_courses.values_list("category", flat=True) if c}
         ),
+    })
+
+
+@staff_required
+@require_http_methods(["GET"])
+def course_students(request: HttpRequest, pk: int) -> JsonResponse:
+    """Étudiants inscrits à un cours (roster de l'éditeur), avec progression."""
+    try:
+        course = Course.objects.get(pk=pk)
+    except Course.DoesNotExist:
+        return _error("Course not found", 404)
+    total_chapters = course.chapters.count()
+    qs = (
+        CourseEnrollment.objects.filter(course=course)
+        .select_related("student")
+        .annotate(completed=Count(
+            "student__chapter_completions",
+            filter=Q(student__chapter_completions__chapter__course_id=pk),
+            distinct=True,
+        ))
+        .order_by("-created_at")
+    )
+    items, active = [], 0
+    for e in qs:
+        if e.status == CourseEnrollment.Status.ACTIVE:
+            active += 1
+        completed = min(e.completed or 0, total_chapters)
+        items.append({
+            "id": e.pk,
+            "student_name": e.student.get_full_name() or e.student.username,
+            "student_email": e.student.email,
+            "status": e.status,
+            "completed_chapters": completed,
+            "total_chapters": total_chapters,
+            "progress_pct": round(completed / total_chapters * 100) if total_chapters else 0,
+        })
+    return JsonResponse({
+        "items": items,
+        "total": len(items),
+        "active": active,
+        "total_chapters": total_chapters,
+        "price_htg": course.price_htg,
     })
 
 
