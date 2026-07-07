@@ -774,6 +774,37 @@ textarea { resize: vertical; min-height: 80px; }
 .ce-student__mail { font-size:11.5px; color:var(--muted); margin-top:2px; overflow:hidden; text-overflow:ellipsis; white-space:nowrap; }
 .ce-student__prog { flex:0 0 auto; min-width:140px; }
 @media (max-width:520px){ .ce-student__prog { min-width:104px; } .ce-student__mail { max-width:150px; } }
+/* ANCRE : insérer juste APRÈS la ligne 509
+   `@media (max-width:520px){ .gei-kpis { grid-template-columns:1fr 1fr; } }`
+   (fin du bloc « Panneau lateral GEI »). Vanilla, aucune dépendance externe. */
+
+/* ===== Section Membres : bascule Liste|Par GEI, groupes GEI, fiche latérale ===== */
+.mviewtoggle { display:inline-flex; background:var(--bg); border:1px solid var(--border); border-radius:10px; padding:3px; gap:2px; }
+.mvt { border:none; background:transparent; color:var(--muted); font-size:12.5px; font-weight:700; padding:6px 13px; border-radius:8px; cursor:pointer; transition:all .15s; }
+.mvt:hover { color:var(--text); }
+.mvt.active { background:var(--card); color:var(--primary); box-shadow:var(--shadow-sm); }
+
+.mgroups { display:flex; flex-direction:column; gap:20px; }
+.mgroup__hd { display:flex; align-items:baseline; justify-content:space-between; gap:12px; flex-wrap:wrap; margin-bottom:10px; padding-bottom:8px; border-bottom:1px solid var(--border); }
+.mgroup__ttl { display:flex; align-items:center; gap:8px; font-size:14px; font-weight:800; color:var(--text); }
+.mgroup__dot { width:10px; height:10px; border-radius:50%; flex-shrink:0; }
+.mgroup__sub { font-size:12px; color:var(--muted); font-variant-numeric:tabular-nums; }
+.mgroup__sub b { color:var(--text); }
+.mgroup .mlist { display:flex; flex-direction:column; gap:8px; }
+.mcard--clk { cursor:pointer; }
+
+/* Fiche membre latérale — réutilise .ce-overlay/.ce-panel/.ce-banner/.ce-body/.ce-sec/.gei-kpi/.pill */
+.mp-coord { display:grid; grid-template-columns:repeat(2,1fr); gap:10px; margin-bottom:20px; }
+.mp-field { background:var(--bg); border:1px solid var(--border); border-radius:11px; padding:10px 13px; }
+.mp-field__l { font-size:10.5px; text-transform:uppercase; letter-spacing:.04em; color:var(--muted); font-weight:700; }
+.mp-field__v { font-size:13.5px; color:var(--text); font-weight:600; margin-top:3px; word-break:break-word; }
+.mp-list { display:flex; flex-direction:column; gap:8px; margin-bottom:20px; }
+.mp-row { display:flex; align-items:center; gap:12px; background:var(--bg); border:1px solid var(--border); border-radius:11px; padding:11px 14px; }
+.mp-row__main { flex:1; min-width:0; }
+.mp-row__ttl { font-weight:600; font-size:13.5px; color:var(--text); overflow:hidden; text-overflow:ellipsis; white-space:nowrap; }
+.mp-row__sub { font-size:11.5px; color:var(--muted); margin-top:2px; overflow:hidden; text-overflow:ellipsis; white-space:nowrap; }
+.mp-row__amt { flex:0 0 auto; text-align:right; font-weight:700; font-size:13.5px; color:var(--text); font-variant-numeric:tabular-nums; }
+@media (max-width:520px){ .mp-coord { grid-template-columns:1fr; } }
 </style>) ===== */
 .settings-card { padding: 0; overflow: visible; }
 .settings-tabs { display:flex; flex-wrap:wrap; gap:4px; padding:12px 16px; border-bottom:1px solid var(--border); position:sticky; top:0; background:var(--card); z-index:6; border-radius:var(--radius) var(--radius) 0 0; }
@@ -1893,7 +1924,7 @@ function refreshSection(sectionKey) {
 }
 
 // ============= SECTION MEMBRES (vue premium) =============
-const memberFilters = { search: '', status: '', gei: '', sort: 'recent' };
+const memberFilters = { search: '', status: '', gei: '', sort: 'recent', view: 'list' };
 const AVATAR_COLORS = ['#2D6A4F','#2563EB','#8E44AD','#E67E22','#16A085','#C0392B','#D35400','#2980B9','#B7791F','#4C51BF'];
 function avatarColor(s) { let h = 0; s = s || '?'; for (let i = 0; i < s.length; i++) h = (h * 31 + s.charCodeAt(i)) >>> 0; return AVATAR_COLORS[h % AVATAR_COLORS.length]; }
 function memberInitials(f, l) { const a = (f || '').trim(), b = (l || '').trim(); return (((a[0] || '') + (b[0] || '')) || '?').toUpperCase(); }
@@ -1903,6 +1934,7 @@ function memberSearchInput(val) { memberFilters.search = val; _memberSearchFocus
 function setMemberStatus(s) { memberFilters.status = s; loadMembers(1); }
 function setMemberGei(v) { memberFilters.gei = v; loadMembers(1); }
 function setMemberSort(v) { memberFilters.sort = v; loadMembers(1); }
+function setMemberView(v) { memberFilters.view = v; loadMembers(1); }
 
 function loadMembers(page) {
   page = page || currentSection.page || 1;
@@ -1916,7 +1948,8 @@ function loadMembers(page) {
   btn.onclick = () => openModal('members', null);
   actions.appendChild(btn);
 
-  const params = new URLSearchParams({ page, per_page: 12, sort: memberFilters.sort });
+  const per = memberFilters.view === 'gei' ? 200 : 12;
+  const params = new URLSearchParams({ page, per_page: per, sort: memberFilters.sort });
   if (memberFilters.search) params.set('search', memberFilters.search);
   if (memberFilters.status) params.set('status', memberFilters.status);
   if (memberFilters.gei) params.set('gei', memberFilters.gei);
@@ -1930,6 +1963,25 @@ function loadMembers(page) {
   api('/dashboard/api/members/overview/?' + params.toString())
     .then(d => renderMembers(d))
     .catch(e => { host.innerHTML = '<div class="card"><div style="padding:24px;color:var(--danger)">' + esc(e.message) + '</div></div>'; });
+}
+
+function _memberCardHtml(m, i) {
+  const name = ((m.first_name || '') + ' ' + (m.last_name || '')).trim();
+  const col = avatarColor(name || String(m.id));
+  const gei = m.gei__name
+    ? '<div class="mcard__gei"><span class="pill pill-sm">' + esc(m.gei__name) + '</span></div>'
+    : '<div class="mcard__gei"></div>';
+  const contact = [m.email, m.phone].filter(Boolean).map(esc).join(' · ') || '—';
+  return '<div class="mcard mcard--clk" data-id="' + m.id + '" style="animation-delay:' + Math.min(i * 40, 320) + 'ms"'
+    + ' onclick="if(!event.target.closest(\'.mcard__act\'))openMemberPanel(' + m.id + ')">'
+    + '<div class="mcard__av" style="background:' + hexA(col, 0.15) + ';color:' + col + '">' + memberInitials(m.first_name, m.last_name) + '</div>'
+    + '<div class="mcard__main"><div class="mcard__name"><span class="nm">' + esc(name || '—') + '</span>' + statusBadge(m.status) + '</div>'
+    + '<div class="mcard__meta">' + contact + '</div></div>' + gei
+    + '<div class="mcard__sav"><b>' + fmt(m.monthly_saving_htg || 0) + '</b> <small>HTG / mois</small></div>'
+    + '<div class="mcard__act">'
+    + '<button class="membtn" title="Modifier" onclick="editRow(\'members\',' + m.id + ')">' + EDIT_ICON + '</button>'
+    + '<button class="membtn danger" title="Supprimer" onclick="confirmDelete(\'members\',' + m.id + ')">' + DEL_ICON + '</button>'
+    + '</div></div>';
 }
 
 function renderMembers(d) {
@@ -1955,6 +2007,10 @@ function renderMembers(d) {
   h += '<select class="mselect" onchange="setMemberGei(this.value)"><option value="">Tous les GEI</option>' + geis.map(g => `<option value="${g.id}" ${String(memberFilters.gei)===String(g.id)?'selected':''}>${esc(g.name)}</option>`).join('') + '</select>';
   const sorts = [['recent','Plus récents'],['name','Nom (A-Z)'],['savings','Épargne ↓'],['savings_asc','Épargne ↑'],['oldest','Plus anciens']];
   h += '<select class="mselect" onchange="setMemberSort(this.value)">' + sorts.map(s => `<option value="${s[0]}" ${memberFilters.sort===s[0]?'selected':''}>${s[1]}</option>`).join('') + '</select>';
+  h += '<div class="mviewtoggle">'
+     + '<button class="mvt' + (memberFilters.view !== 'gei' ? ' active' : '') + '" onclick="setMemberView(\'list\')">Liste</button>'
+     + '<button class="mvt' + (memberFilters.view === 'gei' ? ' active' : '') + '" onclick="setMemberView(\'gei\')">Par GEI</button>'
+     + '</div>';
   h += '</div>';
 
   const chips = [['','Tous',totalAll],['active','Actifs',byStatus.active||0],['prospect','Prospects',byStatus.prospect||0],['paused','En pause',byStatus.paused||0],['alumni','Anciens',byStatus.alumni||0]];
@@ -1962,18 +2018,33 @@ function renderMembers(d) {
 
   if (!items.length) {
     h += '<div class="mempty"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6"><path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2"/><circle cx="9" cy="7" r="4"/><path d="M23 21v-2a4 4 0 0 0-3-3.87"/></svg><h4>Aucun membre trouvé</h4><div>' + ((memberFilters.search || memberFilters.status || memberFilters.gei) ? 'Essayez d\'ajuster vos filtres.' : 'Ajoutez votre premier membre avec le bouton « Nouveau membre ».') + '</div></div>';
-  } else {
-    h += '<div class="mlist">' + items.map((m, i) => {
-      const name = ((m.first_name || '') + ' ' + (m.last_name || '')).trim();
-      const col = avatarColor(name || String(m.id));
-      const gei = m.gei__name ? `<div class="mcard__gei"><span class="pill pill-sm">${esc(m.gei__name)}</span></div>` : '<div class="mcard__gei"></div>';
-      const contact = [m.email, m.phone].filter(Boolean).map(esc).join(' · ') || '—';
-      return `<div class="mcard" data-id="${m.id}" style="animation-delay:${Math.min(i*40,320)}ms"><div class="mcard__av" style="background:${hexA(col,0.15)};color:${col}">${memberInitials(m.first_name,m.last_name)}</div><div class="mcard__main"><div class="mcard__name"><span class="nm">${esc(name||'—')}</span>${statusBadge(m.status)}</div><div class="mcard__meta">${contact}</div></div>${gei}<div class="mcard__sav"><b>${fmt(m.monthly_saving_htg||0)}</b> <small>HTG / mois</small></div><div class="mcard__act"><button class="membtn" title="Modifier" onclick="editRow('members',${m.id})"><svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M11 4H4a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-7"/><path d="M18.5 2.5a2.121 2.121 0 0 1 3 3L12 15l-4 1 1-4 9.5-9.5z"/></svg></button><button class="membtn danger" title="Supprimer" onclick="confirmDelete('members',${m.id})"><svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="3 6 5 6 21 6"/><path d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6m3 0V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2"/></svg></button></div></div>`;
+  } else if (memberFilters.view === 'gei') {
+    const groups = {};
+    items.forEach(m => {
+      const key = m.gei_id != null ? m.gei_id : '__none';
+      if (!groups[key]) groups[key] = { name: m.gei__name || 'Sans GEI', none: (key === '__none'), items: [] };
+      groups[key].items.push(m);
+    });
+    const keys = Object.keys(groups).sort((a, b) => {
+      if (groups[a].none) return 1;
+      if (groups[b].none) return -1;
+      return groups[a].name.localeCompare(groups[b].name);
+    });
+    h += '<div class="mgroups">' + keys.map(k => {
+      const g = groups[k];
+      const sav = g.items.reduce((s, m) => s + (m.monthly_saving_htg || 0), 0);
+      const col = avatarColor(g.name);
+      return '<div class="mgroup"><div class="mgroup__hd">'
+        + '<div class="mgroup__ttl"><span class="mgroup__dot" style="background:' + col + '"></span>' + esc(g.name) + '</div>'
+        + '<div class="mgroup__sub">' + g.items.length + ' membre' + (g.items.length > 1 ? 's' : '') + ' · <b>' + fmt(sav) + '</b> HTG / mois</div>'
+        + '</div><div class="mlist">' + g.items.map((m, i) => _memberCardHtml(m, i)).join('') + '</div></div>';
     }).join('') + '</div>';
+  } else {
+    h += '<div class="mlist">' + items.map((m, i) => _memberCardHtml(m, i)).join('') + '</div>';
   }
 
   h += '<div class="mpager"><span>' + total + ' membre' + (total > 1 ? 's' : '') + '</span>';
-  if (totalPages > 1) {
+  if (memberFilters.view !== 'gei' && totalPages > 1) {
     h += '<div class="mpager__nav">';
     h += '<button class="btn btn-sm" ' + (page <= 1 ? 'disabled' : '') + ' onclick="loadMembers(' + (page - 1) + ')">‹ Précédent</button>';
     h += '<span style="font-weight:700;color:var(--text)">' + page + ' / ' + totalPages + '</span>';
@@ -2021,6 +2092,91 @@ function _headerNewButton(label, section) {
   btn.innerHTML = PLUS_ICON + ' ' + label;
   btn.onclick = () => openModal(section, null);
   actions.appendChild(btn);
+}
+
+const _PAY_PURPOSE_LBL = { venue:'Réservation de salle', course:'Inscription cours', membership:'Adhésion', product:'Commande boutique', other:'Autre' };
+
+function openMemberPanel(id) {
+  const panel = document.getElementById('courseEditorPanel');
+  document.getElementById('courseEditorOverlay').classList.add('open');
+  panel.innerHTML = '<div class="mloading" style="padding:80px 20px"><span class="mspin"></span> Chargement de la fiche membre…</div>';
+  api('/dashboard/api/members/' + id + '/profile/')
+    .then(d => renderMemberPanel(d))
+    .catch(e => { panel.innerHTML = '<div style="padding:24px;color:var(--danger)">' + esc(e.message) + '</div>'; });
+}
+
+function renderMemberPanel(d) {
+  const panel = document.getElementById('courseEditorPanel');
+  const m = d.member || {};
+  const t = d.totals || {};
+  const name = ((m.first_name || '') + ' ' + (m.last_name || '')).trim() || '—';
+  const col = avatarColor(name || String(m.id));
+  // Alimente le cache membres pour que « Modifier » (editRow) retrouve la ligne
+  // même si la section Membres n'a jamais été rendue en mode liste.
+  _rowCache['members'] = _rowCache['members'] || {};
+  _rowCache['members'][m.id] = m;
+
+  let h = '<div class="ce-banner" style="background-color:' + col + '">'
+        + '<button class="ce-close" onclick="closeCourseEditor()">✕</button>'
+        + '<div class="ce-banner__title">' + esc(name) + '</div></div>';
+  h += '<div class="ce-body">';
+
+  h += '<div class="ce-meta">' + statusBadge(m.status);
+  if (m.gei__name) h += '<span class="pill blue">' + esc(m.gei__name) + '</span>';
+  if (m.gei__city) h += '<span class="pill gray">' + esc(m.gei__city) + '</span>';
+  h += '</div>';
+
+  h += '<div class="gei-kpis">'
+     + '<div class="gei-kpi"><div class="gei-kpi__v">' + fmt(m.monthly_saving_htg || 0) + '</div><div class="gei-kpi__l">HTG épargne / mois</div></div>'
+     + '<div class="gei-kpi"><div class="gei-kpi__v">' + fmt(t.enrollments || 0) + '</div><div class="gei-kpi__l">Inscriptions</div></div>'
+     + '<div class="gei-kpi"><div class="gei-kpi__v">' + fmt(t.paid_htg || 0) + '</div><div class="gei-kpi__l">HTG payés</div></div>'
+     + '</div>';
+
+  h += '<div class="ce-sec"><h3>Coordonnées</h3>'
+     + '<button class="btn btn-sm" onclick="closeCourseEditor();editRow(\'members\',' + m.id + ')">' + EDIT_ICON + ' Modifier</button></div>';
+  const joined = m.joined_at ? new Date(m.joined_at).toLocaleDateString('fr-FR') : '—';
+  h += '<div class="mp-coord">'
+     + '<div class="mp-field"><div class="mp-field__l">Téléphone</div><div class="mp-field__v">' + esc(m.phone || '—') + '</div></div>'
+     + '<div class="mp-field"><div class="mp-field__l">Email</div><div class="mp-field__v">' + esc(m.email || '—') + '</div></div>'
+     + '<div class="mp-field"><div class="mp-field__l">GEI</div><div class="mp-field__v">' + esc(m.gei__name || 'Sans GEI') + '</div></div>'
+     + '<div class="mp-field"><div class="mp-field__l">Membre depuis</div><div class="mp-field__v">' + joined + '</div></div>'
+     + '</div>';
+
+  // Inscriptions (lecture seule)
+  const enr = d.enrollments || [];
+  h += '<div class="ce-sec"><h3>Inscriptions <span class="pill pill-sm gray">' + enr.length + '</span></h3></div>';
+  if (!enr.length) {
+    h += '<div class="ce-empty">Aucune inscription pour ce membre.</div>';
+  } else {
+    h += '<div class="mp-list">' + enr.map(e => {
+      const dt = e.created_at ? new Date(e.created_at).toLocaleDateString('fr-FR') : '';
+      return '<div class="mp-row"><div class="mp-row__main">'
+        + '<div class="mp-row__ttl">' + esc(e.course_title || 'Cours supprimé') + '</div>'
+        + '<div class="mp-row__sub">' + esc(e.course_category || '—') + (dt ? ' · ' + dt : '') + '</div></div>'
+        + statusBadge(e.status) + '</div>';
+    }).join('') + '</div>';
+  }
+
+  // Paiements liés (lecture seule)
+  const pays = d.payments || [];
+  h += '<div class="ce-sec"><h3>Paiements <span class="pill pill-sm gray">' + pays.length + '</span></h3></div>';
+  if (!pays.length) {
+    h += '<div class="ce-empty">Aucun paiement lié à ce membre.</div>';
+  } else {
+    h += '<div class="mp-list">' + pays.map(p => {
+      const raw = p.paid_at || p.created_at;
+      const dt = raw ? new Date(raw).toLocaleDateString('fr-FR') : '';
+      const purpose = _PAY_PURPOSE_LBL[p.purpose] || p.purpose;
+      const sub = [purpose, p.course_title, p.reference].filter(Boolean).map(esc).join(' · ');
+      return '<div class="mp-row"><div class="mp-row__main">'
+        + '<div class="mp-row__ttl">' + statusBadge(p.status) + ' <span style="color:var(--muted);font-weight:400;font-size:12px">' + dt + '</span></div>'
+        + '<div class="mp-row__sub">' + (sub || '—') + '</div></div>'
+        + '<div class="mp-row__amt">' + fmt(p.amount_htg || 0) + ' <small style="color:var(--muted);font-weight:600">HTG</small></div></div>';
+    }).join('') + '</div>';
+  }
+
+  h += '</div>';
+  panel.innerHTML = h;
 }
 
 // ============= SECTION GEIs (vue premium) =============

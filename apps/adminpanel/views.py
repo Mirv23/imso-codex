@@ -584,6 +584,68 @@ def member_detail(request: HttpRequest, pk: int) -> JsonResponse:
     return _error("Method not allowed", 405)
 
 
+@staff_required
+def member_profile(request: HttpRequest, pk: int) -> JsonResponse:
+    """Fiche membre : coordonnées + inscriptions et paiements liés (lecture seule).
+
+    Les paiements d'un membre sont rattachés INDIRECTEMENT via ses inscriptions
+    (Payment.enrollment -> Enrollment.member). On ne sert aucune capture/PII de
+    paiement (screenshot privé exclu), uniquement les métadonnées de suivi.
+    """
+    try:
+        m = Member.objects.select_related("gei").get(pk=pk)
+    except Member.DoesNotExist:
+        return _error("Member not found", 404)
+
+    enrollments = (
+        Enrollment.objects.select_related("course")
+        .filter(member=m)
+        .order_by("-created_at")
+    )
+    payments = (
+        Payment.objects.select_related("enrollment__course")
+        .filter(enrollment__member=m)
+        .order_by("-created_at")
+    )
+    return JsonResponse({
+        "member": _serialize_member(m),
+        "enrollments": [
+            {
+                "id": e.pk,
+                "status": e.status,
+                "course_title": e.course.title if e.course else None,
+                "course_category": e.course.category if e.course else None,
+                "created_at": e.created_at.isoformat(),
+            }
+            for e in enrollments
+        ],
+        "payments": [
+            {
+                "id": p.pk,
+                "reference": p.reference,
+                "purpose": p.purpose,
+                "status": p.status,
+                "amount_htg": p.amount_htg,
+                "course_title": (
+                    p.enrollment.course.title
+                    if p.enrollment and p.enrollment.course else None
+                ),
+                "paid_at": p.paid_at.isoformat() if p.paid_at else None,
+                "created_at": p.created_at.isoformat(),
+            }
+            for p in payments
+        ],
+        "totals": {
+            "enrollments": enrollments.count(),
+            "payments": payments.count(),
+            "paid_htg": (
+                payments.filter(status=Payment.Status.PAID)
+                .aggregate(s=Sum("amount_htg"))["s"] or 0
+            ),
+        },
+    })
+
+
 # ── Courses ──────────────────────────────────────────────
 
 def _serialize_course(c: Course, enroll_count: int | None = None) -> dict[str, Any]:
