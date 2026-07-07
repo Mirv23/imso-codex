@@ -1160,6 +1160,17 @@ def teacher_kyc_overview(request: HttpRequest) -> JsonResponse:
 
 
 def _serialize_course_enrollment(e: CourseEnrollment) -> dict[str, Any]:
+    # Progression : chapitres terminés par l'étudiant / total du cours.
+    # Utilise les annotations posées par course_enrollment_list quand elles
+    # existent (évite le N+1) ; sinon (détail unitaire / PUT) on recalcule.
+    total = getattr(e, "total_chapters", None)
+    if total is None:
+        total = e.course.chapters.count()
+    done = getattr(e, "done_chapters", None)
+    if done is None:
+        done = ChapterCompletion.objects.filter(
+            student_id=e.student_id, chapter__course_id=e.course_id
+        ).count()
     return {
         "id": e.pk,
         "student_name": e.student.get_full_name() or e.student.username,
@@ -1167,20 +1178,66 @@ def _serialize_course_enrollment(e: CourseEnrollment) -> dict[str, Any]:
         "course_title": e.course.title,
         "price_htg": e.course.price_htg,
         "status": e.status,
+        "total_chapters": total,
+        "done_chapters": min(done, total) if total else done,
         "created_at": e.created_at.isoformat(),
     }
 
 
 @staff_required
 def course_enrollment_list(request: HttpRequest) -> JsonResponse:
-    qs = CourseEnrollment.objects.select_related("student", "course").all()
+    from django.db.models import IntegerField, OuterRef, Subquery
+    from django.db.models.functions import Coalesce
+
+    # Sous-requêtes : nb de chapitres terminés (étudiant×cours) et total du cours.
+    # Annotées pour éviter un N+1 sur la sérialisation de la liste.
+    done_sq = (
+        ChapterCompletion.objects
+        .filter(student_id=OuterRef("student_id"), chapter__course_id=OuterRef("course_id"))
+        .order_by().values("student_id").annotate(c=Count("id")).values("c")[:1]
+    )
+    total_sq = (
+        Chapter.objects
+        .filter(course_id=OuterRef("course_id"))
+        .order_by().values("course_id").annotate(c=Count("id")).values("c")[:1]
+    )
+    qs = (
+        CourseEnrollment.objects
+        .select_related("student", "course")
+        .annotate(
+            done_chapters=Coalesce(Subquery(done_sq, output_field=IntegerField()), 0),
+            total_chapters=Coalesce(Subquery(total_sq, output_field=IntegerField()), 0),
+        )
+    )
     status = request.GET.get("status")
     if status:
         qs = qs.filter(status=status)
     search = request.GET.get("search")
     if search:
         qs = qs.filter(Q(student__username__icontains=search) | Q(course__title__icontains=search))
-    return _paginated_response(qs.order_by("-created_at"), request, _serialize_course_enrollment)
+    resp = _paginated_response(qs.order_by("-created_at"), request, _serialize_course_enrollment)
+
+    # KPI globaux pour la vue pipeline : exacts (indépendants du filtre status
+    # et de la pagination). Calculés seulement quand ?stats=1 -> pas de surcoût
+    # pour l'usage tableau générique existant.
+    if request.GET.get("stats"):
+        stats = {"pending_count": 0, "active_count": 0, "pending_revenue": 0, "active_revenue": 0}
+        agg = (
+            CourseEnrollment.objects
+            .values("status")
+            .annotate(n=Count("id"), revenue=Sum("course__price_htg"))
+        )
+        for row in agg:
+            if row["status"] == CourseEnrollment.Status.ACTIVE:
+                stats["active_count"] = row["n"]
+                stats["active_revenue"] = row["revenue"] or 0
+            elif row["status"] == CourseEnrollment.Status.PENDING_PAYMENT:
+                stats["pending_count"] = row["n"]
+                stats["pending_revenue"] = row["revenue"] or 0
+        payload = json.loads(resp.content)
+        payload["stats"] = stats
+        return JsonResponse(payload)
+    return resp
 
 
 @staff_required

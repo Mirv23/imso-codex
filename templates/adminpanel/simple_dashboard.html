@@ -281,6 +281,17 @@ textarea { resize: vertical; min-height: 80px; }
 .okb-next svg { width:13px; height:13px; }
 .okb-empty { color:var(--muted); font-size:12.5px; text-align:center; padding:16px 8px; }
 .okb-more { text-align:center; font-size:12px; color:var(--muted); padding:2px; }
+/* À insérer dans le bloc <style>, juste APRÈS la ligne 283 (`.okb-more { ... }`),
+   à la suite des styles pipeline .okb qu'on réutilise. */
+
+/* ── Pipeline inscriptions formation (préfixe .fe-) ── */
+.fe-edit { flex:none; background:none; border:none; padding:2px; margin:-2px -2px 0 0; color:var(--muted); cursor:pointer; border-radius:6px; line-height:0; }
+.fe-edit:hover { color:var(--text); background:var(--bg); }
+.fe-edit svg { width:14px; height:14px; }
+.fe-prog { margin-top:9px; }
+.fe-prog__bar { height:6px; border-radius:999px; background:var(--border); overflow:hidden; }
+.fe-prog__bar span { display:block; height:100%; border-radius:999px; transition:width .3s; }
+.fe-prog__lbl { font-size:11.5px; color:var(--muted); margin-top:4px; font-weight:600; }
 /* ============ SECTION BLOG — kanban editorial (.bk) + editeur/apercu (.be/.bp) ============ */
 /* Colonnes: on REUTILISE le shell kanban existant .okb-col / .okb-col__hd / __dot / __ttl / __ct / __body / .okb-empty / .okb-more (lecture seule, aucune surcharge). */
 .bk-card { background:var(--card); border:1px solid var(--border); border-left:3px solid var(--border); border-radius:11px; padding:11px 12px; cursor:pointer; transition:box-shadow .15s, transform .05s; }
@@ -977,6 +988,7 @@ function navigateTo(section, resetPage = true) {
   else if (section === 'admins') { loadTable('admins'); loadAuditPanel(); }
   else if (section === 'students') loadStudents();
   else if (section === 'blog') loadBlog();
+  else if (section === 'formationEnrollments') loadFormationEnrollments();
   else loadTable(section);
 }
 
@@ -1732,6 +1744,7 @@ function refreshSection(sectionKey) {
   else if (sectionKey === 'bookings') loadBookings();
   else if (sectionKey === 'students') loadStudents();
   else if (sectionKey === 'blog') loadBlog();
+  else if (sectionKey === 'formationEnrollments') loadFormationEnrollments();
   else loadTable(sectionKey);
 }
 
@@ -3017,6 +3030,115 @@ function renderOrderDrawer(o, payments) {
 document.addEventListener('keydown', function (e) {
   if (e.key === 'Escape' && _orderDrawerId !== null && !document.getElementById('modalOverlay').classList.contains('open')) closeOrderDrawer();
 });
+
+// ============= SECTION INSCRIPTIONS FORMATION (pipeline paiement -> accès) =============
+// Réutilise /dashboard/api/course-enrollments/ (filtre status + ?stats=1 pour les KPI).
+// Réutilise les classes .okb (colonnes/cartes) et les helpers statsHtml/api/toast/esc/fmt.
+const FE_COLS = [
+  { v:'pending_payment', l:'Paiement en attente', color:'#F59E0B' },
+  { v:'active',          l:'Accès actif',          color:'#16A34A' },
+];
+const FE_BOOK_ICON = '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M4 19.5A2.5 2.5 0 0 1 6.5 17H20"/><path d="M6.5 2H20v20H6.5A2.5 2.5 0 0 1 4 19.5v-15A2.5 2.5 0 0 1 6.5 2z"/></svg>';
+
+function loadFormationEnrollments() {
+  currentSection.name = 'formationEnrollments';
+  const actions = document.getElementById('headerActions');
+  actions.innerHTML = '';
+  const rb = document.createElement('button');
+  rb.className = 'btn btn-sm';
+  rb.innerHTML = '<svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="23 4 23 10 17 10"/><path d="M20.49 15a9 9 0 1 1-2.12-9.36L23 10"/></svg> Actualiser';
+  rb.onclick = () => loadFormationEnrollments();
+  actions.appendChild(rb);
+
+  const host = document.getElementById('card-formationEnrollments');
+  if (!host.querySelector('.okb')) host.innerHTML = '<div class="mloading"><span class="mspin"></span> Chargement du pipeline…</div>';
+
+  // La colonne « en attente » porte ?stats=1 -> KPI globaux exacts en une requête.
+  Promise.all([
+    api('/dashboard/api/course-enrollments/?stats=1&status=pending_payment&per_page=100'),
+    api('/dashboard/api/course-enrollments/?status=active&per_page=100'),
+  ]).then(([pending, active]) => {
+    _rowCache['formationEnrollments'] = {};
+    [pending, active].forEach(d => (d.items || []).forEach(e => { _rowCache['formationEnrollments'][e.id] = e; }));
+    renderFormationPipeline(pending, active);
+  }).catch(e => {
+    host.innerHTML = '<div class="card"><div style="padding:24px;color:var(--danger)">' + esc(e.message) + '</div></div>';
+  });
+}
+
+function renderFormationPipeline(pending, active) {
+  const s = pending.stats || { pending_count:0, active_count:0, pending_revenue:0, active_revenue:0 };
+  let h = statsHtml([
+    { l:'Revenu confirmé',   v: fmt(s.active_revenue)  + ' <small>HTG</small>', c:'#16A34A' },
+    { l:'Revenu en attente', v: fmt(s.pending_revenue) + ' <small>HTG</small>', c:'#F59E0B' },
+    { l:'Accès à débloquer', v: fmt(s.pending_count),  c:'#8E44AD' },
+    { l:'Accès actifs',      v: fmt(s.active_count),   c:'#2563EB' },
+  ]);
+  h += '<div class="okb">';
+  h += formationColumn(FE_COLS[0], pending);
+  h += formationColumn(FE_COLS[1], active);
+  h += '</div>';
+  document.getElementById('card-formationEnrollments').innerHTML = h;
+}
+
+function formationColumn(col, d) {
+  const items = d.items || [], total = d.total || 0;
+  let h = '<div class="okb-col"><div class="okb-col__hd">'
+        + '<span class="okb-col__dot" style="background:' + col.color + '"></span>'
+        + '<span class="okb-col__ttl">' + esc(col.l) + '</span>'
+        + '<span class="okb-col__ct">' + fmt(total) + '</span></div>'
+        + '<div class="okb-col__body">';
+  if (!items.length) {
+    h += '<div class="okb-empty">Aucune inscription</div>';
+  } else {
+    items.forEach(e => { h += formationCard(e, col); });
+    if (total > items.length) h += '<div class="okb-more">+ ' + fmt(total - items.length) + ' autre(s)…</div>';
+  }
+  h += '</div></div>';
+  return h;
+}
+
+function formationCard(e, col) {
+  const price = e.price_htg ? fmt(e.price_htg) + ' HTG' : '<span style="color:#1a7a44">Gratuit</span>';
+  let h = '<div class="okb-card" style="border-left-color:' + col.color + '">'
+        + '<div style="display:flex;justify-content:space-between;align-items:flex-start;gap:8px">'
+        + '<div class="okb-card__cust" style="margin:0">' + esc(e.student_name) + '</div>'
+        + '<button class="fe-edit" title="Modifier / supprimer" onclick="editRow(\'formationEnrollments\',' + e.id + ')">' + EDIT_ICON + '</button>'
+        + '</div>';
+  if (e.student_email) h += '<div class="okb-card__row" style="margin-top:2px">' + esc(e.student_email) + '</div>';
+  h += '<div class="okb-card__row" style="margin-top:5px">' + FE_BOOK_ICON + esc(e.course_title) + '</div>'
+     + '<div class="okb-card__row"><span class="okb-card__total">' + price + '</span></div>';
+  // Progression : chapitres terminés / total du cours.
+  const tot = e.total_chapters || 0, done = e.done_chapters || 0;
+  if (tot > 0) {
+    const pct = Math.round(done / tot * 100);
+    h += '<div class="fe-prog"><div class="fe-prog__bar"><span style="width:' + pct + '%;background:' + col.color + '"></span></div>'
+       + '<div class="fe-prog__lbl">' + done + '/' + tot + ' chapitres · ' + pct + '%</div></div>';
+  } else {
+    h += '<div class="fe-prog__lbl" style="margin-top:8px">Aucun chapitre publié</div>';
+  }
+  if (e.status === 'pending_payment') {
+    h += '<button class="okb-next" onclick="activateEnrollment(event,' + e.id + ')">Activer l\'accès'
+       + ' <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4"><polyline points="20 6 9 17 4 12"/></svg></button>';
+  }
+  h += '</div>';
+  return h;
+}
+
+// Débloque l'accès d'une inscription en un clic (PUT status=active).
+// ev.stopPropagation par cohérence avec le pipeline commandes ; le bouton se
+// désactive le temps de la requête pour éviter le double-clic.
+function activateEnrollment(ev, id) {
+  ev.stopPropagation();
+  const btn = ev.currentTarget;
+  if (btn) btn.disabled = true;
+  api('/dashboard/api/course-enrollments/' + id + '/', { method:'PUT', body: JSON.stringify({ status:'active' }) })
+    .then(e => {
+      toast('Accès activé pour ' + (e.student_name || "l'étudiant"), 'success');
+      loadFormationEnrollments();
+    })
+    .catch(err => { if (btn) btn.disabled = false; toast(err.message, 'error'); });
+}
 
 // ============= JOURNAL D'AUDIT (activite recente des admins) =============
 const AUDIT_META = { create:['#16A34A','a créé'], update:['#F59E0B','a modifié'], delete:['#DC2626','a supprimé'] };
