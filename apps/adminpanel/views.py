@@ -48,6 +48,7 @@ from .models import (
     ProcessStep,
     Profile,
     SiteSetting,
+    SiteText,
     Testimonial,
     VenueBooking,
 )
@@ -2558,6 +2559,81 @@ def core_value_create(request: HttpRequest) -> JsonResponse:
         is_active=data.get("is_active", True),
     )
     return JsonResponse(_serialize_core_value(v), status=201)
+
+
+# ── Textes du site (registre editable) ───────────────────
+
+def _serialize_sitetext(t: SiteText) -> dict[str, Any]:
+    return {
+        "id": t.pk,
+        "key": t.key,
+        "label": t.label,
+        "group": t.group,
+        "value": t.value,
+        "sort_order": t.sort_order,
+    }
+
+
+@staff_required
+@require_http_methods(["GET"])
+def sitetext_list(request: HttpRequest) -> JsonResponse:
+    qs = SiteText.objects.all()
+    search = request.GET.get("search")
+    if search:
+        qs = qs.filter(Q(label__icontains=search) | Q(key__icontains=search) | Q(group__icontains=search) | Q(value__icontains=search))
+    group = request.GET.get("group")
+    if group:
+        qs = qs.filter(group=group)
+    return _paginated_response(qs.order_by("group", "sort_order", "key"), request, _serialize_sitetext)
+
+
+@staff_required
+@require_http_methods(["GET", "PUT", "DELETE"])
+def sitetext_detail(request: HttpRequest, pk: int) -> JsonResponse:
+    try:
+        t = SiteText.objects.get(pk=pk)
+    except SiteText.DoesNotExist:
+        return _error("Texte introuvable", 404)
+    if request.method == "GET":
+        return JsonResponse(_serialize_sitetext(t))
+    if request.method == "DELETE":
+        t.delete()
+        return _ok()
+    data = _json_body(request)
+    # L'admin edite surtout `value` ; label/group ajustables aussi. La cle est
+    # stable (referencee par les templates) -> modifiable seulement a la creation.
+    if "value" in data:
+        t.value = str(data.get("value") or "")
+    if "label" in data:
+        t.label = str(data.get("label") or "")[:200]
+    if "group" in data:
+        t.group = str(data.get("group") or "")[:60]
+    if "sort_order" in data:
+        try:
+            t.sort_order = max(0, int(data.get("sort_order") or 0))
+        except (ValueError, TypeError):
+            return _error("L'ordre doit etre un nombre.")
+    t.save()
+    return JsonResponse(_serialize_sitetext(t))
+
+
+@staff_required
+@require_http_methods(["POST"])
+def sitetext_create(request: HttpRequest) -> JsonResponse:
+    data = _json_body(request)
+    key = str(data.get("key") or "").strip()
+    if not key:
+        return _error("La cle est obligatoire.")
+    if SiteText.objects.filter(key=key).exists():
+        return _error("Cette cle existe deja.", 409)
+    t = SiteText.objects.create(
+        key=key[:80],
+        label=str(data.get("label") or key)[:200],
+        group=str(data.get("group") or "")[:60],
+        value=str(data.get("value") or ""),
+        sort_order=max(0, int(data.get("sort_order") or 0)) if str(data.get("sort_order") or "0").isdigit() else 0,
+    )
+    return JsonResponse(_serialize_sitetext(t), status=201)
 
 
 def _serialize_process_step(s: ProcessStep) -> dict[str, Any]:

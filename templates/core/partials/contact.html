@@ -2,8 +2,8 @@
 <section class="section testimonials" id="temoignages">
   <div class="container">
     <div class="section__head reveal">
-      <span class="label"><span class="label__bullet"></span>Témoignages</span>
-      <h2 class="section__title">Les voix de nos membres.</h2>
+      <span class="label"><span class="label__bullet"></span>{{ texts.cta_testimonials_label|default:"Témoignages" }}</span>
+      <h2 class="section__title">{{ texts.cta_testimonials_title|default:"Les voix de nos membres." }}</h2>
     </div>
     <div class="testi__carousel reveal" data-delay="1">
       <div class="testi__track" id="testiTrack">
@@ -48,14 +48,11 @@
 <!-- CTA Strip -->
 <div class="cta-strip reveal">
   <div class="cta-strip__inner">
-    <h2>Prêt·e à entreprendre avec votre communauté ?</h2>
-    <p>
-      Rejoignez l'un des cinq GEI actifs et accédez immédiatement à l'épargne
-      collective, aux formations et au mentorat de pair-à-pair.
-    </p>
+    <h2>{{ texts.cta_title|default:"Prêt·e à entreprendre avec votre communauté ?" }}</h2>
+    <p>{{ texts.cta_paragraph|default:"Rejoignez l'un des cinq GEI actifs et accédez immédiatement à l'épargne collective, aux formations et au mentorat de pair-à-pair." }}</p>
     <div class="hero__ctas" style="justify-content:center;">
-      <a href="#rejoindre" class="btn btn--primary">Démarrer mon adhésion</a>
-      <a href="#contact" class="btn btn--outline-amber">Nous contacter</a>
+      <a href="#rejoindre" class="btn btn--primary">{{ texts.cta_btn_join|default:"Démarrer mon adhésion" }}</a>
+      <a href="#contact" class="btn btn--outline-amber">{{ texts.cta_btn_contact|default:"Nous contacter" }}</a>
     </div>
   </div>
 </div>
@@ -64,12 +61,12 @@
 <div class="modal-scrim" id="bookingModal" aria-hidden="true">
   <div class="modal" role="dialog" aria-modal="true" aria-labelledby="modalTitle">
     <div class="modal__head">
-      <h3 class="modal__title" id="modalTitle">Réserver ce créneau</h3>
+      <h3 class="modal__title" id="modalTitle">{{ texts.cta_modal_title|default:"Réserver ce créneau" }}</h3>
       <button class="modal__close" id="modalClose" aria-label="Fermer">
         <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><path d="M18 6L6 18M6 6l12 12"></path></svg>
       </button>
     </div>
-    <p class="modal__sub" id="modalSub">Complétez vos informations et nous confirmons sous 24h.</p>
+    <p class="modal__sub" id="modalSub">{{ texts.cta_modal_sub|default:"Complétez vos informations et nous confirmons sous 24h." }}</p>
     <form class="modal__form" id="modalForm" novalidate="">
       {% csrf_token %}
       <div class="field">
@@ -103,14 +100,14 @@
           <option>Avec tables — jusqu'à 40 personnes</option>
         </select>
       </div>
-      <button type="submit" class="btn btn--primary btn--block" style="margin-top:8px;">Envoyer la demande</button>
+      <button type="submit" class="btn btn--primary btn--block" style="margin-top:8px;">{{ texts.cta_modal_submit|default:"Envoyer la demande" }}</button>
     </form>
     <div class="modal__success" id="modalSuccess" style="display:none;">
       <div class="modal__success-icon">
         <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.6" stroke-linecap="round" stroke-linejoin="round"><polyline points="20 6 9 17 4 12"></polyline></svg>
       </div>
-      <h3 class="modal__title" style="margin-bottom:6px;">Demande envoyée !</h3>
-      <p class="modal__sub" id="modalSuccessSub" style="margin-bottom:0;">Nous vous contactons sous 24h pour confirmer votre réservation.</p>
+      <h3 class="modal__title" style="margin-bottom:6px;">{{ texts.cta_modal_success_title|default:"Demande envoyée !" }}</h3>
+      <p class="modal__sub" id="modalSuccessSub" style="margin-bottom:0;">{{ texts.cta_modal_success_sub|default:"Nous vous contactons sous 24h pour confirmer votre réservation." }}</p>
     </div>
   </div>
 </div>

@@ -3,9 +3,9 @@
   <section class="section">
     <div class="container">
       <div class="section__head reveal">
-        <span class="label"><span class="label__bullet"></span>Blog</span>
-        <h2 class="section__title">Actualités &amp; conseils</h2>
-        <p class="section__intro">Nos articles sur l'épargne, l'entrepreneuriat et la vie des GEI.</p>
+        <span class="label"><span class="label__bullet"></span>{{ texts.foot_blog_label|default:"Blog" }}</span>
+        <h2 class="section__title">{{ texts.foot_blog_title|default:"Actualités & conseils" }}</h2>
+        <p class="section__intro">{{ texts.foot_blog_intro|default:"Nos articles sur l'épargne, l'entrepreneuriat et la vie des GEI." }}</p>
       </div>
       <div class="courses__grid">
         {% for post in posts %}
@@ -27,7 +27,7 @@
           </div>
         </article>
         {% empty %}
-        <p style="grid-column:1 / -1;text-align:center;color:var(--muted);padding:40px 0">Aucun article publié pour le moment.</p>
+        <p style="grid-column:1 / -1;text-align:center;color:var(--muted);padding:40px 0">{{ texts.foot_blog_empty|default:"Aucun article publié pour le moment." }}</p>
         {% endfor %}
       </div>
     </div>

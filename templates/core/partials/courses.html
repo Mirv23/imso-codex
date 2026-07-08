@@ -3,11 +3,11 @@
   <div class="container">
     <div class="courses__head-row reveal">
       <div>
-        <span class="label"><span class="label__bullet"></span>Aperçu des cours</span>
-        <h2 class="section__title">Apprendre, entreprendre, transmettre.</h2>
+        <span class="label"><span class="label__bullet"></span>{{ texts.cours_label|default:"Aperçu des cours" }}</span>
+        <h2 class="section__title">{{ texts.cours_title|default:"Apprendre, entreprendre, transmettre." }}</h2>
       </div>
       <a href="#" class="link-arrow">
-        Voir tous les cours
+        {{ texts.cours_link_all|default:"Voir tous les cours" }}
         <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round"><path d="M5 12h14M13 5l7 7-7 7"></path></svg>
       </a>
     </div>
@@ -32,19 +32,19 @@
                 <svg viewBox="0 0 24 24" fill="currentColor"><path d="M12 2l3 7h7l-5.5 4.5L18 21l-6-4-6 4 1.5-7.5L2 9h7z"></path></svg>
                 <svg viewBox="0 0 24 24" fill="currentColor"><path d="M12 2l3 7h7l-5.5 4.5L18 21l-6-4-6 4 1.5-7.5L2 9h7z"></path></svg>
               </span>
-              <span>Nouveau</span>
+              <span>{{ texts.cours_badge_new|default:"Nouveau" }}</span>
             </div>
             <div class="course-card__meta">
               <div class="course-card__price">{{ course.price_htg }}  <small>HTG</small></div>
               <button class="btn btn--ghost btn--small js-enroll"
                       data-id="{{ course.id }}"
                       data-name="{{ course.title }}"
-                      data-price="{{ course.price_htg }}">S'inscrire</button>
+                      data-price="{{ course.price_htg }}">{{ texts.cours_card_cta|default:"S'inscrire" }}</button>
             </div>
           </div>
         </article>
         {% empty %}
-        <p style="grid-column: 1 / -1; text-align: center; color: var(--muted); padding: 40px 0;">Aucun cours disponible pour le moment. Revenez bientôt !</p>
+        <p style="grid-column: 1 / -1; text-align: center; color: var(--muted); padding: 40px 0;">{{ texts.cours_empty|default:"Aucun cours disponible pour le moment. Revenez bientôt !" }}</p>
         {% endfor %}
       </div>
     </div>
@@ -55,30 +55,30 @@
 <div class="modal-scrim" id="enrollModal" aria-hidden="true">
   <div class="modal" role="dialog" aria-modal="true" aria-labelledby="enrollModalTitle">
     <div class="modal__head">
-      <h3 class="modal__title" id="enrollModalTitle">S'inscrire</h3>
+      <h3 class="modal__title" id="enrollModalTitle">{{ texts.cours_modal_title|default:"S'inscrire" }}</h3>
       <button class="modal__close" id="enrollModalClose" aria-label="Fermer">
         <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><path d="M18 6L6 18M6 6l12 12"></path></svg>
       </button>
     </div>
-    <p class="modal__sub" id="enrollModalSub">Renseignez vos coordonnées. Le paiement se fait à l'étape suivante.</p>
+    <p class="modal__sub" id="enrollModalSub">{{ texts.cours_modal_sub|default:"Renseignez vos coordonnées. Le paiement se fait à l'étape suivante." }}</p>
     <form class="modal__form" id="enrollForm" novalidate="">
       {% csrf_token %}
       <input type="hidden" name="course_id" id="eCourseId">
       <div class="field">
-        <label for="eName">Nom complet</label>
+        <label for="eName">{{ texts.cours_field_name|default:"Nom complet" }}</label>
         <input id="eName" name="full_name" type="text" required="" placeholder="Marie-Claire Pierre">
       </div>
       <div class="field">
-        <label for="ePhone">Téléphone</label>
+        <label for="ePhone">{{ texts.cours_field_phone|default:"Téléphone" }}</label>
         <input id="ePhone" name="phone" type="tel" required="" placeholder="+509 38 22 18 04">
       </div>
       <div class="field">
-        <label for="eEmail">Email (optionnel)</label>
+        <label for="eEmail">{{ texts.cours_field_email|default:"Email (optionnel)" }}</label>
         <input id="eEmail" name="email" type="email" placeholder="exemple@email.com">
       </div>
       <p class="modal__sub" id="enrollTotal" style="font-weight:600;color:var(--text);"></p>
       <p class="modal__error" id="enrollError" style="display:none;color:var(--danger,#EF4444);font-size:13px;"></p>
-      <button type="submit" class="btn btn--primary btn--block" id="enrollSubmit" style="margin-top:8px;">Continuer vers le paiement</button>
+      <button type="submit" class="btn btn--primary btn--block" id="enrollSubmit" style="margin-top:8px;">{{ texts.cours_submit|default:"Continuer vers le paiement" }}</button>
     </form>
   </div>
 </div>

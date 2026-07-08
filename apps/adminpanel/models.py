@@ -513,6 +513,29 @@ class ProcessStep(TimestampedModel):
         return self.title
 
 
+class SiteText(TimestampedModel):
+    """Registre de textes editables du site vitrine (titres, intitules, intros...).
+
+    Chaque chaine editable a une cle stable (ex. « hero_label »). Le template
+    affiche {{ texts.<cle>|default:"texte actuel" }} : si l'admin renseigne une
+    valeur, elle remplace le texte code en dur ; sinon le defaut du template est
+    utilise (aucun changement visuel tant que vide). Charge en UNE requete par
+    page via le context processor -> pas de N+1.
+    """
+
+    key = models.CharField(max_length=80, unique=True)
+    label = models.CharField(max_length=200, help_text="Description lisible pour l'admin")
+    group = models.CharField(max_length=60, blank=True, help_text="Section/page (regroupement dans l'admin)")
+    value = models.TextField(blank=True)
+    sort_order = models.PositiveIntegerField(default=0)
+
+    class Meta:
+        ordering = ["group", "sort_order", "key"]
+
+    def __str__(self) -> str:
+        return f"{self.group} · {self.key}" if self.group else self.key
+
+
 class Product(TimestampedModel):
     """Article vendu en boutique (kit d'éducation financière : livre, cahier…)."""
 

@@ -65,7 +65,7 @@
     <div class="hero__text">
       <span class="label hero__label reveal">
         <span class="label__bullet"></span>
-        Mutuelle de solidarité · Haïti
+        {{ texts.hero_label|default:"Mutuelle de solidarité · Haïti" }}
       </span>
       <h1 class="hero__title reveal" data-delay="1">
         {% if site.hero_title %}{{ site.hero_title }}{% else %}Ensemble, nous créons de la <em>richesse</em>{% endif %}
@@ -80,7 +80,7 @@
           {{ site.hero_cta_text|default:"Rejoindre un GEI" }}
           <svg viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round"><path d="M5 12h14M13 5l7 7-7 7"></path></svg>
         </a>
-        <a href="#cours" class="btn btn--outline-amber">Découvrir les cours</a>
+        <a href="#cours" class="btn btn--outline-amber">{{ texts.hero_cta2|default:"Découvrir les cours" }}</a>
       </div>
       <div class="hero__trust reveal" data-delay="4">
         <div class="avatars" aria-hidden="true">
@@ -89,7 +89,7 @@
           <span class="avatar avatar--c">FP</span>
           <span class="avatar avatar--d">+</span>
         </div>
-        <span>De nouveaux membres rejoignent IMSO chaque mois à travers nos 5 GEI</span>
+        <span>{{ texts.hero_trust|default:"De nouveaux membres rejoignent IMSO chaque mois à travers nos 5 GEI" }}</span>
       </div>
     </div>
     <div class="hero__visual reveal" data-delay="2">
@@ -111,7 +111,7 @@
           <span class="hero__photo--label">Croissance</span>
         </div>
       </div>
-      <div class="hero__visual-overlay">Solidarité · Épargne · Croissance</div>
+      <div class="hero__visual-overlay">{{ texts.hero_visual_overlay|default:"Solidarité · Épargne · Croissance" }}</div>
       <div class="float-card float-card--members">
         <div class="float-card__icon">
           <svg viewBox="0 0 24 24" width="22" height="22" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="9" cy="8" r="3.5"></circle><circle cx="17" cy="10" r="2.5"></circle><path d="M3 19c0-2.8 2.7-5 6-5s6 2.2 6 5"></path><path d="M15 19c0-2 1.5-4 4-4s4 1.6 4 4"></path></svg>

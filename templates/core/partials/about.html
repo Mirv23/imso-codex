@@ -15,19 +15,19 @@
         <ul class="mission__list">
           <li>
             <span class="check"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3" stroke-linecap="round" stroke-linejoin="round"><polyline points="20 6 9 17 4 12"></polyline></svg></span>
-            <span>Mobiliser l'épargne locale pour financer les projets de proximité.</span>
+            <span>{{ texts.val_mission_1|default:"Mobiliser l'épargne locale pour financer les projets de proximité." }}</span>
           </li>
           <li>
             <span class="check"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3" stroke-linecap="round" stroke-linejoin="round"><polyline points="20 6 9 17 4 12"></polyline></svg></span>
-            <span>Former chaque membre aux fondamentaux de la gestion et de la comptabilité.</span>
+            <span>{{ texts.val_mission_2|default:"Former chaque membre aux fondamentaux de la gestion et de la comptabilité." }}</span>
           </li>
           <li>
             <span class="check"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3" stroke-linecap="round" stroke-linejoin="round"><polyline points="20 6 9 17 4 12"></polyline></svg></span>
-            <span>Garantir un accès équitable au microcrédit, sans collatéral abusif.</span>
+            <span>{{ texts.val_mission_3|default:"Garantir un accès équitable au microcrédit, sans collatéral abusif." }}</span>
           </li>
           <li>
             <span class="check"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3" stroke-linecap="round" stroke-linejoin="round"><polyline points="20 6 9 17 4 12"></polyline></svg></span>
-            <span>Renforcer la cohésion sociale par l'entraide et la transparence.</span>
+            <span>{{ texts.val_mission_4|default:"Renforcer la cohésion sociale par l'entraide et la transparence." }}</span>
           </li>
         </ul>
       </div>
@@ -77,8 +77,8 @@
 <section class="section section--tight" id="valeurs">
   <div class="container">
     <div class="section__head reveal">
-      <span class="label"><span class="label__bullet"></span>Nos valeurs</span>
-      <h2 class="section__title">Trois principes qui guident chaque décision.</h2>
+      <span class="label"><span class="label__bullet"></span>{{ texts.val_label|default:"Nos valeurs" }}</span>
+      <h2 class="section__title">{{ texts.val_title|default:"Trois principes qui guident chaque décision." }}</h2>
     </div>
     <div class="values__wrap">
       <div class="values__grid">

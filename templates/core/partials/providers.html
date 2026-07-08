@@ -3,32 +3,30 @@
   <div class="container">
     <div class="espace__head-row reveal">
       <div>
-        <span class="label"><span class="label__bullet"></span>Location d'espace</span>
-        <h2 class="section__title" style="margin-bottom:14px;">Un espace pensé pour vos événements.</h2>
+        <span class="label"><span class="label__bullet"></span>{{ texts.espace_label|default:"Location d'espace" }}</span>
+        <h2 class="section__title" style="margin-bottom:14px;">{{ texts.espace_title|default:"Un espace pensé pour vos événements." }}</h2>
         <p class="section__intro">
-          IMSO met à disposition une salle modulable au cœur de Port-au-Prince :
-          conférences, séminaires, formations, anniversaires, mariages… Réservez
-          directement en consultant les disponibilités ci-dessous.
+          {{ texts.espace_intro|default:"IMSO met à disposition une salle modulable au cœur de Port-au-Prince : conférences, séminaires, formations, anniversaires, mariages… Réservez directement en consultant les disponibilités ci-dessous." }}
         </p>
         <div class="espace__pills">
-          <span class="espace__pill">Conférence</span>
-          <span class="espace__pill">Séminaire</span>
-          <span class="espace__pill">Formation</span>
-          <span class="espace__pill">Anniversaire</span>
-          <span class="espace__pill">Mariage</span>
-          <span class="espace__pill">Réunion privée</span>
+          <span class="espace__pill">{{ texts.espace_pill1|default:"Conférence" }}</span>
+          <span class="espace__pill">{{ texts.espace_pill2|default:"Séminaire" }}</span>
+          <span class="espace__pill">{{ texts.espace_pill3|default:"Formation" }}</span>
+          <span class="espace__pill">{{ texts.espace_pill4|default:"Anniversaire" }}</span>
+          <span class="espace__pill">{{ texts.espace_pill5|default:"Mariage" }}</span>
+          <span class="espace__pill">{{ texts.espace_pill6|default:"Réunion privée" }}</span>
         </div>
       </div>
       <div class="espace__capacity">
         <div class="espace__capacity-item">
           <div class="espace__capacity-num">60<small>pers.</small></div>
-          <div class="espace__capacity-label">Sans tables</div>
-          <div class="espace__capacity-sub">Format conférence, cérémonie, cocktail debout.</div>
+          <div class="espace__capacity-label">{{ texts.espace_cap1_label|default:"Sans tables" }}</div>
+          <div class="espace__capacity-sub">{{ texts.espace_cap1_sub|default:"Format conférence, cérémonie, cocktail debout." }}</div>
         </div>
         <div class="espace__capacity-item">
           <div class="espace__capacity-num">40<small>pers.</small></div>
-          <div class="espace__capacity-label">Avec tables</div>
-          <div class="espace__capacity-sub">Format banquet, atelier, repas assis.</div>
+          <div class="espace__capacity-label">{{ texts.espace_cap2_label|default:"Avec tables" }}</div>
+          <div class="espace__capacity-sub">{{ texts.espace_cap2_sub|default:"Format banquet, atelier, repas assis." }}</div>
         </div>
       </div>
     </div>
