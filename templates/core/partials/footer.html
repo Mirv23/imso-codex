@@ -385,7 +385,7 @@ function selectDate(dateStr) {
     const el = document.createElement('div');
     el.className = 'slot' + (isOk ? '' : ' slot--booked');
     el.innerHTML = `
-      <div>
+      <div class="slot__main">
         <div class="slot__time">${slot.time}</div>
         <div class="slot__period">${slot.label} · ${slot.period}</div>
       </div>

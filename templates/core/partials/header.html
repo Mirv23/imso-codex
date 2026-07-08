@@ -2129,9 +2129,11 @@ a { color: inherit; text-decoration: none; }
   border: 1px solid var(--border);
   border-radius: 14px;
   padding: 14px 16px;
-  display: flex; align-items: center; gap: 14px;
+  display: flex; align-items: center; gap: 12px 14px;
+  flex-wrap: wrap;
   transition: border-color .2s, background .2s, transform .2s;
 }
+.slot__main { min-width: 0; }
 .slot:hover:not(.slot--booked) {
   border-color: var(--primary);
   background: var(--surface);
@@ -2141,8 +2143,7 @@ a { color: inherit; text-decoration: none; }
   font-weight: 700;
   font-size: 15px;
   letter-spacing: -0.01em;
-  width: 96px;
-  flex-shrink: 0;
+  white-space: nowrap;
 }
 .slot__period {
   font-size: 11.5px;
@@ -2171,6 +2172,20 @@ a { color: inherit; text-decoration: none; }
 .slot__action { flex-shrink: 0; }
 .slot--booked { opacity: .6; cursor: not-allowed; }
 .slot--booked .slot__action { display: none; }
+/* Mobile : le créneau s'empile (heure/période en haut, statut + bouton en bas)
+   au lieu de se comprimer sur une seule ligne trop étroite. */
+@media (max-width: 560px) {
+  .booking { padding: 20px; border-radius: 22px; gap: 26px; }
+  .slot { padding: 13px 14px; }
+  .slot__main { flex: 1 1 100%; }
+  .slot__info { flex: 1 1 auto; }
+  .slot__action { flex: 0 0 auto; }
+  .slot__action .btn { white-space: nowrap; }
+}
+@media (max-width: 380px) {
+  .booking { padding: 16px; }
+  .cal__day { font-size: 13px; border-radius: 10px; }
+}
 .slots__empty {
   background: var(--bg);
   border: 1px dashed var(--border);
