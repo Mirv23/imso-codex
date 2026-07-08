@@ -166,7 +166,8 @@ const counterIO = new IntersectionObserver((entries) => {
 }, { threshold: 0.4 });
 counters.forEach(c => counterIO.observe(c));
 
-// Testimonials carousel
+// Testimonials carousel (page d'accueil uniquement — garde anti-crash ailleurs)
+if (document.getElementById('testiTrack')) {
 const track = document.getElementById('testiTrack');
 const dotsWrap = document.getElementById('testiDots');
 const prev = document.getElementById('testiPrev');
@@ -238,6 +239,7 @@ window.addEventListener('resize', () => {
     update();
   }
 });
+} // fin garde témoignages
 
 // Ripple
 document.querySelectorAll('.btn').forEach(btn => {
@@ -254,7 +256,8 @@ document.querySelectorAll('.btn').forEach(btn => {
   });
 });
 
-// ====== Booking calendar ======
+// ====== Booking calendar (page d'accueil uniquement — garde anti-crash ailleurs) ======
+if (document.getElementById('calGrid')) {
 const MONTHS_FR = ['janvier','février','mars','avril','mai','juin','juillet','août','septembre','octobre','novembre','décembre'];
 const DAYS_FR = ['dimanche','lundi','mardi','mercredi','jeudi','vendredi','samedi'];
 
@@ -524,6 +527,7 @@ modalForm.addEventListener('submit', async (e) => {
     submitBtn.textContent = 'Envoyer la demande';
   }
 });
+} // fin garde calendrier de réservation
 </script>
 
 </body></html>
