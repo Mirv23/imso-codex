@@ -6,6 +6,7 @@ from .views import (
     ContactRequestCreateView,
     CourseEnrollmentCreateView,
     HomeView,
+    MaintenanceView,
     OrderCreateView,
     PaymentConfirmationView,
     PaymentPageView,
@@ -26,7 +27,9 @@ from .webhooks import webhook_receiver
 app_name = "core"
 
 urlpatterns = [
-    path("", HomeView.as_view(), name="home"),
+    # Maintenance : la racine affiche un message ; le vrai site est sur /view/.
+    path("", MaintenanceView.as_view(), name="maintenance"),
+    path("view/", HomeView.as_view(), name="home"),
     path("robots.txt", robots_txt, name="robots_txt"),
     path("sitemap.xml", sitemap_xml, name="sitemap_xml"),
     path("api/contact-requests/", ContactRequestCreateView.as_view(), name="contact_request_create"),

@@ -65,7 +65,8 @@ class TestSiteSettings:
             data=json.dumps({"hero_title": "Titre personnalisé IMSO", "contact_phone": "+509 0000"}),
             content_type="application/json",
         )
-        home = Client().get("/")
+        # Le site public est servi sur /view/ (la racine affiche la maintenance).
+        home = Client().get("/view/")
         assert home.status_code == 200
         assert b"Titre personnalis\xc3\xa9 IMSO" in home.content
 

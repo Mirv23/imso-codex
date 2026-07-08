@@ -1,0 +1,82 @@
+{% load static %}<!DOCTYPE html>
+<html lang="fr">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<meta name="robots" content="noindex, nofollow">
+<title>{{ site.site_name|default:"IMSO" }} — Site en maintenance</title>
+{% if site.logo %}<link rel="icon" href="{{ site.logo.url }}">{% else %}<link rel="icon" href="{% static 'website/assets/9f2647f0-409d-40a1-969b-7969601ef459.png' %}">{% endif %}
+<style>
+  :root{
+    --primary:{{ site.color_primary|default:"#3C9626" }};
+    --primary-dark:{{ site.color_primary_dark|default:"#2A6E1B" }};
+    --accent:{{ site.color_accent|default:"#5BB143" }};
+    --highlight:{{ site.color_highlight|default:"#E87A18" }};
+    --bg:#FAFAF6;--text:#1A2014;--muted:#6B7560;--border:#E8EBE2;--surface:#fff;
+  }
+  *{box-sizing:border-box;margin:0;padding:0}
+  html,body{height:100%}
+  body{
+    font-family:'Plus Jakarta Sans',system-ui,-apple-system,Segoe UI,Roboto,sans-serif;
+    background:
+      radial-gradient(circle at 15% 10%, rgba(91,177,67,.14), transparent 42%),
+      radial-gradient(circle at 85% 90%, rgba(232,122,24,.12), transparent 46%),
+      var(--bg);
+    color:var(--text);
+    min-height:100dvh;
+    display:flex;align-items:center;justify-content:center;
+    padding:28px;line-height:1.6;
+    -webkit-font-smoothing:antialiased;
+  }
+  .card{
+    width:100%;max-width:560px;background:var(--surface);
+    border-radius:28px;padding:44px 34px 38px;text-align:center;
+    box-shadow:0 24px 60px -20px rgba(26,32,20,.18),0 6px 16px -8px rgba(26,32,20,.08);
+    border:1px solid var(--border);
+  }
+  .logo{height:70px;width:auto;margin:0 auto 10px;display:block;
+    filter:drop-shadow(0 2px 4px rgba(26,32,20,.08))}
+  .badge{
+    display:inline-flex;align-items:center;gap:8px;margin:18px 0 20px;
+    font-size:12.5px;font-weight:600;letter-spacing:.12em;text-transform:uppercase;
+    color:var(--highlight);background:rgba(232,122,24,.10);
+    padding:7px 16px;border-radius:999px;
+  }
+  .badge .dot{width:8px;height:8px;border-radius:50%;background:var(--highlight);
+    animation:pulse 1.3s ease-in-out infinite}
+  @keyframes pulse{0%,100%{transform:scale(1);opacity:1}50%{transform:scale(1.7);opacity:.45}}
+  h1{font-size:clamp(26px,6vw,38px);font-weight:800;letter-spacing:-.03em;line-height:1.1;margin-bottom:14px}
+  h1 em{font-style:normal;color:var(--primary)}
+  p{color:var(--muted);font-size:16px;max-width:440px;margin:0 auto}
+  .divider{height:1px;background:var(--border);margin:28px 0 22px}
+  .contact{display:flex;flex-wrap:wrap;gap:10px 22px;justify-content:center;
+    font-size:14px;color:var(--muted)}
+  .contact a{color:var(--primary);font-weight:600;text-decoration:none}
+  .contact a:hover{text-decoration:underline}
+  .bar{display:flex;gap:5px;justify-content:center;margin:26px 0 4px}
+  .bar span{height:5px;width:34px;border-radius:999px;background:var(--border);overflow:hidden;position:relative}
+  .bar span::after{content:'';position:absolute;inset:0;background:linear-gradient(90deg,var(--primary),var(--accent));
+    transform:translateX(-100%);animation:load 2.2s ease-in-out infinite}
+  .bar span:nth-child(2)::after{animation-delay:.35s}
+  .bar span:nth-child(3)::after{animation-delay:.7s}
+  @keyframes load{0%{transform:translateX(-100%)}60%,100%{transform:translateX(100%)}}
+  .foot{margin-top:22px;font-size:12px;color:var(--muted)}
+</style>
+</head>
+<body>
+  <main class="card" role="main">
+    {% if site.logo %}<img class="logo" src="{{ site.logo.url }}" alt="{{ site.site_name|default:'IMSO' }}">{% else %}<img class="logo" src="{% static 'website/assets/9f2647f0-409d-40a1-969b-7969601ef459.png' %}" alt="IMSO">{% endif %}
+    <span class="badge"><span class="dot"></span>Maintenance en cours</span>
+    <h1>Notre site fait <em>peau neuve</em>.</h1>
+    <p>{{ site.site_name|default:"IMSO" }} revient très bientôt avec une expérience améliorée. Merci de votre patience — nous préparons quelque chose de mieux pour vous.</p>
+    <div class="bar"><span></span><span></span><span></span></div>
+    <div class="divider"></div>
+    <div class="contact">
+      {% if site.contact_email %}<span>Un besoin urgent ? <a href="mailto:{{ site.contact_email }}">{{ site.contact_email }}</a></span>{% endif %}
+      {% if site.contact_whatsapp %}<span><a href="https://wa.me/{{ site.contact_whatsapp }}" target="_blank" rel="noopener">WhatsApp</a></span>{% endif %}
+      {% if site.contact_phone %}<span><a href="tel:{{ site.contact_phone }}">{{ site.contact_phone }}</a></span>{% endif %}
+    </div>
+    <div class="foot">© {% now "Y" %} {{ site.site_name|default:"IMSO" }} — Impact Mutuelle de Solidarité</div>
+  </main>
+</body>
+</html>

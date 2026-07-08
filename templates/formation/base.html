@@ -74,7 +74,7 @@ img{max-width:100%;display:block}
     <nav class="fnav">
       <a href="/formation/" class="{% block nav_catalog %}{% endblock %}">Catalogue</a>
       {% if user.is_authenticated %}<a href="/formation/espace/" class="{% block nav_space %}{% endblock %}">Mon espace</a>{% endif %}
-      <a href="/">← Retour au site</a>
+      <a href="{% url 'core:home' %}">← Retour au site</a>
     </nav>
     <div class="fhead__sp"></div>
     <div class="fauth">
@@ -102,7 +102,7 @@ img{max-width:100%;display:block}
 <footer class="ffoot">
   <div class="wrap ffoot__in">
     <div>© {{ site.site_name|default:"IMSO" }} — Plateforme de formation</div>
-    <div><a href="/">Site principal</a> · <a href="/formation/">Catalogue</a></div>
+    <div><a href="{% url 'core:home' %}">Site principal</a> · <a href="/formation/">Catalogue</a></div>
   </div>
 </footer>
 </body>

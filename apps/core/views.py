@@ -35,6 +35,20 @@ from .payment_tokens import make_payment_token, read_payment_token
 logger = logging.getLogger(__name__)
 
 
+class MaintenanceView(TemplateView):
+    """Page « site en maintenance » servie à la racine. Le vrai site reste
+    accessible sur /view/ pour la prévisualisation. Renvoie 503 + Retry-After
+    (sémantique correcte : les moteurs n'indexent pas la page de maintenance
+    comme contenu du site)."""
+
+    template_name = "core/maintenance.html"
+
+    def render_to_response(self, context: dict[str, Any], **kwargs: Any) -> HttpResponse:
+        response = super().render_to_response(context, status=503, **kwargs)
+        response["Retry-After"] = "3600"
+        return response
+
+
 class HomeView(TemplateView):
     template_name = "core/index.html"
 

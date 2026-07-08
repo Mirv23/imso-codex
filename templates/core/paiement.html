@@ -355,7 +355,7 @@ function render() {
         <div style="font-size:48px;margin-bottom:12px;">🔒</div>
         <h2 class="card-title">Aucun moyen de paiement disponible</h2>
         <p class="card-sub">Veuillez réessayer plus tard ou nous contacter directement.</p>
-        <a href="/" class="btn" style="display:inline-flex;width:auto;">Retour à l'accueil</a>
+        <a href="{% url 'core:home' %}" class="btn" style="display:inline-flex;width:auto;">Retour à l'accueil</a>
       </div>
     `;
     return;
@@ -564,7 +564,7 @@ function showSuccess(data) {
         <p class="success-sub">${message}</p>
         <span class="success-ref">Réf: ${escHtml(data.reference)}</span>
       </div>
-      <a href="/" class="btn primary" style="margin-top:16px;">Retour à l'accueil</a>
+      <a href="{% url 'core:home' %}" class="btn primary" style="margin-top:16px;">Retour à l'accueil</a>
     </div>
   `;
 }
