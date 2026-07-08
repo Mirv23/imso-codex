@@ -18,6 +18,7 @@ from django.views.generic import TemplateView, RedirectView
 from apps.adminpanel.models import (
     BlogPost,
     Course,
+    CoreValue,
     Enrollment,
     GEI,
     Member,
@@ -26,6 +27,7 @@ from apps.adminpanel.models import (
     Payment,
     PaymentProvider,
     Product,
+    ProcessStep,
     Testimonial,
     VenueBooking,
 )
@@ -69,6 +71,10 @@ class HomeView(TemplateView):
         context["total_geis"] = GEI.objects.filter(is_active=True).count()
 
         context["testimonials"] = Testimonial.objects.filter(is_active=True)
+
+        # Contenu editable du site vitrine (fallback template si vide).
+        context["core_values"] = CoreValue.objects.filter(is_active=True)
+        context["process_steps"] = ProcessStep.objects.filter(is_active=True)
 
         context["products"] = Product.objects.filter(is_active=True).only(
             "id", "name", "slug", "kind", "description", "price_htg", "stock", "sort_order", "image"

@@ -467,6 +467,52 @@ class Testimonial(TimestampedModel):
         return f"{self.author_name} - {self.location}"
 
 
+class CoreValue(TimestampedModel):
+    """Valeur affichee dans la section « Nos valeurs » du site vitrine.
+
+    Modele simple/CRUD : si aucune ligne active n'existe, le template garde son
+    contenu code en dur (fallback via {% empty %}).
+    """
+
+    title = models.CharField(max_length=120)
+    text = models.TextField()
+    icon = models.CharField(
+        max_length=8, blank=True,
+        help_text="Emoji affiche (ex. \U0001F91D, \U0001F331). Laisse vide pour une icone par defaut.",
+    )
+    sort_order = models.PositiveIntegerField(default=0)
+    is_active = models.BooleanField(default=True)
+
+    class Meta:
+        ordering = ["sort_order", "id"]
+
+    def __str__(self) -> str:
+        return self.title
+
+
+class ProcessStep(TimestampedModel):
+    """Etape affichee dans la section « Notre processus » du site vitrine.
+
+    Le numero d'etape (1, 2, 3) est genere par le template (forloop.counter),
+    on ne le stocke pas. Fallback via {% empty %} si aucune ligne active.
+    """
+
+    title = models.CharField(max_length=120)
+    text = models.TextField()
+    meta = models.CharField(
+        max_length=80, blank=True,
+        help_text="Duree / info courte (ex. « ⏱ 1 semaine »).",
+    )
+    sort_order = models.PositiveIntegerField(default=0)
+    is_active = models.BooleanField(default=True)
+
+    class Meta:
+        ordering = ["sort_order", "id"]
+
+    def __str__(self) -> str:
+        return self.title
+
+
 class Product(TimestampedModel):
     """Article vendu en boutique (kit d'éducation financière : livre, cahier…)."""
 
@@ -601,6 +647,35 @@ class SiteSetting(models.Model):
     about_text = models.TextField(blank=True)
     shop_intro = models.TextField(blank=True, help_text="Texte d'intro de la boutique")
     footer_text = models.TextField(blank=True)
+
+    # ── Statistiques marketing (vitrine) — vide = valeur d'origine du template ──
+    # Héro (float-cards)
+    stat_members = models.CharField(max_length=40, blank=True, help_text="Ex: 248 membres")
+    stat_members_label = models.CharField(max_length=80, blank=True, help_text="Ex: Actifs en avril 2026")
+    stat_growth = models.CharField(max_length=40, blank=True, help_text="Ex: +38%")
+    stat_growth_label = models.CharField(max_length=80, blank=True, help_text="Ex: Épargne collective")
+    # Section Mission (tuiles)
+    stat_savings = models.CharField(max_length=40, blank=True, help_text="Ex: 3.2M")
+    stat_savings_label = models.CharField(max_length=80, blank=True, help_text="Ex: HTG d'épargne mobilisée")
+    stat_repayment = models.CharField(max_length=40, blank=True, help_text="Ex: 96%")
+    stat_repayment_label = models.CharField(max_length=80, blank=True, help_text="Ex: Taux de remboursement")
+    stat_workshops = models.CharField(max_length=40, blank=True, help_text="Ex: 52")
+    stat_workshops_label = models.CharField(max_length=80, blank=True, help_text="Ex: Ateliers tenus en 2025")
+    stat_women = models.CharField(max_length=40, blank=True, help_text="Ex: 61%")
+    stat_women_label = models.CharField(max_length=80, blank=True, help_text="Ex: Membres femmes")
+
+    # ── Hero formation (catalogue /formation/) ──
+    formation_hero_title = models.CharField(max_length=200, blank=True)
+    formation_hero_subtitle = models.TextField(blank=True)
+
+    # ── Liens footer (ressources / légaux) — vide = #contact ──
+    url_statuts = models.CharField(max_length=200, blank=True)
+    url_calendrier = models.CharField(max_length=200, blank=True)
+    url_rapport = models.CharField(max_length=200, blank=True)
+    url_mentor = models.CharField(max_length=200, blank=True)
+    url_presse = models.CharField(max_length=200, blank=True)
+    url_mentions = models.CharField(max_length=200, blank=True)
+    url_confidentialite = models.CharField(max_length=200, blank=True)
 
     # ── Affichage (toggles) ──
     show_shop = models.BooleanField(default=True)

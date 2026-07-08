@@ -23,8 +23,8 @@
 </style>{% endblock %}
 {% block content %}
 <section class="hero-f">
-  <h1 class="h1">Développez vos compétences financières</h1>
-  <p class="lead">Des formations pratiques créées par IMSO. Inscrivez-vous et apprenez à votre rythme.</p>
+  <h1 class="h1">{{ site.formation_hero_title|default:"Développez vos compétences financières" }}</h1>
+  <p class="lead">{{ site.formation_hero_subtitle|default:"Des formations pratiques créées par IMSO. Inscrivez-vous et apprenez à votre rythme." }}</p>
 </section>
 
 {% if courses %}

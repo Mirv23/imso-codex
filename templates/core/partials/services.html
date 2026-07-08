@@ -82,6 +82,16 @@
       </p>
     </div>
     <div class="process__timeline">
+      {% for s in process_steps %}
+      <div class="step reveal" data-delay="{{ forloop.counter }}">
+        <div class="step__num">{{ forloop.counter }}</div>
+        <div class="step__content">
+          <h3 class="step__title">{{ s.title }}</h3>
+          <p class="step__text">{{ s.text }}</p>
+          {% if s.meta %}<span class="step__meta">{{ s.meta }}</span>{% endif %}
+        </div>
+      </div>
+      {% empty %}
       <div class="step reveal" data-delay="1">
         <div class="step__num">1</div>
         <div class="step__content">
@@ -115,6 +125,7 @@
           <span class="step__meta">⏱ Le jour même</span>
         </div>
       </div>
+      {% endfor %}
     </div>
   </div>
 </section>

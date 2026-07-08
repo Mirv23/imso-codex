@@ -46,11 +46,11 @@
       <div class="footer__col">
         <h4>Ressources</h4>
         <ul role="list">
-          <li><a href="#contact">Statuts du GEI</a></li>
-          <li><a href="#contact">Calendrier 2026</a></li>
-          <li><a href="#contact">Rapport annuel</a></li>
-          <li><a href="#contact">Devenir mentor</a></li>
-          <li><a href="#contact">Presse</a></li>
+          <li><a href="{{ site.url_statuts|default:"#contact" }}">Statuts du GEI</a></li>
+          <li><a href="{{ site.url_calendrier|default:"#contact" }}">Calendrier 2026</a></li>
+          <li><a href="{{ site.url_rapport|default:"#contact" }}">Rapport annuel</a></li>
+          <li><a href="{{ site.url_mentor|default:"#contact" }}">Devenir mentor</a></li>
+          <li><a href="{{ site.url_presse|default:"#contact" }}">Presse</a></li>
         </ul>
       </div>
       <div class="footer__col">
@@ -74,9 +74,9 @@
     <div class="footer__bottom">
       <span>© {% now "Y" %} IMSO — Impact Mutuelle de Solidarité. Tous droits réservés.</span>
       <div class="footer__bottom-links">
-        <a href="#contact">Mentions légales</a>
-        <a href="#contact">Confidentialité</a>
-        <a href="#contact">Statuts</a>
+        <a href="{{ site.url_mentions|default:"#contact" }}">Mentions légales</a>
+        <a href="{{ site.url_confidentialite|default:"#contact" }}">Confidentialité</a>
+        <a href="{{ site.url_statuts|default:"#contact" }}">Statuts</a>
       </div>
     </div>
   </div>

@@ -913,6 +913,14 @@ textarea { resize: vertical; min-height: 80px; }
         Inscriptions
       </button>
       <div class="sb-section">Site</div>
+      <button class="sb-item" data-section="values" onclick="navigateTo('values')">
+        <span class="ico"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M20.84 4.61a5.5 5.5 0 0 0-7.78 0L12 5.67l-1.06-1.06a5.5 5.5 0 0 0-7.78 7.78l1.06 1.06L12 21.23l7.78-7.78 1.06-1.06a5.5 5.5 0 0 0 0-7.78z"/></svg></span>
+        Nos valeurs
+      </button>
+      <button class="sb-item" data-section="steps" onclick="navigateTo('steps')">
+        <span class="ico"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><line x1="8" y1="6" x2="21" y2="6"/><line x1="8" y1="12" x2="21" y2="12"/><line x1="8" y1="18" x2="21" y2="18"/><line x1="3" y1="6" x2="3.01" y2="6"/><line x1="3" y1="12" x2="3.01" y2="12"/><line x1="3" y1="18" x2="3.01" y2="18"/></svg></span>
+        Notre processus
+      </button>
       <button class="sb-item" data-section="settings" onclick="navigateTo('settings')">
         <span class="ico"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="3"/><path d="M19.4 15a1.65 1.65 0 0 0 .33 1.82l.06.06a2 2 0 1 1-2.83 2.83l-.06-.06a1.65 1.65 0 0 0-1.82-.33 1.65 1.65 0 0 0-1 1.51V21a2 2 0 0 1-4 0v-.09A1.65 1.65 0 0 0 9 19.4a1.65 1.65 0 0 0-1.82.33l-.06.06a2 2 0 1 1-2.83-2.83l.06-.06a1.65 1.65 0 0 0 .33-1.82 1.65 1.65 0 0 0-1.51-1H3a2 2 0 0 1 0-4h.09A1.65 1.65 0 0 0 4.6 9a1.65 1.65 0 0 0-.33-1.82l-.06-.06a2 2 0 1 1 2.83-2.83l.06.06a1.65 1.65 0 0 0 1.82.33H9a1.65 1.65 0 0 0 1-1.51V3a2 2 0 0 1 4 0v.09a1.65 1.65 0 0 0 1 1.51 1.65 1.65 0 0 0 1.82-.33l.06-.06a2 2 0 1 1 2.83 2.83l-.06.06a1.65 1.65 0 0 0-.33 1.82V9a1.65 1.65 0 0 0 1.51 1H21a2 2 0 0 1 0 4h-.09a1.65 1.65 0 0 0-1.51 1z"/></svg></span>
         Paramètres
@@ -985,6 +993,8 @@ textarea { resize: vertical; min-height: 80px; }
       <div class="section" id="section-enrollments"><div class="card" id="card-enrollments"></div></div>
       <div class="section" id="section-contacts"><div class="card" id="card-contacts"></div></div>
       <div class="section" id="section-testimonials"><div id="card-testimonials"></div></div>
+      <div class="section" id="section-values"><div class="card" id="card-values"></div></div>
+      <div class="section" id="section-steps"><div class="card" id="card-steps"></div></div>
       <div class="section" id="section-providers"><div id="card-providers"></div></div>
       <div class="section" id="section-products"><div class="card" id="card-products"></div></div>
       <div class="section" id="section-orders"><div class="card" id="card-orders"></div></div>
@@ -1091,7 +1101,7 @@ function navigateTo(section, resetPage = true) {
   // « À traiter ». gotoFiltered arme _keepFilter pour le conserver.
   if (!_keepFilter) delete tableFilters[section];
   if (resetPage) { currentSection.page = 1; currentSection.search = ''; }
-  const titles = { dashboard:'Tableau de bord', members:'Membres', geis:'GEIs', courses:'Cours', payments:'Paiements', bookings:'Réservations', enrollments:'Inscriptions', contacts:'Contacts', testimonials:'Témoignages', providers:'Moyens de paiement', products:'Produits', orders:'Commandes', blog:'Blog', students:'Étudiants (formation)', teachers:'Professeurs', formationEnrollments:'Inscriptions formation', settings:'Paramètres', admins:'Administrateurs', export:'Export CSV' };
+  const titles = { dashboard:'Tableau de bord', members:'Membres', geis:'GEIs', courses:'Cours', payments:'Paiements', bookings:'Réservations', enrollments:'Inscriptions', contacts:'Contacts', testimonials:'Témoignages', values:'Nos valeurs', steps:'Notre processus', providers:'Moyens de paiement', products:'Produits', orders:'Commandes', blog:'Blog', students:'Étudiants (formation)', teachers:'Professeurs', formationEnrollments:'Inscriptions formation', settings:'Paramètres', admins:'Administrateurs', export:'Export CSV' };
   document.getElementById('pageTitle').textContent = titles[section] || section;
   document.getElementById('headerActions').innerHTML = '';
   if (section === 'dashboard') { loadMetrics(); loadCharts(); }
@@ -1589,6 +1599,49 @@ const SECTIONS = {
     // pas, on les derive du nom (testiInitials est defini plus bas dans le script).
     serializeForm: d => ({ ...d, author_initials: String(d.author_initials || '').trim() || testiInitials(d.author_name) }),
     detailUrl: r => '/dashboard/api/testimonials/' + r.id + '/',
+  },
+  values: {
+    title: 'Nos valeurs (accueil)',
+    endpoint: '/dashboard/api/core-values/',
+    createEndpoint: '/dashboard/api/core-values/create/',
+    canCreate: true, canEdit: true, canDelete: true,
+    columns: [
+      { key:'title', label:'Valeur', render: r => `${r.icon ? esc(r.icon) + ' ' : ''}<strong>${esc(r.title)}</strong>` },
+      { key:'text', label:'Texte', render: r => esc(r.text).slice(0,90) + ((r.text || '').length > 90 ? '…' : '') },
+      { key:'sort_order', label:'Ordre', render: r => r.sort_order },
+      { key:'is_active', label:'Actif', render: r => r.is_active ? '<span class="pill green">Oui</span>' : '<span class="pill red">Non</span>' },
+    ],
+    formTitle: r => r ? 'Modifier la valeur' : 'Nouvelle valeur',
+    formFields: r => [
+      { name:'title', label:'Titre (ex. « Solidarité »)', type:'text', value: r?.title || '', required: true, maxLength: 120 },
+      { name:'text', label:'Description', type:'textarea', value: r?.text || '', required: true },
+      { name:'icon', label:'Icône emoji (optionnel — ex. 🤝 🌱 🌍 ; sinon icône par défaut)', type:'text', value: r?.icon || '', maxLength: 8 },
+      { name:'sort_order', label:'Ordre d\'affichage', type:'number', value: r?.sort_order || 0, min: 0 },
+      { name:'is_active', label:'Actif (visible sur le site)', type:'checkbox', value: r?.is_active ?? true },
+    ],
+    detailUrl: r => '/dashboard/api/core-values/' + r.id + '/',
+  },
+  steps: {
+    title: 'Notre processus (accueil)',
+    endpoint: '/dashboard/api/process-steps/',
+    createEndpoint: '/dashboard/api/process-steps/create/',
+    canCreate: true, canEdit: true, canDelete: true,
+    columns: [
+      { key:'title', label:'Étape', render: r => `<strong>${esc(r.title)}</strong>` },
+      { key:'text', label:'Texte', render: r => esc(r.text).slice(0,90) + ((r.text || '').length > 90 ? '…' : '') },
+      { key:'meta', label:'Durée / méta', render: r => esc(r.meta || '—') },
+      { key:'sort_order', label:'Ordre', render: r => r.sort_order },
+      { key:'is_active', label:'Actif', render: r => r.is_active ? '<span class="pill green">Oui</span>' : '<span class="pill red">Non</span>' },
+    ],
+    formTitle: r => r ? 'Modifier l\'étape' : 'Nouvelle étape',
+    formFields: r => [
+      { name:'title', label:'Titre (ex. « Candidature et entretien »)', type:'text', value: r?.title || '', required: true, maxLength: 120 },
+      { name:'text', label:'Description', type:'textarea', value: r?.text || '', required: true },
+      { name:'meta', label:'Durée / info (ex. « ⏱ 1 semaine »)', type:'text', value: r?.meta || '', maxLength: 80 },
+      { name:'sort_order', label:'Ordre d\'affichage', type:'number', value: r?.sort_order || 0, min: 0 },
+      { name:'is_active', label:'Actif (visible sur le site)', type:'checkbox', value: r?.is_active ?? true },
+    ],
+    detailUrl: r => '/dashboard/api/process-steps/' + r.id + '/',
   },
   providers: {
     title: 'Moyens de paiement',
@@ -4376,6 +4429,8 @@ const SETTINGS_TABS = [
   { key:'reseaux',   label:'Réseaux'   },
   { key:'theme',     label:'Thème'     },
   { key:'accueil',   label:'Accueil'   },
+  { key:'stats',     label:'Statistiques' },
+  { key:'liens',     label:'Liens'     },
   { key:'affichage', label:'Affichage' },
   { key:'seo',       label:'SEO'       },
 ];
@@ -4439,6 +4494,32 @@ function renderSettings() {
       _sf('Intro boutique','shop_intro',s.shop_intro,'textarea') +
       _sf('Texte du pied de page','footer_text',s.footer_text,'textarea'));
 
+    const stats = pane('stats', '<div class="settings-grid2">' +
+      _sf('Héro — membres (valeur)','stat_members',s.stat_members) +
+      _sf('Héro — membres (libellé)','stat_members_label',s.stat_members_label) +
+      _sf('Héro — croissance (valeur)','stat_growth',s.stat_growth) +
+      _sf('Héro — croissance (libellé)','stat_growth_label',s.stat_growth_label) +
+      _sf('Épargne (valeur)','stat_savings',s.stat_savings) +
+      _sf('Épargne (libellé)','stat_savings_label',s.stat_savings_label) +
+      _sf('Remboursement (valeur)','stat_repayment',s.stat_repayment) +
+      _sf('Remboursement (libellé)','stat_repayment_label',s.stat_repayment_label) +
+      _sf('Ateliers (valeur)','stat_workshops',s.stat_workshops) +
+      _sf('Ateliers (libellé)','stat_workshops_label',s.stat_workshops_label) +
+      _sf('Femmes (valeur)','stat_women',s.stat_women) +
+      _sf('Femmes (libellé)','stat_women_label',s.stat_women_label) + '</div>');
+
+    const liens = pane('liens',
+      _sf('Titre héro formation','formation_hero_title',s.formation_hero_title) +
+      _sf('Sous-titre héro formation','formation_hero_subtitle',s.formation_hero_subtitle,'textarea') +
+      '<div class="settings-grid2">' +
+      _sf('Lien — Statuts du GEI','url_statuts',s.url_statuts) +
+      _sf('Lien — Calendrier 2026','url_calendrier',s.url_calendrier) +
+      _sf('Lien — Rapport annuel','url_rapport',s.url_rapport) +
+      _sf('Lien — Devenir mentor','url_mentor',s.url_mentor) +
+      _sf('Lien — Presse','url_presse',s.url_presse) +
+      _sf('Lien — Mentions légales','url_mentions',s.url_mentions) +
+      _sf('Lien — Confidentialité','url_confidentialite',s.url_confidentialite) + '</div>');
+
     const affichage = pane('affichage', '<div class="stoggle-list">' +
       _stoggle('Afficher la boutique','show_shop',s.show_shop,'Rend la boutique visible sur le site public') +
       _stoggle('Afficher le blog','show_blog',s.show_blog) +
@@ -4451,7 +4532,7 @@ function renderSettings() {
       _sf('Meta description','meta_description',s.meta_description,'textarea') +
       _sf('Mots-clés','meta_keywords',s.meta_keywords));
 
-    const panes = identite + contact + reseaux + theme + accueil + affichage + seo;
+    const panes = identite + contact + reseaux + theme + accueil + stats + liens + affichage + seo;
     const tabs = SETTINGS_TABS.map(t => '<button type="button" class="settings-tab" data-tab="' + t.key + '" onclick="settingsTab(\'' + t.key + '\')">' + esc(t.label) + '</button>').join('');
     const modif = s.updated_at ? 'Dernière modification : ' + new Date(s.updated_at).toLocaleDateString('fr-FR') : '';
 

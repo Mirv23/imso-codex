@@ -35,6 +35,7 @@ from .models import (
     ChapterCompletion,
     ContactRequest,
     Course,
+    CoreValue,
     EncryptedCharField,
     Enrollment,
     GEI,
@@ -44,6 +45,7 @@ from .models import (
     Payment,
     PaymentProvider,
     Product,
+    ProcessStep,
     Profile,
     SiteSetting,
     Testimonial,
@@ -197,6 +199,9 @@ def _serialize_payments_for_react() -> list[dict[str, Any]]:
             course_title = p.enrollment.course.title
         elif p.purpose == "venue" and p.venue_booking:
             course_title = f"Réservation: {p.venue_booking.event_type}"
+        elif p.purpose == "course" and p.notes:
+            # Paiement formation materialise (pas de FK Enrollment) : libelle depuis notes.
+            course_title = p.notes
 
         provider_type = p.provider.provider_type if p.provider else "manual"
         method = {"moncash": "MonCash", "stripe": "Stripe", "natcash": "NatCash",
@@ -1359,6 +1364,44 @@ def course_enrollment_list(request: HttpRequest) -> JsonResponse:
     return resp
 
 
+def _materialize_course_payment(enrollment: CourseEnrollment) -> None:
+    """Materialise UN Payment 'paye' quand une inscription formation devient
+    ACTIVE et que le cours est payant, pour que le CA formation apparaisse dans
+    la table Payment et le graphe des revenus (_serialize_revenue_for_react).
+
+    Idempotent : au plus un Payment par CourseEnrollment, repere via
+    external_reference = 'CE-<id>'. Ne fait RIEN si l'inscription n'est pas
+    active ou si le cours est gratuit (price_htg == 0) -> aucun doublon ni
+    revenu fantome. Ne touche jamais au Payment.enrollment (FK vers l'Enrollment
+    core), laisse a None : ce paiement est rattache a la plateforme formation.
+    """
+    course = enrollment.course
+    if enrollment.status != CourseEnrollment.Status.ACTIVE:
+        return
+    if not course or not course.price_htg:
+        return
+    ref = f"CE-{enrollment.pk}"
+    # Anti-doublon : un Payment existe deja pour cette inscription -> on sort.
+    if Payment.objects.filter(external_reference=ref).exists():
+        return
+    student = enrollment.student
+    payer_name = (student.get_full_name() or student.username or "Etudiant")[:140]
+    try:
+        Payment.objects.create(
+            purpose=Payment.Purpose.COURSE,
+            status=Payment.Status.PAID,
+            entry_mode=Payment.EntryMode.MANUAL,
+            payer_name=payer_name,
+            payer_email=getattr(student, "email", "") or "",
+            amount_htg=course.price_htg,
+            external_reference=ref,
+            notes=f"Inscription formation · {course.title}",
+        )
+    except Exception:
+        # La materialisation du CA ne doit jamais casser l'activation d'un acces.
+        logger.exception("Materialisation Payment formation echouee (CE=%s)", enrollment.pk)
+
+
 @staff_required
 @require_http_methods(["POST"])
 def course_enrollment_create(request: HttpRequest) -> JsonResponse:
@@ -1391,6 +1434,8 @@ def course_enrollment_create(request: HttpRequest) -> JsonResponse:
         "CourseEnrollment created (student=%s course=%s status=%s) by %s",
         p.user_id, course_id, status, request.user.username,
     )
+    # Cours payant deja active a la creation -> on materialise le revenu.
+    _materialize_course_payment(e)
     return JsonResponse(_serialize_course_enrollment(e), status=201)
 
 
@@ -1409,6 +1454,8 @@ def course_enrollment_detail(request: HttpRequest, pk: int) -> JsonResponse:
             e.status = st
             e.save(update_fields=["status", "updated_at"])
             logger.info("CourseEnrollment %d -> %s by %s", pk, st, request.user.username)
+            # Passage a ACTIVE -> materialise le revenu (idempotent, no-op si deja fait).
+            _materialize_course_payment(e)
         return JsonResponse(_serialize_course_enrollment(e))
     e.delete()
     return _ok()
@@ -2440,6 +2487,146 @@ def testimonial_create(request: HttpRequest) -> JsonResponse:
     return JsonResponse(_serialize_testimonial(t), status=201)
 
 
+# ── Valeurs & Processus (contenu du site vitrine) ─────
+# CRUD calque sur les temoignages : le site vitrine boucle dessus avec un
+# fallback ({% empty %}) sur le contenu code en dur tant qu'aucune ligne active
+# n'est saisie.
+
+
+def _serialize_core_value(v: CoreValue) -> dict[str, Any]:
+    return {
+        "id": v.pk,
+        "title": v.title,
+        "text": v.text,
+        "icon": v.icon,
+        "sort_order": v.sort_order,
+        "is_active": v.is_active,
+        "created_at": v.created_at.isoformat(),
+    }
+
+
+@staff_required
+@require_http_methods(["GET"])
+def core_value_list(request: HttpRequest) -> JsonResponse:
+    qs = CoreValue.objects.all()
+    search = request.GET.get("search")
+    if search:
+        qs = qs.filter(Q(title__icontains=search) | Q(text__icontains=search))
+    return _paginated_response(qs.order_by("sort_order", "id"), request, _serialize_core_value)
+
+
+@staff_required
+@require_http_methods(["GET", "PUT", "DELETE"])
+def core_value_detail(request: HttpRequest, pk: int) -> JsonResponse:
+    try:
+        v = CoreValue.objects.get(pk=pk)
+    except CoreValue.DoesNotExist:
+        return _error("Valeur introuvable", 404)
+    if request.method == "GET":
+        return JsonResponse(_serialize_core_value(v))
+    if request.method == "DELETE":
+        v.delete()
+        return _ok()
+    data = _json_body(request)
+    for field in ("title", "text", "icon", "is_active"):
+        if field in data:
+            setattr(v, field, data[field])
+    if "sort_order" in data:
+        try:
+            v.sort_order = max(0, int(data.get("sort_order") or 0))
+        except (ValueError, TypeError):
+            return _error("L'ordre doit etre un nombre.")
+    v.save()
+    return JsonResponse(_serialize_core_value(v))
+
+
+@staff_required
+@require_http_methods(["POST"])
+def core_value_create(request: HttpRequest) -> JsonResponse:
+    data = _json_body(request)
+    if not str(data.get("title") or "").strip():
+        return _error("Le titre est obligatoire.")
+    try:
+        sort_order = max(0, int(data.get("sort_order") or 0))
+    except (ValueError, TypeError):
+        return _error("L'ordre doit etre un nombre.")
+    v = CoreValue.objects.create(
+        title=str(data.get("title") or "").strip(),
+        text=data.get("text", ""),
+        icon=str(data.get("icon") or "").strip(),
+        sort_order=sort_order,
+        is_active=data.get("is_active", True),
+    )
+    return JsonResponse(_serialize_core_value(v), status=201)
+
+
+def _serialize_process_step(s: ProcessStep) -> dict[str, Any]:
+    return {
+        "id": s.pk,
+        "title": s.title,
+        "text": s.text,
+        "meta": s.meta,
+        "sort_order": s.sort_order,
+        "is_active": s.is_active,
+        "created_at": s.created_at.isoformat(),
+    }
+
+
+@staff_required
+@require_http_methods(["GET"])
+def process_step_list(request: HttpRequest) -> JsonResponse:
+    qs = ProcessStep.objects.all()
+    search = request.GET.get("search")
+    if search:
+        qs = qs.filter(Q(title__icontains=search) | Q(text__icontains=search))
+    return _paginated_response(qs.order_by("sort_order", "id"), request, _serialize_process_step)
+
+
+@staff_required
+@require_http_methods(["GET", "PUT", "DELETE"])
+def process_step_detail(request: HttpRequest, pk: int) -> JsonResponse:
+    try:
+        s = ProcessStep.objects.get(pk=pk)
+    except ProcessStep.DoesNotExist:
+        return _error("Etape introuvable", 404)
+    if request.method == "GET":
+        return JsonResponse(_serialize_process_step(s))
+    if request.method == "DELETE":
+        s.delete()
+        return _ok()
+    data = _json_body(request)
+    for field in ("title", "text", "meta", "is_active"):
+        if field in data:
+            setattr(s, field, data[field])
+    if "sort_order" in data:
+        try:
+            s.sort_order = max(0, int(data.get("sort_order") or 0))
+        except (ValueError, TypeError):
+            return _error("L'ordre doit etre un nombre.")
+    s.save()
+    return JsonResponse(_serialize_process_step(s))
+
+
+@staff_required
+@require_http_methods(["POST"])
+def process_step_create(request: HttpRequest) -> JsonResponse:
+    data = _json_body(request)
+    if not str(data.get("title") or "").strip():
+        return _error("Le titre est obligatoire.")
+    try:
+        sort_order = max(0, int(data.get("sort_order") or 0))
+    except (ValueError, TypeError):
+        return _error("L'ordre doit etre un nombre.")
+    s = ProcessStep.objects.create(
+        title=str(data.get("title") or "").strip(),
+        text=data.get("text", ""),
+        meta=str(data.get("meta") or "").strip(),
+        sort_order=sort_order,
+        is_active=data.get("is_active", True),
+    )
+    return JsonResponse(_serialize_process_step(s), status=201)
+
+
 # ── Products (boutique) ──────────────────────────────────
 
 def _serialize_product(p: Product) -> dict[str, Any]:
@@ -2767,6 +2954,11 @@ SETTINGS_TEXT_FIELDS = [
     "facebook_url", "instagram_url", "twitter_url", "linkedin_url", "youtube_url", "tiktok_url",
     "color_primary", "color_primary_dark", "color_accent", "color_highlight",
     "hero_title", "hero_subtitle", "hero_cta_text", "about_title", "about_text", "shop_intro", "footer_text",
+    "stat_members", "stat_members_label", "stat_growth", "stat_growth_label",
+    "stat_savings", "stat_savings_label", "stat_repayment", "stat_repayment_label",
+    "stat_workshops", "stat_workshops_label", "stat_women", "stat_women_label",
+    "formation_hero_title", "formation_hero_subtitle",
+    "url_statuts", "url_calendrier", "url_rapport", "url_mentor", "url_presse", "url_mentions", "url_confidentialite",
     "meta_description", "meta_keywords",
 ]
 SETTINGS_BOOL_FIELDS = ["show_shop", "show_blog", "show_courses", "show_testimonials", "maintenance_mode"]
