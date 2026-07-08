@@ -1360,6 +1360,41 @@ def course_enrollment_list(request: HttpRequest) -> JsonResponse:
 
 
 @staff_required
+@require_http_methods(["POST"])
+def course_enrollment_create(request: HttpRequest) -> JsonResponse:
+    """Inscription manuelle d'un etudiant a un cours par un admin (paiement recu
+    hors-ligne, acces offert...). Recoit le pk du Profil etudiant + le pk du cours ;
+    l'acces est actif par defaut (status=active) mais peut rester en attente."""
+    data = _json_body(request)
+    try:
+        profile_id = int(data.get("student_id"))
+        course_id = int(data.get("course_id"))
+    except (TypeError, ValueError):
+        return _error("Etudiant et cours obligatoires.")
+    try:
+        p = Profile.objects.select_related("user").get(pk=profile_id, role=Profile.Role.STUDENT)
+    except Profile.DoesNotExist:
+        return _error("Etudiant introuvable", 404)
+    try:
+        course = Course.objects.get(pk=course_id)
+    except Course.DoesNotExist:
+        return _error("Cours introuvable", 404)
+    status = data.get("status")
+    if status not in (CourseEnrollment.Status.ACTIVE, CourseEnrollment.Status.PENDING_PAYMENT):
+        status = CourseEnrollment.Status.ACTIVE
+    e, created = CourseEnrollment.objects.get_or_create(
+        student=p.user, course=course, defaults={"status": status},
+    )
+    if not created:
+        return _error("Cet etudiant est deja inscrit a ce cours.", 409)
+    logger.info(
+        "CourseEnrollment created (student=%s course=%s status=%s) by %s",
+        p.user_id, course_id, status, request.user.username,
+    )
+    return JsonResponse(_serialize_course_enrollment(e), status=201)
+
+
+@staff_required
 @require_http_methods(["GET", "PUT", "DELETE"])
 def course_enrollment_detail(request: HttpRequest, pk: int) -> JsonResponse:
     try:
@@ -1722,10 +1757,17 @@ def payment_detail(request: HttpRequest, pk: int) -> JsonResponse:
             if amount < 0:
                 return _error("Le montant ne peut pas être négatif.")
             p.amount_htg = amount
+        # Bornes de longueur : un save() nu n'applique PAS max_length et laisse
+        # remonter une DataError Postgres -> 500. On tronque comme provider_detail.
+        _pay_maxlen = {"payer_name": 140, "payer_phone": 40,
+                        "payer_email": 254, "external_reference": 120, "entry_mode": 20}
         for fld in ("payer_name", "payer_phone", "payer_email",
                      "notes", "entry_mode", "external_reference"):
             if fld in data:
-                setattr(p, fld, str(data[fld] or ""))
+                val = str(data[fld] or "")
+                if fld in _pay_maxlen:
+                    val = val[: _pay_maxlen[fld]]
+                setattr(p, fld, val)
         if "provider_id" in data:
             pid = data["provider_id"] or None
             if pid is not None:
@@ -1739,6 +1781,54 @@ def payment_detail(request: HttpRequest, pk: int) -> JsonResponse:
         p.save()
         logger.info("Payment %d updated by user %s (status: %s)", pk, request.user.username, p.status)
         return JsonResponse(_serialize_payment(p))
+
+
+@staff_required
+@require_http_methods(["POST"])
+def payment_create(request: HttpRequest) -> JsonResponse:
+    """Enregistrement MANUEL d'un paiement : encaissement cash, mobile money
+    hors-ligne, cotisation. entry_mode est force a 'manual'. Payment.save()
+    genere la reference et renseigne paid_at si le statut est 'paid'."""
+    data = _json_body(request)
+    purpose = str(data.get("purpose") or "").strip()
+    if purpose not in Payment.Purpose.values:
+        return _error("Motif de paiement invalide.")
+    payer_name = str(data.get("payer_name") or "").strip()
+    if not payer_name:
+        return _error("Le nom du payeur est obligatoire.")
+    try:
+        amount = int(data.get("amount_htg") or 0)
+    except (ValueError, TypeError):
+        return _error("Le montant doit être un nombre.")
+    if amount < 0:
+        return _error("Le montant ne peut pas être négatif.")
+    status = data.get("status") or Payment.Status.PENDING
+    if status not in Payment.Status.values:
+        return _error("Statut de paiement invalide.")
+    provider_id = data.get("provider_id") or None
+    if provider_id is not None:
+        try:
+            provider_id = int(provider_id)
+        except (ValueError, TypeError):
+            return _error("Moyen de paiement invalide.")
+        if not PaymentProvider.objects.filter(pk=provider_id).exists():
+            return _error("Le moyen de paiement sélectionné n'existe pas.")
+    # Bornes de longueur : un create() nu n'applique pas max_length -> 500 Postgres.
+    p = Payment.objects.create(
+        purpose=purpose,
+        provider_id=provider_id,
+        status=status,
+        entry_mode=Payment.EntryMode.MANUAL,
+        payer_name=payer_name[:140],
+        payer_phone=str(data.get("payer_phone") or "")[:40],
+        payer_email=str(data.get("payer_email") or "")[:254],
+        amount_htg=amount,
+        external_reference=str(data.get("external_reference") or "")[:120],
+        notes=str(data.get("notes") or ""),
+    )
+    logger.info("Payment %d created manually by user %s (%s, %d HTG, %s)",
+                p.pk, request.user.username, purpose, amount, status)
+    return JsonResponse(_serialize_payment(p), status=201)
 
 
 # ── Contacts ─────────────────────────────────────────────

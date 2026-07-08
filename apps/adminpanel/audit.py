@@ -84,6 +84,7 @@ def connect() -> None:
         BlogPost,
         ContactRequest,
         Course,
+        CourseEnrollment,
         Enrollment,
         GEI,
         Member,
@@ -91,6 +92,7 @@ def connect() -> None:
         Payment,
         PaymentProvider,
         Product,
+        Profile,
         SiteSetting,
         Testimonial,
         VenueBooking,
@@ -110,6 +112,8 @@ def connect() -> None:
         Order,
         BlogPost,
         SiteSetting,
+        Profile,
+        CourseEnrollment,
     ]
     for model in audited:
         post_save.connect(_on_save, sender=model, dispatch_uid=f"audit_save_{model.__name__}")

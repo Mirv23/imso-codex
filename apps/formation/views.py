@@ -15,6 +15,7 @@ from django.views.decorators.http import require_http_methods
 
 from apps.adminpanel import views as av
 from apps.adminpanel.models import (
+    AdminNotification,
     Chapter,
     ChapterCompletion,
     Course,
@@ -106,6 +107,14 @@ def enroll(request: HttpRequest, pk: int) -> HttpResponse:
     elif is_free:
         messages.success(request, "Inscription confirmée ! Bon apprentissage. 🎓")
     else:
+        AdminNotification.objects.create(
+            message=(
+                f"Nouvelle inscription en attente de paiement : "
+                f"{request.user.get_full_name() or request.user.username} → {course.title}"
+            )[:255],
+            notification_type=AdminNotification.NotificationType.NEW_ENROLLMENT,
+            related_id=enr.pk,
+        )
         messages.info(request, "Inscription enregistrée. Effectuez le paiement pour débloquer l'accès aux vidéos.")
     return redirect("formation:course_detail", pk=pk)
 
@@ -214,6 +223,14 @@ def kyc(request: HttpRequest) -> HttpResponse:
             profile.kyc_status = Profile.KycStatus.SUBMITTED
             profile.kyc_note = ""
             profile.save()
+            AdminNotification.objects.create(
+                message=(
+                    f"Dossier KYC à vérifier : "
+                    f"{request.user.get_full_name() or request.user.username}"
+                )[:255],
+                notification_type=AdminNotification.NotificationType.NEW_CONTACT,
+                related_id=profile.pk,
+            )
             messages.success(request, "Vérification soumise ! Notre équipe l'examinera prochainement.")
             return redirect("formation:dashboard")
     return render(request, "formation/kyc.html", {"profile": profile})
