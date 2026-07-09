@@ -5,7 +5,7 @@
 <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
 <meta name="robots" content="noindex, nofollow">
 <title>{{ site.site_name|default:"IMSO" }} — Site en maintenance</title>
-{% if site.logo %}<link rel="icon" href="{{ site.logo.url }}">{% else %}<link rel="icon" href="{% static 'website/assets/9f2647f0-409d-40a1-969b-7969601ef459.png' %}">{% endif %}
+<link rel="icon" href="{% static 'website/assets/imso-logo.png' %}">
 <style>
   :root{
     --primary:{{ site.color_primary|default:"#3C9626" }};
@@ -65,7 +65,7 @@
 </head>
 <body>
   <main class="card" role="main">
-    {% if site.logo %}<img class="logo" src="{{ site.logo.url }}" alt="{{ site.site_name|default:'IMSO' }}">{% else %}<img class="logo" src="{% static 'website/assets/9f2647f0-409d-40a1-969b-7969601ef459.png' %}" alt="IMSO">{% endif %}
+    <img class="logo" src="{% static 'website/assets/imso-logo.png' %}" alt="{{ site.site_name|default:'IMSO' }}">
     <span class="badge"><span class="dot"></span>Maintenance en cours</span>
     <h1>Notre site fait <em>peau neuve</em>.</h1>
     <p>{{ site.site_name|default:"IMSO" }} revient très bientôt avec une expérience améliorée. Merci de votre patience — nous préparons quelque chose de mieux pour vous.</p>

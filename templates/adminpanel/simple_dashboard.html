@@ -59,7 +59,13 @@ textarea { resize: vertical; min-height: 80px; }
 .sb-bottom { padding: 8px; border-top: 1px solid rgba(255,255,255,0.06); }
 
 /* Main */
-.main { margin-left: var(--sb-w); flex: 1; display: flex; flex-direction: column; }
+.main { margin-left: var(--sb-w); flex: 1; display: flex; flex-direction: column; transition: margin-left .22s ease; }
+.sidebar { transition: transform .22s ease; }
+/* Sidebar repliée (desktop) : le menu glisse hors écran, le contenu occupe toute la largeur */
+@media (min-width: 641px) {
+  .app.sb-collapsed .sidebar { transform: translateX(-100%); }
+  .app.sb-collapsed .main { margin-left: 0; }
+}
 .header {
   height: var(--hd-h); background: rgba(255,255,255,0.85); backdrop-filter: saturate(140%) blur(10px);
   border-bottom: 1px solid var(--border); position: sticky; top: 0; z-index: 20;
@@ -132,6 +138,9 @@ textarea { resize: vertical; min-height: 80px; }
 .table th { font-size: 11px; font-weight: 600; color: var(--muted); text-transform: uppercase; letter-spacing: 0.04em; border-bottom: 1px solid var(--border); background: #FAFBFC; }
 .table tbody tr:hover { background: #FAFBFC; }
 .table td.actions { white-space: nowrap; text-align: right; }
+/* Groupe de boutons d'action aligné proprement sur une même ligne (fini les boutons collés/décalés) */
+.row-actions { display: inline-flex; align-items: center; justify-content: flex-end; gap: 6px; flex-wrap: wrap; }
+.row-actions > * { margin: 0; }
 .table .empty { text-align: center; padding: 48px 22px; color: var(--muted); }
 
 /* Badges */
@@ -201,7 +210,8 @@ textarea { resize: vertical; min-height: 80px; }
 /* Activity grid */
 .grid-2 { display: grid; grid-template-columns: 1fr 1fr; gap: 18px; margin-top: 18px; }
 @media (max-width: 900px) { .grid-2 { grid-template-columns: 1fr; } }
-.sb-toggle { display: none; width: 40px; height: 40px; border-radius: 10px; border: 1px solid var(--border); background: var(--card); place-items: center; cursor: pointer; margin-right: 12px; flex-shrink: 0; color: var(--text); }
+.sb-toggle { display: grid; width: 40px; height: 40px; border-radius: 10px; border: 1px solid var(--border); background: var(--card); place-items: center; cursor: pointer; margin-right: 12px; flex-shrink: 0; color: var(--text); transition: background .15s, border-color .15s; }
+.sb-toggle:hover { background: var(--bg); border-color: #D1D5DB; }
 .sb-toggle svg { width: 20px; height: 20px; }
 .sb-scrim { display: none; position: fixed; inset: 0; background: rgba(0,0,0,.45); z-index: 25; opacity: 0; pointer-events: none; transition: opacity .25s ease; }
 @media (max-width: 640px) {
@@ -272,11 +282,13 @@ textarea { resize: vertical; min-height: 80px; }
 .bk-item__body { flex:1 1 auto; min-width:0; }
 .bk-item__ttl { display:flex; align-items:center; gap:8px; flex-wrap:wrap; font-size:14px; font-weight:600; color:var(--text); }
 .bk-item__sub { font-size:12.5px; color:var(--muted); margin-top:2px; }
-.bk-item__act { flex:0 0 auto; }
+.bk-item__act { flex:0 0 auto; display:flex; align-items:center; gap:6px; flex-wrap:wrap; justify-content:flex-end; }
 @media (max-width:640px){
   .bk-cell { min-height:74px; padding:4px; }
   .bk-item { flex-wrap:wrap; }
   .bk-item__time { min-width:auto; }
+  /* Sur mobile : l'ensemble des actions passe sous le contenu, aligné à gauche */
+  .bk-item__act { width:100%; justify-content:flex-start; }
 }
 /* ── Pipeline commandes (kanban) — préfixe .okb / drawer .od ── */
 .okb { display:flex; gap:14px; overflow-x:auto; padding:4px 4px 18px; align-items:flex-start; }
@@ -858,7 +870,7 @@ textarea { resize: vertical; min-height: 80px; }
 <div class="app">
   <aside class="sidebar">
     <div class="sb-brand">
-      <div class="sb-logo">{% if site.logo %}<img src="{{ site.logo.url }}" alt="{{ site.site_name|default:'IMSO' }}">{% else %}<img src="{% static 'website/assets/9f2647f0-409d-40a1-969b-7969601ef459.png' %}" alt="IMSO">{% endif %}</div>
+      <div class="sb-logo"><img src="{% static 'website/assets/imso-logo.png' %}" alt="{{ site.site_name|default:'IMSO' }}"></div>
       <span class="sb-name">{{ site.site_name|default:'IMSO' }}</span><span class="sb-tag">Admin</span>
     </div>
     <nav class="sb-nav" id="sideNav">
@@ -981,7 +993,7 @@ textarea { resize: vertical; min-height: 80px; }
   <div class="sb-scrim" id="sbScrim" onclick="toggleSidebar(false)"></div>
   <div class="main">
     <header class="header">
-      <button class="sb-toggle" onclick="toggleSidebar()" aria-label="Ouvrir le menu"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><line x1="3" y1="6" x2="21" y2="6"/><line x1="3" y1="12" x2="21" y2="12"/><line x1="3" y1="18" x2="21" y2="18"/></svg></button>
+      <button class="sb-toggle" onclick="toggleSidebar()" aria-label="Réduire ou afficher le menu" title="Réduire / afficher le menu"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><line x1="3" y1="6" x2="21" y2="6"/><line x1="3" y1="12" x2="21" y2="12"/><line x1="3" y1="18" x2="21" y2="18"/></svg></button>
       <div class="hd-left">
         <div class="hd-title" id="pageTitle">Tableau de bord</div>
         <div class="hd-sub" id="pageSubtitle">{{ summary.active_members }} membre(s) actif(s) · {{ summary.active_courses }} cours actif(s)</div>
@@ -1162,13 +1174,34 @@ document.addEventListener('click', (e) => {
   if (w && p && !p.hasAttribute('hidden') && !w.contains(e.target)) p.setAttribute('hidden', '');
 });
 
-// Menu lateral mobile (ouverture/fermeture)
+// Menu lateral :
+//  - Desktop (>=641px) : on REPLIE la barre (contenu pleine largeur), etat memorise.
+//  - Mobile (<641px)   : tiroir classique (ouverture/fermeture) avec voile.
 function toggleSidebar(force) {
+  const isDesktop = window.matchMedia('(min-width: 641px)').matches;
+  if (isDesktop) {
+    const app = document.querySelector('.app');
+    // force === true => ouvrir (deplier) ; force === false => replier ; sinon bascule.
+    const collapse = force === undefined ? !app.classList.contains('sb-collapsed') : !force;
+    app.classList.toggle('sb-collapsed', collapse);
+    try { localStorage.setItem('imso_sb_collapsed', collapse ? '1' : '0'); } catch (e) {}
+    return;
+  }
   const sb = document.querySelector('.sidebar'), sc = document.getElementById('sbScrim');
   const open = force === undefined ? !sb.classList.contains('open') : force;
   sb.classList.toggle('open', open);
   if (sc) sc.classList.toggle('open', open);
 }
+
+// Restaure l'etat replie/deplie de la barre sur desktop au chargement.
+(function initSidebarState() {
+  try {
+    if (localStorage.getItem('imso_sb_collapsed') === '1'
+        && window.matchMedia('(min-width: 641px)').matches) {
+      document.querySelector('.app').classList.add('sb-collapsed');
+    }
+  } catch (e) {}
+})();
 
 function api(url, opts = {}) {
   opts.headers = opts.headers || {};
@@ -1219,7 +1252,8 @@ function navigateTo(section, resetPage = true) {
     const allowed = new Set(window.ME.sections || []);
     if (!allowed.has(section)) { toast && toast('Accès non autorisé à cette section.', 'error'); section = 'dashboard'; }
   }
-  toggleSidebar(false);  // referme le menu mobile apres selection
+  // Referme le tiroir mobile apres selection (mais ne replie PAS la barre desktop).
+  if (!window.matchMedia('(min-width: 641px)').matches) toggleSidebar(false);
   document.querySelectorAll('.section').forEach(s => s.classList.remove('active'));
   document.querySelectorAll('.sb-item').forEach(s => s.classList.remove('active'));
   const secEl = document.getElementById('section-' + section);
@@ -2202,11 +2236,11 @@ function renderTable(sectionKey, data) {
       html += '<tr data-id="' + r.id + '">';
       cfg.columns.forEach(c => { html += '<td>' + (c.render ? c.render(r) : esc(r[c.key])) + '</td>'; });
       if (cfg.canEdit || cfg.canDelete || cfg.rowActions) {
-        html += '<td class="actions">';
+        html += '<td class="actions"><div class="row-actions">';
         if (cfg.rowActions) html += cfg.rowActions(r);
         if (cfg.canEdit) html += '<button class="btn btn-sm" onclick="editRow(\'' + sectionKey + '\',' + r.id + ')" title="Modifier"><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M11 4H4a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-7"/><path d="M18.5 2.5a2.121 2.121 0 0 1 3 3L12 15l-4 1 1-4 9.5-9.5z"/></svg></button>';
         if (cfg.canDelete) html += '<button class="btn btn-sm btn-danger" onclick="confirmDelete(\'' + sectionKey + '\',' + r.id + ')" title="Supprimer"><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="3 6 5 6 21 6"/><path d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6m3 0V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2"/></svg></button>';
-        html += '</td>';
+        html += '</div></td>';
       }
       html += '</tr>';
     });
@@ -3257,14 +3291,14 @@ function renderContacts(d) {
     items.forEach(r => {
       html += '<tr data-id="' + r.id + '">';
       cfg.columns.forEach(c => { html += '<td>' + (c.render ? c.render(r) : esc(r[c.key])) + '</td>'; });
-      html += '<td class="actions">';
+      html += '<td class="actions"><div class="row-actions">';
       const wa = contactWaLink(r.phone);
       if (wa) html += '<a class="btn btn-sm ct-wa" href="' + esc(wa) + '" target="_blank" rel="noopener" title="Contacter sur WhatsApp"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M21 15.5a2 2 0 0 1-2 2 16 16 0 0 1-13-13 2 2 0 0 1 2-2h2a2 2 0 0 1 2 1.7c.1.9.3 1.8.6 2.6a2 2 0 0 1-.5 2.1L13 10a12 12 0 0 0 4 4l1.1-1.1a2 2 0 0 1 2.1-.5c.8.3 1.7.5 2.6.6a2 2 0 0 1 1.7 2z"/></svg>WhatsApp</a>';
       if (!r.is_processed) html += '<button class="btn btn-sm ct-done" onclick="contactMarkDone(' + r.id + ')" title="Marquer comme traite"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="20 6 9 17 4 12"/></svg> Traite</button>';
       if (r.email) html += '<a class="btn btn-sm" href="mailto:' + esc(r.email) + '?subject=' + encodeURIComponent('Votre message à IMSO') + '" title="Répondre par email"><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="2" y="4" width="20" height="16" rx="2"/><path d="M22 6l-10 7L2 6"/></svg></a>';
       html += '<button class="btn btn-sm" onclick="editRow(\'contacts\',' + r.id + ')" title="Voir le message complet"><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z"/><circle cx="12" cy="12" r="3"/></svg></button>';
       html += '<button class="btn btn-sm btn-danger" onclick="contactDelete(' + r.id + ')" title="Supprimer"><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="3 6 5 6 21 6"/><path d="M19 6l-1 14a2 2 0 0 1-2 2H8a2 2 0 0 1-2-2L5 6m3 0V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2"/></svg></button>';
-      html += '</td></tr>';
+      html += '</div></td></tr>';
     });
   }
   html += '</tbody></table></div>';

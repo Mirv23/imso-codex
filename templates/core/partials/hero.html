@@ -1,7 +1,7 @@
 {% load static %}<!-- Loader -->
 <div class="loader" id="loader">
   <div class="brand-logo" aria-label="IMSO">
-    <img src="{% if site.logo %}{{ site.logo.url }}{% else %}{% static 'website/assets/9f2647f0-409d-40a1-969b-7969601ef459.png' %}{% endif %}" alt="IMSO">
+    <img src="{% static 'website/assets/imso-logo.png' %}" alt="IMSO">
   </div>
 </div>
 
@@ -9,7 +9,7 @@
 <nav class="nav" id="nav">
   <div class="container nav__inner">
     <a href="#top" class="brand-logo" aria-label="IMSO accueil">
-      <img src="{% if site.logo %}{{ site.logo.url }}{% else %}{% static 'website/assets/9f2647f0-409d-40a1-969b-7969601ef459.png' %}{% endif %}" alt="IMSO — Impact Mutuelle de Solidarité">
+      <img src="{% static 'website/assets/imso-logo.png' %}" alt="IMSO — Impact Mutuelle de Solidarité">
     </a>
     <ul class="nav__links" role="list">
       <li><a class="nav__link" href="#mission">Mission</a></li>
@@ -32,7 +32,7 @@
 <div class="scrim" id="scrim"></div>
 <aside class="drawer" id="drawer" aria-hidden="true">
   <div class="drawer__head">
-    <span class="brand-logo"><img src="{% if site.logo %}{{ site.logo.url }}{% else %}{% static 'website/assets/9f2647f0-409d-40a1-969b-7969601ef459.png' %}{% endif %}" alt="IMSO"></span>
+    <span class="brand-logo"><img src="{% static 'website/assets/imso-logo.png' %}" alt="IMSO"></span>
     <button class="drawer__close" id="drawerClose" aria-label="Fermer le menu">
       <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><path d="M18 6 6 18M6 6l12 12"></path></svg>
     </button>

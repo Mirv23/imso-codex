@@ -102,6 +102,7 @@ a:hover { color: var(--primary-600); }
   display: grid; place-items: center;
   color: #fff; font-weight: 800; font-size: 13px;
 }
+.header-logo-img { height: 34px; width: auto; display: block; }
 .header-badge {
   font-size: 11px; font-weight: 600;
   background: var(--primary-light); color: var(--primary);
@@ -273,8 +274,7 @@ a:hover { color: var(--primary-600); }
 <header class="header">
   <div class="header-inner">
     <div class="header-logo">
-      <div class="header-logo-icon">I</div>
-      <span>IMSO Haiti</span>
+      <img class="header-logo-img" src="{% static 'website/assets/imso-logo.png' %}" alt="IMSO Haiti">
     </div>
     <span class="header-badge">Paiement sécurisé</span>
   </div>
