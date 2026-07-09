@@ -5,7 +5,7 @@ from typing import Any
 from django.conf import settings
 from django.core.mail import send_mail
 from django.db import transaction
-from django.db.models.signals import post_delete, post_save, pre_save
+from django.db.models.signals import post_delete, post_save, pre_delete, pre_save
 from django.dispatch import receiver
 
 from .models import (
@@ -14,6 +14,7 @@ from .models import (
     Chapter,
     ContactRequest,
     Course,
+    CourseEnrollment,
     Enrollment,
     Order,
     Payment,
@@ -21,6 +22,17 @@ from .models import (
     Testimonial,
     VenueBooking,
 )
+
+
+@receiver(pre_delete, sender=CourseEnrollment)
+def cancel_materialized_course_payment(sender, instance, **kwargs):
+    """Supprime le Payment de CA materialise (external_reference='CE-<id>') quand
+    une inscription formation est supprimee — y compris en CASCADE (suppression
+    d'un etudiant). Evite un CA fantome apres suppression."""
+    try:
+        Payment.objects.filter(external_reference=f"CE-{instance.pk}").delete()
+    except Exception:
+        pass
 
 
 # ── Nettoyage automatique des fichiers du stockage ───────────────────────

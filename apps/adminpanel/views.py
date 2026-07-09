@@ -1415,6 +1415,16 @@ def _materialize_course_payment(enrollment: CourseEnrollment) -> None:
         logger.exception("Materialisation Payment formation echouee (CE=%s)", enrollment.pk)
 
 
+def _cancel_course_payment(enrollment_pk: int) -> None:
+    """Supprime le Payment materialise d'une inscription formation (external_
+    reference='CE-<id>') quand elle quitte ACTIVE ou est supprimee. Evite de
+    sur-compter le CA (inscription annulee comptee comme revenu)."""
+    try:
+        Payment.objects.filter(external_reference=f"CE-{enrollment_pk}").delete()
+    except Exception:
+        logger.exception("Annulation Payment formation echouee (CE=%s)", enrollment_pk)
+
+
 @staff_required
 @require_http_methods(["POST"])
 def course_enrollment_create(request: HttpRequest) -> JsonResponse:
@@ -1467,9 +1477,14 @@ def course_enrollment_detail(request: HttpRequest, pk: int) -> JsonResponse:
             e.status = st
             e.save(update_fields=["status", "updated_at"])
             logger.info("CourseEnrollment %d -> %s by %s", pk, st, request.user.username)
-            # Passage a ACTIVE -> materialise le revenu (idempotent, no-op si deja fait).
-            _materialize_course_payment(e)
+            if st == CourseEnrollment.Status.ACTIVE:
+                # Passage a ACTIVE -> materialise le revenu (idempotent).
+                _materialize_course_payment(e)
+            else:
+                # Quitte ACTIVE (repasse en attente) -> annule le CA materialise.
+                _cancel_course_payment(e.pk)
         return JsonResponse(_serialize_course_enrollment(e))
+    _cancel_course_payment(e.pk)  # suppression -> retirer le CA materialise
     e.delete()
     return _ok()
 
@@ -1729,6 +1744,14 @@ def booking_detail(request: HttpRequest, pk: int) -> JsonResponse:
                 b.guest_count = max(0, int(data["guest_count"] or 0))
             except (ValueError, TypeError):
                 return _error("Le nombre d'invités doit être un nombre.")
+        # Anti double-réservation : si ce créneau devient occupant (validé/confirmé
+        # /en paiement) ou si l'horaire change, refuser s'il chevauche une AUTRE
+        # réservation déjà occupante.
+        from apps.core.venue import slot_taken, OCCUPIED_STATUSES
+        if b.status in OCCUPIED_STATUSES and slot_taken(
+            b.event_date, b.start_time, b.end_time, exclude_pk=b.pk
+        ):
+            return _error("Ce créneau est déjà occupé par une autre réservation.", 409)
         b.save()
         logger.info("Booking %d updated by user %s (status: %s)", pk, request.user.username, b.status)
         return JsonResponse(_serialize_booking(b))
@@ -1924,7 +1947,7 @@ def contact_list(request: HttpRequest) -> JsonResponse:
 
 @ensure_csrf_cookie
 @staff_required
-@require_http_methods(["GET", "PUT"])
+@require_http_methods(["GET", "PUT", "DELETE"])
 def contact_detail(request: HttpRequest, pk: int) -> JsonResponse:
     try:
         c = ContactRequest.objects.get(pk=pk)
@@ -1942,6 +1965,10 @@ def contact_detail(request: HttpRequest, pk: int) -> JsonResponse:
         c.save()
         logger.info("Contact %d updated by user %s (processed: %s)", pk, request.user.username, c.is_processed)
         return JsonResponse(_serialize_contact(c))
+    # DELETE : nettoyage (spam / demande traitée).
+    c.delete()
+    logger.info("Contact %d deleted by user %s", pk, request.user.username)
+    return _ok()
 
 
 # ── GEIs ─────────────────────────────────────────────────
@@ -2315,7 +2342,12 @@ def get_dashboard_summary(request: HttpRequest | None = None) -> dict[str, Any]:
     recent_bookings = VenueBooking.objects.filter(created_at__gte=seven_days_ago).count()
     recent_payments_qs = Payment.objects.filter(created_at__gte=seven_days_ago)
     recent_payments_count = recent_payments_qs.count()
-    recent_payments_sum = recent_payments_qs.aggregate(total=Sum("amount_htg"))["total"] or 0
+    # « Montant reçu (7j) » = argent RÉELLEMENT encaissé -> filtrer sur PAID
+    # (cohérent avec total_revenue_htg ; sinon un paiement en attente/échoué
+    # gonfle le CA affiché).
+    recent_payments_sum = recent_payments_qs.filter(
+        status=Payment.Status.PAID
+    ).aggregate(total=Sum("amount_htg"))["total"] or 0
     result = {
         "active_members": Member.objects.filter(status=Member.Status.ACTIVE).count(),
         "active_gei": GEI.objects.filter(is_active=True).count(),
@@ -3145,7 +3177,17 @@ def site_settings_detail(request: HttpRequest) -> JsonResponse:
     data = _json_body(request)
     for f in SETTINGS_TEXT_FIELDS:
         if f in data:
-            setattr(s, f, data[f] or "")
+            val = str(data[f] or "")
+            # Tronque à la max_length du champ : un save() nu n'applique PAS la
+            # limite et laisse remonter une DataError Postgres -> 500 qui casse
+            # TOUTE la sauvegarde des paramètres (comme sitetext/siteimage).
+            try:
+                max_len = s._meta.get_field(f).max_length
+                if max_len:
+                    val = val[:max_len]
+            except Exception:
+                pass
+            setattr(s, f, val)
     for f in SETTINGS_BOOL_FIELDS:
         if f in data:
             setattr(s, f, bool(data[f]))
@@ -3165,6 +3207,12 @@ _UPLOAD_TARGETS = {
     "provider": (PaymentProvider, "logo"),
     "siteimage": (SiteImage, "image"),
 }
+# Section RBAC associée à chaque cible d'upload (contrôle par section).
+_UPLOAD_TARGET_SECTION = {
+    "product": "products", "blog": "blog", "testimonial": "testimonials",
+    "site": "settings", "course": "courses", "provider": "providers",
+    "siteimage": "siteimages",
+}
 _MAX_UPLOAD_BYTES = 5 * 1024 * 1024
 
 
@@ -3173,6 +3221,11 @@ _MAX_UPLOAD_BYTES = 5 * 1024 * 1024
 def upload_image(request: HttpRequest, target: str, pk: int) -> JsonResponse:
     if target not in _UPLOAD_TARGETS:
         return _error(f"Cible d'upload invalide: {target}", 404)
+    # RBAC : un admin simple ne peut téléverser que dans ses sections autorisées
+    # (sinon un admin « membres » pourrait remplacer le logo du site).
+    from .sections import user_can
+    if not user_can(request.user, _UPLOAD_TARGET_SECTION.get(target)):
+        return _error("Vous n'avez pas accès à cette section.", 403)
     model_class, field = _UPLOAD_TARGETS[target]
     if target == "site":
         obj = SiteSetting.load()

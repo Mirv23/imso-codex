@@ -68,7 +68,26 @@ textarea { resize: vertical; min-height: 80px; }
 .hd-left { display: flex; align-items: center; gap: 16px; }
 .hd-title { font-size: 18px; font-weight: 600; }
 .hd-sub { font-size: 12.5px; color: var(--muted); }
-.hd-actions { display: flex; gap: 10px; }
+.hd-actions { display: flex; gap: 10px; align-items: center; }
+/* Cloche de notifications */
+.notif-wrap { position: relative; }
+.notif-bell { width: 40px; height: 40px; border-radius: 10px; border: 1px solid var(--border); background: var(--card); color: var(--text); display: grid; place-items: center; cursor: pointer; position: relative; }
+.notif-bell:hover { background: var(--bg); }
+.notif-bell svg { width: 19px; height: 19px; }
+.notif-badge { position: absolute; top: -5px; right: -5px; min-width: 17px; height: 17px; padding: 0 4px; border-radius: 999px; background: var(--danger); color: #fff; font-size: 10.5px; font-weight: 700; display: grid; place-items: center; line-height: 1; }
+.notif-panel { position: absolute; top: 48px; right: 0; width: 340px; max-width: calc(100vw - 24px); background: var(--card); border: 1px solid var(--border); border-radius: 14px; box-shadow: var(--shadow-lg); z-index: 60; overflow: hidden; }
+.notif-panel[hidden] { display: none; }
+.notif-panel__hd { display: flex; align-items: center; justify-content: space-between; padding: 12px 14px; border-bottom: 1px solid var(--border); }
+.notif-mark { border: none; background: none; color: var(--primary); font-size: 12px; font-weight: 600; cursor: pointer; }
+.notif-panel__list { max-height: 380px; overflow-y: auto; }
+.notif-item { display: flex; gap: 10px; padding: 11px 14px; border-bottom: 1px solid var(--border); font-size: 13px; cursor: pointer; }
+.notif-item:hover { background: var(--bg); }
+.notif-item--unread { background: var(--primary-light); }
+.notif-item__dot { width: 8px; height: 8px; border-radius: 50%; background: var(--primary); flex-shrink: 0; margin-top: 4px; }
+.notif-item--read .notif-item__dot { background: var(--border); }
+.notif-item__msg { flex: 1; color: var(--text); line-height: 1.4; }
+.notif-item__time { font-size: 11px; color: var(--muted); margin-top: 2px; }
+.notif-empty { padding: 28px 14px; text-align: center; color: var(--muted); font-size: 13px; }
 .content { padding: 28px 32px 64px; max-width: 1480px; width: 100%; }
 
 /* Components */
@@ -963,7 +982,22 @@ textarea { resize: vertical; min-height: 80px; }
         <div class="hd-title" id="pageTitle">Tableau de bord</div>
         <div class="hd-sub" id="pageSubtitle">{{ summary.active_members }} membre(s) actif(s) · {{ summary.active_courses }} cours actif(s)</div>
       </div>
-      <div class="hd-actions" id="headerActions"></div>
+      <div class="hd-actions">
+        <div id="headerActions"></div>
+        <div class="notif-wrap">
+          <button class="notif-bell" id="notifBell" onclick="toggleNotifs(event)" aria-label="Notifications" title="Notifications">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M18 8A6 6 0 0 0 6 8c0 7-3 9-3 9h18s-3-2-3-9"/><path d="M13.73 21a2 2 0 0 1-3.46 0"/></svg>
+            <span class="notif-badge" id="notifBadge" style="display:none">0</span>
+          </button>
+          <div class="notif-panel" id="notifPanel" hidden>
+            <div class="notif-panel__hd">
+              <strong>Notifications</strong>
+              <button type="button" class="notif-mark" onclick="markAllNotifs()">Tout marquer lu</button>
+            </div>
+            <div class="notif-panel__list" id="notifList"><div class="notif-empty">Chargement…</div></div>
+          </div>
+        </div>
+      </div>
     </header>
 
     <div class="content">
@@ -1075,6 +1109,53 @@ function applyPermissions() {
     if (!anyVisible) h.style.display = 'none';
   });
 }
+
+// ── Notifications (cloche persistante) ──────────────────────────
+function _notifTimeAgo(iso) {
+  const d = new Date(iso), s = Math.floor((Date.now() - d.getTime()) / 1000);
+  if (s < 60) return "à l'instant";
+  if (s < 3600) return Math.floor(s / 60) + ' min';
+  if (s < 86400) return Math.floor(s / 3600) + ' h';
+  return d.toLocaleDateString('fr-FR');
+}
+function loadNotifs() {
+  const list = document.getElementById('notifList');
+  api('/dashboard/api/notifications/').then(items => {
+    if (!items || !items.length) { list.innerHTML = '<div class="notif-empty">Aucune notification.</div>'; return; }
+    list.innerHTML = items.map(n =>
+      '<div class="notif-item ' + (n.is_read ? 'notif-item--read' : 'notif-item--unread') + '" onclick="markNotifRead(' + n.id + ')">' +
+      '<span class="notif-item__dot"></span>' +
+      '<div class="notif-item__msg">' + esc(n.message) + '<div class="notif-item__time">' + _notifTimeAgo(n.created_at) + '</div></div></div>'
+    ).join('');
+  }).catch(() => { list.innerHTML = '<div class="notif-empty">Erreur de chargement.</div>'; });
+}
+function pollNotifs() {
+  api('/dashboard/api/notifications/check/').then(d => {
+    const n = (d && d.unread_count) || 0;
+    const b = document.getElementById('notifBadge');
+    if (!b) return;
+    if (n > 0) { b.textContent = n > 99 ? '99+' : n; b.style.display = 'grid'; }
+    else b.style.display = 'none';
+  }).catch(() => {});
+}
+function toggleNotifs(ev) {
+  if (ev) ev.stopPropagation();
+  const p = document.getElementById('notifPanel');
+  if (p.hasAttribute('hidden')) { p.removeAttribute('hidden'); loadNotifs(); }
+  else p.setAttribute('hidden', '');
+}
+function markNotifRead(id) {
+  api('/dashboard/api/notifications/' + id + '/read/', { method: 'POST', body: '{}' })
+    .then(() => { loadNotifs(); pollNotifs(); }).catch(() => {});
+}
+function markAllNotifs() {
+  api('/dashboard/api/notifications/read-all/', { method: 'POST', body: '{}' })
+    .then(() => { loadNotifs(); pollNotifs(); }).catch(() => {});
+}
+document.addEventListener('click', (e) => {
+  const w = document.querySelector('.notif-wrap'), p = document.getElementById('notifPanel');
+  if (w && p && !p.hasAttribute('hidden') && !w.contains(e.target)) p.setAttribute('hidden', '');
+});
 
 // Menu lateral mobile (ouverture/fermeture)
 function toggleSidebar(force) {
@@ -1493,7 +1574,7 @@ const SECTIONS = {
     columns: [
       { key:'reference', label:'Réf.', render: r => `<code style="font-size:11px">${esc(r.reference)}</code>` },
       { key:'payer_name', label:'Payeur' },
-      { key:'purpose', label:'Motif', render: r => ({venue:'Réservation',course:'Cours',membership:'Adhésion',other:'Autre'}[r.purpose] || r.purpose) },
+      { key:'purpose', label:'Motif', render: r => ({venue:'Réservation',course:'Cours',membership:'Adhésion',product:'Commande boutique',other:'Autre'}[r.purpose] || r.purpose) },
       { key:'amount_htg', label:'Montant', render: r => fmt(r.amount_htg) + ' HTG' },
       { key:'provider_name', label:'Mode', render: r => r.provider_name ? esc(r.provider_name) : '<span style="color:var(--muted)">—</span>' },
       { key:'status', label:'Statut', render: r => statusBadge(r.status) },
@@ -1604,7 +1685,7 @@ const SECTIONS = {
   contacts: {
     title: 'Contacts',
     endpoint: '/dashboard/api/contacts/',
-    canCreate: false, canEdit: true, canDelete: false,
+    canCreate: false, canEdit: true, canDelete: true,
     columns: [
       { key:'full_name', label:'Nom', render: r => `<strong>${esc(r.full_name)}</strong><br><span style="font-size:11px;color:var(--muted)">${esc(r.phone)}</span>` },
       { key:'subject', label:'Sujet', render: r => ({membership:'Adhésion',course:'Cours',venue:'Location',mentor:'Mentorat',other:'Autre'}[r.subject] || r.subject) },
@@ -1612,9 +1693,11 @@ const SECTIONS = {
       { key:'is_processed', label:'Traité', render: r => r.is_processed ? '<span class="pill green">Oui</span>' : '<span class="pill amber">Non</span>' },
       { key:'created_at', label:'Reçu le', render: r => new Date(r.created_at).toLocaleDateString('fr-FR') },
     ],
-    formTitle: () => 'Modifier le contact',
+    formTitle: () => 'Message de contact',
     formFields: r => [
-      { name:'is_processed', label:'Traité', type:'checkbox', value: r?.is_processed || false },
+      { name:'_from', label:'Expéditeur', type:'static', html: '<div style="font-size:13px"><strong>'+esc(r?.full_name||'')+'</strong>'+(r?.phone?' · '+esc(r.phone):'')+(r?.email?' · <a href="mailto:'+esc(r.email)+'">'+esc(r.email)+'</a>':'')+'</div>' },
+      { name:'_msg', label:'Message', type:'static', html: '<div style="font-size:13.5px;white-space:pre-wrap;background:var(--bg);border-radius:10px;padding:12px;max-height:260px;overflow:auto">'+esc(r?.message||'(vide)')+'</div>' },
+      { name:'is_processed', label:'Marquer comme traité', type:'checkbox', value: r?.is_processed || false },
     ],
     detailUrl: r => '/dashboard/api/contacts/' + r.id + '/',
   },
@@ -4741,6 +4824,8 @@ function renderExport() {
 // Init
 document.addEventListener('DOMContentLoaded', () => {
   applyPermissions();  // masque les sections non autorisees (admin simple)
+  pollNotifs();        // badge de notifications non-lues + rafraichissement periodique
+  setInterval(pollNotifs, 30000);
   // Check URL hash for navigation (navigateTo charge métriques + graphiques)
   const hash = window.location.hash.slice(1);
   if (hash && document.getElementById('section-' + hash)) navigateTo(hash, true);
