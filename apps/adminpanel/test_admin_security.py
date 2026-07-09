@@ -148,3 +148,58 @@ class TestLoginRateLimit:
             statuses.append(resp.status_code)
         # Au-delà du seuil (5/min par identifiant), la vue renvoie 403 (Ratelimited).
         assert 403 in statuses
+
+
+# ── Permissions par section (admin simple vs super-admin) ────────
+
+@pytest.mark.django_db
+class TestSectionPermissions:
+    def _limited(self, sections):
+        from .models import AdminAccess
+        u = User.objects.create_user("agent1", "a@test.com", "password123", is_staff=True)
+        AdminAccess.objects.create(user=u, sections=sections, note="test")
+        c = Client()
+        c.force_login(u)
+        return c
+
+    def test_limited_admin_only_sees_granted_sections(self):
+        client = self._limited(["members", "payments"])
+        # Autorisé
+        assert client.get(reverse("adminpanel:member-list")).status_code == 200
+        assert client.get(reverse("adminpanel:payment-list")).status_code == 200
+        # Refusé (section non attribuée) → 403
+        assert client.get(reverse("adminpanel:course-list")).status_code == 403
+        assert client.get(reverse("adminpanel:blog-list")).status_code == 403
+        # Coquille du dashboard toujours accessible
+        assert client.get(reverse("adminpanel:summary")).status_code == 200
+        assert client.get(reverse("adminpanel:charts")).status_code == 200
+
+    def test_limited_admin_cannot_reach_admins_section(self):
+        client = self._limited(["members"])
+        # La gestion des admins est réservée aux super-administrateurs.
+        assert client.get(reverse("adminpanel:admin-list")).status_code == 403
+
+    def test_limited_admin_write_blocked_outside_scope(self):
+        client = self._limited(["members"])
+        import json
+        r = client.post(reverse("adminpanel:course-create"),
+                        data=json.dumps({"title": "X", "category": "Y", "instructor": "Z", "city": "PAP"}),
+                        content_type="application/json")
+        assert r.status_code == 403
+
+    def test_superuser_sees_everything(self):
+        client = Client()
+        _staff(client)  # crée un superuser
+        for name in ("member-list", "course-list", "blog-list", "admin-list", "settings-detail"):
+            assert client.get(reverse(f"adminpanel:{name}")).status_code == 200
+
+    def test_superadmin_assigns_sections_on_create(self):
+        import json
+        client = Client()
+        _staff(client)
+        r = client.post(reverse("adminpanel:admin-create"),
+                        data=json.dumps({"username": "agent2", "password": "password123",
+                                         "sections": ["members", "geis"], "note": "GEIs"}),
+                        content_type="application/json")
+        assert r.status_code == 201
+        assert set(r.json()["sections"]) == {"members", "geis"}

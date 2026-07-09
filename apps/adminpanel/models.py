@@ -825,6 +825,33 @@ class AdminNotification(models.Model):
         return f"[{self.get_notification_type_display()}] {self.message}"
 
 
+class AdminAccess(models.Model):
+    """Droits d'un administrateur NON super-admin : la liste des sections du
+    panel auxquelles il a accès (les « tâches/données » qui lui sont confiées).
+
+    Un super-administrateur (User.is_superuser) a TOUT, sans dépendre de ce
+    modèle. Un admin simple (is_staff, non superuser) n'accède qu'aux sections
+    listées ici (contrôle serveur dans staff_required, fail-closed). Absence de
+    ligne = aucune section autorisée.
+    """
+
+    user = models.OneToOneField(
+        settings.AUTH_USER_MODEL, on_delete=models.CASCADE, related_name="admin_access"
+    )
+    # Liste de clés de sections (ex. ["members", "payments"]). JSONField =
+    # compatible SQLite + Postgres.
+    sections = models.JSONField(default=list, blank=True)
+    note = models.CharField(max_length=200, blank=True, help_text="Rôle/mission de cet admin")
+    updated_at = models.DateTimeField(auto_now=True)
+
+    class Meta:
+        verbose_name = "Accès administrateur"
+        verbose_name_plural = "Accès administrateurs"
+
+    def __str__(self) -> str:
+        return f"{self.user.username} · {len(self.sections or [])} sections"
+
+
 class AuditLog(models.Model):
     """Trace persistante des actions du personnel (qui, quoi, quand).
 

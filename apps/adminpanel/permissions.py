@@ -50,6 +50,18 @@ def staff_required(view_func):
             return redirect(f"{settings.LOGIN_URL}?next={request.get_full_path()}")
         if not user.is_staff:
             return JsonResponse({"error": _FORBIDDEN_MESSAGE}, status=403)
+        # Contrôle par section pour les admins simples (non super-admin) : ils
+        # n'accèdent qu'aux sections que le super-admin leur a attribuées.
+        # Fail-closed : une section inconnue ou « admins » est refusée.
+        if not user.is_superuser:
+            from .sections import section_for_urlname, user_can
+
+            url_name = getattr(getattr(request, "resolver_match", None), "url_name", None)
+            section = section_for_urlname(url_name)
+            if not user_can(user, section):
+                return JsonResponse(
+                    {"error": "Vous n'avez pas accès à cette section."}, status=403
+                )
         return view_func(request, *args, **kwargs)
 
     return _wrapped

@@ -1045,10 +1045,36 @@ textarea { resize: vertical; min-height: 80px; }
 <div class="toast-container" id="toastContainer" role="status" aria-live="polite" aria-atomic="true"></div>
 
 <script>
+// Permissions de l'utilisateur courant (injectees par DashboardView) :
+// un admin simple ne voit que les sections qui lui sont attribuees.
+window.ME = { superuser: {{ me_is_superuser|yesno:"true,false" }}, sections: {{ me_sections_json|default:"[]"|safe }} };
+window.ADMIN_SECTIONS = {{ grantable_sections_json|default:"[]"|safe }};
+
 const CSRF = (() => {
   const m = document.cookie.match(/csrftoken=([\w-]+)/);
   return m ? m[1] : '';
 })();
+
+// Masque dans le menu les sections non autorisees (admin simple). Les
+// super-admins voient tout. Le controle reel est cote serveur (staff_required).
+function applyPermissions() {
+  if (!window.ME || window.ME.superuser) return;
+  const allowed = new Set(window.ME.sections || []);
+  allowed.add('dashboard'); // la coquille (Aperçu) reste accessible
+  document.querySelectorAll('.sb-item[data-section]').forEach(btn => {
+    const sec = btn.getAttribute('data-section');
+    if (!allowed.has(sec)) btn.style.display = 'none';
+  });
+  // Masque les entetes de groupe dont tous les items sont caches.
+  document.querySelectorAll('#sideNav .sb-section').forEach(h => {
+    let n = h.nextElementSibling, anyVisible = false;
+    while (n && !n.classList.contains('sb-section')) {
+      if (n.classList.contains('sb-item') && n.style.display !== 'none') anyVisible = true;
+      n = n.nextElementSibling;
+    }
+    if (!anyVisible) h.style.display = 'none';
+  });
+}
 
 // Menu lateral mobile (ouverture/fermeture)
 function toggleSidebar(force) {
@@ -1101,6 +1127,12 @@ function getCSRF() { return CSRF; }
 const currentSection = { name: 'dashboard', page: 1, search: '' };
 
 function navigateTo(section, resetPage = true) {
+  // Garde permissions (admin simple) : une section non autorisee renvoie a
+  // l'accueil. Le vrai controle reste cote serveur (403 sur l'API).
+  if (window.ME && !window.ME.superuser && section !== 'dashboard') {
+    const allowed = new Set(window.ME.sections || []);
+    if (!allowed.has(section)) { toast && toast('Accès non autorisé à cette section.', 'error'); section = 'dashboard'; }
+  }
   toggleSidebar(false);  // referme le menu mobile apres selection
   document.querySelectorAll('.section').forEach(s => s.classList.remove('active'));
   document.querySelectorAll('.sb-item').forEach(s => s.classList.remove('active'));
@@ -1816,6 +1848,7 @@ const SECTIONS = {
     columns: [
       { key:'username', label:'Utilisateur', render: r => `<strong>${esc(r.username)}</strong><br><span style="font-size:11px;color:var(--muted)">${esc(r.email || '')}</span>` },
       { key:'role', label:'Rôle', render: r => r.is_superuser ? '<span class="pill blue">Super-admin</span>' : '<span class="pill green">Admin</span>' },
+      { key:'acces', label:'Accès', render: r => r.is_superuser ? '<span style="color:var(--muted)">Tout</span>' : ((r.sections && r.sections.length) ? (r.sections.length + ' section' + (r.sections.length>1?'s':'')) + (r.note ? ' · ' + esc(r.note) : '') : '<span style="color:var(--muted)">Aucune</span>') },
       { key:'is_active', label:'Actif', render: r => r.is_active ? '<span class="pill green">Oui</span>' : '<span class="pill red">Non</span>' },
       { key:'last_login', label:'Dernière connexion', render: r => r.last_login ? new Date(r.last_login).toLocaleDateString('fr-FR') : '<span style="color:var(--muted)">jamais</span>' },
     ],
@@ -1823,13 +1856,17 @@ const SECTIONS = {
     formFields: r => r ? [
       { name:'email', label:'Email', type:'email', value: r?.email || '' },
       { name:'password', label:'Nouveau mot de passe (vide = inchangé)', type:'password', value: '' },
-      { name:'is_superuser', label:'Super-administrateur', type:'checkbox', value: r?.is_superuser || false },
+      { name:'is_superuser', label:'Super-administrateur (accès total)', type:'checkbox', value: r?.is_superuser || false },
       { name:'is_active', label:'Compte actif', type:'checkbox', value: r?.is_active ?? true },
+      { name:'note', label:'Rôle / mission (note interne)', type:'text', value: r?.note || '' },
+      { name:'sections', label:'Sections & données autorisées (ignoré si super-admin)', type:'sections', value: r?.sections || [] },
     ] : [
       { name:'username', label:'Nom d\'utilisateur', type:'text', value: '', required: true },
       { name:'email', label:'Email', type:'email', value: '' },
       { name:'password', label:'Mot de passe', type:'password', value: '', required: true },
-      { name:'is_superuser', label:'Super-administrateur (peut gérer les autres admins)', type:'checkbox', value: false },
+      { name:'is_superuser', label:'Super-administrateur (accès total, peut gérer les autres admins)', type:'checkbox', value: false },
+      { name:'note', label:'Rôle / mission (note interne)', type:'text', value: '' },
+      { name:'sections', label:'Sections & données autorisées (si non super-admin)', type:'sections', value: [] },
     ],
     detailUrl: r => '/dashboard/api/admins/' + r.id + '/',
   },
@@ -4348,6 +4385,15 @@ function openModal(sectionKey, record) {
       body += '<select name="teacher"><option value="">— Aucun professeur —</option></select>';
     } else if (f.type === 'provider-select') {
       body += '<select name="provider_id"><option value="">— Aucun —</option></select>';
+    } else if (f.type === 'sections') {
+      // Liste de cases a cocher des sections attribuables (droits d'un admin simple).
+      const cur = new Set(Array.isArray(f.value) ? f.value : []);
+      const cats = (window.ADMIN_SECTIONS || []);
+      body += '<div data-sections="1" style="display:grid;grid-template-columns:1fr 1fr;gap:6px 14px;max-height:260px;overflow:auto;border:1px solid var(--border);border-radius:10px;padding:12px">';
+      cats.forEach(c => {
+        body += '<label style="display:flex;align-items:center;gap:8px;font-size:13px;cursor:pointer"><input type="checkbox" data-section-cb="' + esc(c.key) + '" ' + (cur.has(c.key) ? 'checked' : '') + ' style="width:auto"> ' + esc(c.label) + '</label>';
+      });
+      body += '</div><div style="font-size:11px;color:var(--muted);margin-top:4px">Cochez les sections/données auxquelles cet administrateur aura accès. Sans effet si « Super-administrateur » est coché.</div>';
     } else if (f.type === 'textarea') {
       body += '<textarea name="' + f.name + '" ' + (f.required ? 'required' : '') + '>' + esc(String(f.value ?? '')) + '</textarea>';
     } else if (f.type === 'image') {
@@ -4441,6 +4487,7 @@ function saveModal() {
   const data = {};
   form.querySelectorAll('input, select, textarea').forEach(inp => {
     if (inp.type === 'file') return; // géré séparément (upload)
+    if (inp.hasAttribute('data-section-cb')) return; // cases sections : collectées à part
     // Select FK charge en asynchrone (gei_id/teacher) : s'il ne contient encore
     // que le placeholder, ne PAS l'envoyer -> evite d'ecraser la FK a null lors
     // d'un enregistrement avant la fin du chargement (les PUT serveur sont partiels).
@@ -4451,6 +4498,11 @@ function saveModal() {
     else if ((inp.type === 'date' || inp.type === 'datetime-local') && inp.value === '') data[inp.name] = null;
     else data[inp.name] = inp.value;
   });
+  // Champ « sections » (droits admin) : tableau des clés cochées.
+  if (form.querySelector('[data-sections="1"]')) {
+    data.sections = Array.from(form.querySelectorAll('[data-section-cb]'))
+      .filter(cb => cb.checked).map(cb => cb.getAttribute('data-section-cb'));
+  }
 
   if (cfg.serializeForm) Object.assign(data, cfg.serializeForm(data));
 
@@ -4688,6 +4740,7 @@ function renderExport() {
 
 // Init
 document.addEventListener('DOMContentLoaded', () => {
+  applyPermissions();  // masque les sections non autorisees (admin simple)
   // Check URL hash for navigation (navigateTo charge métriques + graphiques)
   const hash = window.location.hash.slice(1);
   if (hash && document.getElementById('section-' + hash)) navigateTo(hash, true);

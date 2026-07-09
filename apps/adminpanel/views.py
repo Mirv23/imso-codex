@@ -28,6 +28,7 @@ logger = logging.getLogger(__name__)
 
 from .permissions import StaffRequiredMixin, staff_required
 from .models import (
+    AdminAccess,
     AdminNotification,
     AuditLog,
     BlogPost,
@@ -105,6 +106,16 @@ class DashboardView(StaffRequiredMixin, TemplateView):
         context = super().get_context_data(**kwargs)
         context["summary"] = get_dashboard_summary()
         context["django_version"] = "5.2.15"
+        # Permissions du user courant + catalogue des sections attribuables :
+        # le front masque les sections non autorisees et alimente le formulaire
+        # d'attribution des droits (section Administrateurs).
+        from .sections import SECTION_LABELS, GRANTABLE_SECTIONS, user_sections
+        u = self.request.user
+        context["me_is_superuser"] = bool(u.is_superuser)
+        context["me_sections_json"] = json.dumps(sorted(user_sections(u)))
+        context["grantable_sections_json"] = json.dumps(
+            [{"key": k, "label": SECTION_LABELS[k]} for k in GRANTABLE_SECTIONS]
+        )
         return context
 
 
@@ -3198,6 +3209,15 @@ def upload_image(request: HttpRequest, target: str, pk: int) -> JsonResponse:
 # ── Administrateurs (comptes staff) ──────────────────────
 
 def _serialize_admin(u) -> dict[str, Any]:
+    sections: list[str] = []
+    note = ""
+    if not u.is_superuser:
+        try:
+            acc = u.admin_access
+            sections = list(acc.sections or [])
+            note = acc.note
+        except Exception:
+            sections = []
     return {
         "id": u.pk,
         "username": u.username,
@@ -3205,6 +3225,8 @@ def _serialize_admin(u) -> dict[str, Any]:
         "is_staff": u.is_staff,
         "is_superuser": u.is_superuser,
         "is_active": u.is_active,
+        "sections": sections,
+        "note": note,
         "last_login": u.last_login.isoformat() if u.last_login else None,
         "date_joined": u.date_joined.isoformat(),
     }
@@ -3247,7 +3269,13 @@ def admin_user_create(request: HttpRequest) -> JsonResponse:
     )
     user.set_password(password)
     user.save()
-    logger.info("Admin user '%s' created by %s (superuser=%s)", username, request.user.username, user.is_superuser)
+    # Sections attribuées (admins simples uniquement ; un super-admin a tout).
+    if not user.is_superuser:
+        from .sections import GRANTABLE_SECTIONS
+        clean = [s for s in (data.get("sections") or []) if s in GRANTABLE_SECTIONS]
+        AdminAccess.objects.create(user=user, sections=clean, note=(data.get("note") or "")[:200])
+    logger.info("Admin user '%s' created by %s (superuser=%s, %d sections)",
+                username, request.user.username, user.is_superuser, len(data.get("sections") or []))
     return JsonResponse(_serialize_admin(user), status=201)
 
 
@@ -3286,6 +3314,15 @@ def admin_user_detail(request: HttpRequest, pk: int) -> JsonResponse:
             user.set_password(data["password"])
         user.is_staff = True
         user.save()
+        # Sections attribuées / note de rôle (pour un admin simple).
+        if "sections" in data or "note" in data:
+            from .sections import GRANTABLE_SECTIONS
+            acc, _ = AdminAccess.objects.get_or_create(user=user)
+            if "sections" in data:
+                acc.sections = [s for s in (data.get("sections") or []) if s in GRANTABLE_SECTIONS]
+            if "note" in data:
+                acc.note = (data.get("note") or "")[:200]
+            acc.save()
         logger.info("Admin user '%s' updated by %s", user.username, request.user.username)
         return JsonResponse(_serialize_admin(user))
 
