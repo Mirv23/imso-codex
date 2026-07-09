@@ -80,7 +80,7 @@
       <span class="label"><span class="label__bullet"></span>{{ texts.val_label|default:"Nos valeurs" }}</span>
       <h2 class="section__title">{{ texts.val_title|default:"Trois principes qui guident chaque décision." }}</h2>
     </div>
-    <div class="values__wrap">
+    <div class="values__wrap{% if core_values|length > 3 %} values__wrap--carousel{% endif %}">
       <div class="values__grid">
         {% for v in core_values %}
         <article class="value-card reveal" data-delay="{{ forloop.counter }}">

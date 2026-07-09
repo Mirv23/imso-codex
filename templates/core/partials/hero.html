@@ -18,7 +18,7 @@
       <li><a class="nav__link" href="#cours">Cours</a></li>
       <li><a class="nav__link" href="/formation/">Formation</a></li>
       <li><a class="nav__link" href="#boutique">Kit financier</a></li>
-      <li><a class="nav__link" href="/blog/">Blog</a></li>
+      {% if site.show_blog %}<li><a class="nav__link" href="/blog/">Blog</a></li>{% endif %}
       <li><a class="nav__link" href="#contact">Contact</a></li>
       <li><a class="btn btn--primary btn--small" href="#rejoindre">Adhérer</a></li>
     </ul>
@@ -44,7 +44,7 @@
     <li><a href="#cours"><span>Cours</span><span>04</span></a></li>
     <li><a href="/formation/"><span>Formation</span><span>05</span></a></li>
     <li><a href="#boutique"><span>Kit financier</span><span>06</span></a></li>
-    <li><a href="/blog/"><span>Blog</span><span>07</span></a></li>
+    {% if site.show_blog %}<li><a href="/blog/"><span>Blog</span><span>07</span></a></li>{% endif %}
     <li><a href="#contact"><span>Contact</span><span>08</span></a></li>
   </ul>
   <div class="drawer__cta">

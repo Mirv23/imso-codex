@@ -1,5 +1,5 @@
-{% load static %}<!-- Témoignages -->
-<section class="section testimonials" id="temoignages">
+{% load static %}<!-- Témoignages (masquable via Paramètres → Affichage) -->
+{% if site.show_testimonials %}<section class="section testimonials" id="temoignages">
   <div class="container">
     <div class="section__head reveal">
       <span class="label"><span class="label__bullet"></span>{{ texts.cta_testimonials_label|default:"Témoignages" }}</span>
@@ -43,7 +43,7 @@
       </div>
     </div>
   </div>
-</section>
+</section>{% endif %}
 
 <!-- CTA Strip -->
 <div class="cta-strip reveal">
