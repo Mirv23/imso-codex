@@ -13,7 +13,7 @@
         <h3 class="why__title">{{ texts.why_card1_title|default:"Un réseau d'entraide actif" }}</h3>
         <div class="why__featured-img img-wrap">
           <div class="img-fallback">Réseau IMSO</div>
-          <img src="https://images.unsplash.com/photo-1582213782179-e0d53f98f2ca?w=900&amp;auto=format&amp;q=80" alt="Mains jointes en signe d'entraide — réseau IMSO" loading="lazy" onload="this.parentElement.classList.add('img-loaded')">
+          {% if images.why_featured %}<img src="{{ images.why_featured.image.url }}" alt="{{ images.why_featured.alt }}" loading="lazy" onload="this.parentElement.classList.add('img-loaded')">{% else %}<img src="https://images.unsplash.com/photo-1582213782179-e0d53f98f2ca?w=900&amp;auto=format&amp;q=80" alt="Mains jointes en signe d'entraide — réseau IMSO" loading="lazy" onload="this.parentElement.classList.add('img-loaded')">{% endif %}
           <span class="why__featured-img-caption">Membres · 5 GEI actifs</span>
         </div>
         <p class="why__text">{{ texts.why_card1_text|default:"Des centaines d'entrepreneurs, formateurs et épargnants partagent quotidiennement conseils, ressources et opportunités. Vous n'êtes jamais seul·e dans votre projet." }}</p>

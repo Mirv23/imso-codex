@@ -913,6 +913,10 @@ textarea { resize: vertical; min-height: 80px; }
         Inscriptions
       </button>
       <div class="sb-section">Site</div>
+      <a class="sb-item" href="/view/" target="_blank" rel="noopener" title="Ouvre le site public dans un nouvel onglet">
+        <span class="ico"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M18 13v6a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V8a2 2 0 0 1 2-2h6"/><polyline points="15 3 21 3 21 9"/><line x1="10" y1="14" x2="21" y2="3"/></svg></span>
+        Voir le site
+      </a>
       <button class="sb-item" data-section="values" onclick="navigateTo('values')">
         <span class="ico"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M20.84 4.61a5.5 5.5 0 0 0-7.78 0L12 5.67l-1.06-1.06a5.5 5.5 0 0 0-7.78 7.78l1.06 1.06L12 21.23l7.78-7.78 1.06-1.06a5.5 5.5 0 0 0 0-7.78z"/></svg></span>
         Nos valeurs
@@ -924,6 +928,10 @@ textarea { resize: vertical; min-height: 80px; }
       <button class="sb-item" data-section="sitetexts" onclick="navigateTo('sitetexts')">
         <span class="ico"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="4 7 4 4 20 4 20 7"/><line x1="9" y1="20" x2="15" y2="20"/><line x1="12" y1="4" x2="12" y2="20"/></svg></span>
         Textes du site
+      </button>
+      <button class="sb-item" data-section="siteimages" onclick="navigateTo('siteimages')">
+        <span class="ico"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="3" y="3" width="18" height="18" rx="2" ry="2"/><circle cx="8.5" cy="8.5" r="1.5"/><polyline points="21 15 16 10 5 21"/></svg></span>
+        Images du site
       </button>
       <button class="sb-item" data-section="settings" onclick="navigateTo('settings')">
         <span class="ico"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="3"/><path d="M19.4 15a1.65 1.65 0 0 0 .33 1.82l.06.06a2 2 0 1 1-2.83 2.83l-.06-.06a1.65 1.65 0 0 0-1.82-.33 1.65 1.65 0 0 0-1 1.51V21a2 2 0 0 1-4 0v-.09A1.65 1.65 0 0 0 9 19.4a1.65 1.65 0 0 0-1.82.33l-.06.06a2 2 0 1 1-2.83-2.83l.06-.06a1.65 1.65 0 0 0 .33-1.82 1.65 1.65 0 0 0-1.51-1H3a2 2 0 0 1 0-4h.09A1.65 1.65 0 0 0 4.6 9a1.65 1.65 0 0 0-.33-1.82l-.06-.06a2 2 0 1 1 2.83-2.83l.06.06a1.65 1.65 0 0 0 1.82.33H9a1.65 1.65 0 0 0 1-1.51V3a2 2 0 0 1 4 0v.09a1.65 1.65 0 0 0 1 1.51 1.65 1.65 0 0 0 1.82-.33l.06-.06a2 2 0 1 1 2.83 2.83l-.06.06a1.65 1.65 0 0 0-.33 1.82V9a1.65 1.65 0 0 0 1.51 1H21a2 2 0 0 1 0 4h-.09a1.65 1.65 0 0 0-1.51 1z"/></svg></span>
@@ -1670,6 +1678,35 @@ const SECTIONS = {
       { name:'value', label:'Texte', type:'textarea', value:'' },
     ],
     detailUrl: r => '/dashboard/api/site-texts/' + r.id + '/',
+  },
+  siteimages: {
+    title: 'Images du site',
+    endpoint: '/dashboard/api/site-images/',
+    createEndpoint: '/dashboard/api/site-images/create/',
+    canCreate: true, canEdit: true, canDelete: true, uploadTarget: 'siteimage',
+    searchable: true,
+    columns: [
+      { key:'group', label:'Section', render: r => `<span class="pill gray">${esc(r.group || '—')}</span>` },
+      { key:'label', label:'Élément', render: r => `<strong>${esc(r.label)}</strong><div style="font-size:11px;color:var(--muted);font-family:monospace">${esc(r.key)}</div>` },
+      { key:'image', label:'Aperçu', render: r => r.image ? `<img src="${esc(r.image)}" alt="" style="width:48px;height:48px;object-fit:cover;border-radius:8px;border:1px solid var(--border)">` : '<span style="color:var(--muted)">— (image par défaut du site)</span>' },
+    ],
+    formTitle: r => r ? 'Modifier l\'image' : 'Nouvelle image',
+    formFields: r => r ? [
+      { name:'_info', label:'Emplacement', type:'static', html: '<div style="font-size:12px;color:var(--muted)"><code>'+esc(r.key)+'</code> — '+esc(r.label)+(r.group?' · '+esc(r.group):'')+'</div>' },
+      { name:'image', label:'Image affichée sur le site (laisser vide = image par défaut)', type:'image', value: r?.image || '' },
+      { name:'alt', label:'Texte alternatif (accessibilité)', type:'text', value: r?.alt || '', maxLength:200 },
+      { name:'label', label:'Description (pour vous repérer)', type:'text', value: r?.label || '', maxLength:200 },
+      { name:'group', label:'Section (regroupement)', type:'text', value: r?.group || '', maxLength:60 },
+      { name:'sort_order', label:'Ordre d\'affichage dans cette liste', type:'number', value: r?.sort_order || 0, min:0 },
+    ] : [
+      { name:'key', label:'Clé (identifiant technique, ex. hero_photo_1)', type:'text', value:'', required:true, maxLength:80 },
+      { name:'label', label:'Description (pour vous repérer)', type:'text', value:'', maxLength:200 },
+      { name:'group', label:'Section (regroupement, ex. Accueil)', type:'text', value:'', maxLength:60 },
+      { name:'alt', label:'Texte alternatif (accessibilité)', type:'text', value:'', maxLength:200 },
+      { name:'image', label:'Image', type:'image', value:'' },
+      { name:'sort_order', label:'Ordre d\'affichage', type:'number', value:0, min:0 },
+    ],
+    detailUrl: r => '/dashboard/api/site-images/' + r.id + '/',
   },
   providers: {
     title: 'Moyens de paiement',
@@ -4536,9 +4573,12 @@ function renderSettings() {
       _sf('Femmes (valeur)','stat_women',s.stat_women) +
       _sf('Femmes (libellé)','stat_women_label',s.stat_women_label) + '</div>');
 
+    const _subhead = (t, note) => '<div style="font-size:11.5px;font-weight:700;text-transform:uppercase;letter-spacing:.04em;color:var(--muted);margin:6px 0 10px">' + esc(t) + (note ? ' <span style="font-weight:500;text-transform:none;letter-spacing:0">' + esc(note) + '</span>' : '') + '</div>';
     const liens = pane('liens',
+      _subhead('Héro de la page Formation') +
       _sf('Titre héro formation','formation_hero_title',s.formation_hero_title) +
       _sf('Sous-titre héro formation','formation_hero_subtitle',s.formation_hero_subtitle,'textarea') +
+      _subhead('Liens du pied de page','(laisser vide = lien vers #contact)') +
       '<div class="settings-grid2">' +
       _sf('Lien — Statuts du GEI','url_statuts',s.url_statuts) +
       _sf('Lien — Calendrier 2026','url_calendrier',s.url_calendrier) +

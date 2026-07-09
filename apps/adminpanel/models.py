@@ -536,6 +536,30 @@ class SiteText(TimestampedModel):
         return f"{self.group} · {self.key}" if self.group else self.key
 
 
+class SiteImage(TimestampedModel):
+    """Registre d'images editables du site vitrine (photos hero, galerie...).
+
+    Meme principe que SiteText mais pour les images : chaque image a une cle
+    stable (ex. « hero_photo_1 »). Le template affiche l'image televersee si
+    elle existe, sinon garde l'image codee en dur (fallback). Chargees en UNE
+    requete par page via le context processor (dict {cle: objet}).
+    """
+
+    key = models.CharField(max_length=80, unique=True)
+    label = models.CharField(max_length=200, help_text="Description lisible pour l'admin")
+    group = models.CharField(max_length=60, blank=True, help_text="Section/page (regroupement dans l'admin)")
+    # Stockage public par defaut (comme Product.image), servi via URL directe.
+    image = models.FileField(upload_to="site/images/", blank=True)
+    alt = models.CharField(max_length=200, blank=True, help_text="Texte alternatif (accessibilite/SEO)")
+    sort_order = models.PositiveIntegerField(default=0)
+
+    class Meta:
+        ordering = ["group", "sort_order", "key"]
+
+    def __str__(self) -> str:
+        return f"{self.group} · {self.key}" if self.group else self.key
+
+
 class Product(TimestampedModel):
     """Article vendu en boutique (kit d'éducation financière : livre, cahier…)."""
 

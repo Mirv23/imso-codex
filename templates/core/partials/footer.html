@@ -34,27 +34,27 @@
         </div>
       </div>
       <div class="footer__col">
-        <h4>Navigation</h4>
+        <h4>{{ texts.foot_nav_title|default:"Navigation" }}</h4>
         <ul role="list">
-          <li><a href="#mission">Notre mission</a></li>
-          <li><a href="#valeurs">Nos valeurs</a></li>
-          <li><a href="#processus">Le processus</a></li>
-          <li><a href="#cours">Les cours</a></li>
-          <li><a href="#temoignages">Témoignages</a></li>
+          <li><a href="#mission">{{ texts.foot_nav_mission|default:"Notre mission" }}</a></li>
+          <li><a href="#valeurs">{{ texts.foot_nav_valeurs|default:"Nos valeurs" }}</a></li>
+          <li><a href="#processus">{{ texts.foot_nav_processus|default:"Le processus" }}</a></li>
+          <li><a href="#cours">{{ texts.foot_nav_cours|default:"Les cours" }}</a></li>
+          <li><a href="#temoignages">{{ texts.foot_nav_temoignages|default:"Témoignages" }}</a></li>
         </ul>
       </div>
       <div class="footer__col">
-        <h4>Ressources</h4>
+        <h4>{{ texts.foot_resources_title|default:"Ressources" }}</h4>
         <ul role="list">
-          <li><a href="{{ site.url_statuts|default:"#contact" }}">Statuts du GEI</a></li>
-          <li><a href="{{ site.url_calendrier|default:"#contact" }}">Calendrier 2026</a></li>
-          <li><a href="{{ site.url_rapport|default:"#contact" }}">Rapport annuel</a></li>
-          <li><a href="{{ site.url_mentor|default:"#contact" }}">Devenir mentor</a></li>
-          <li><a href="{{ site.url_presse|default:"#contact" }}">Presse</a></li>
+          <li><a href="{{ site.url_statuts|default:"#contact" }}">{{ texts.foot_res_statuts|default:"Statuts du GEI" }}</a></li>
+          <li><a href="{{ site.url_calendrier|default:"#contact" }}">{{ texts.foot_res_calendrier|default:"Calendrier 2026" }}</a></li>
+          <li><a href="{{ site.url_rapport|default:"#contact" }}">{{ texts.foot_res_rapport|default:"Rapport annuel" }}</a></li>
+          <li><a href="{{ site.url_mentor|default:"#contact" }}">{{ texts.foot_res_mentor|default:"Devenir mentor" }}</a></li>
+          <li><a href="{{ site.url_presse|default:"#contact" }}">{{ texts.foot_res_presse|default:"Presse" }}</a></li>
         </ul>
       </div>
       <div class="footer__col">
-        <h4>Contact</h4>
+        <h4>{{ texts.foot_contact_title|default:"Contact" }}</h4>
         <ul role="list" class="footer__contact">
           <li>
             <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M21 10c0 7-9 13-9 13S3 17 3 10a9 9 0 0118 0z"></path><circle cx="12" cy="10" r="3"></circle></svg>

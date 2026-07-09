@@ -34,22 +34,22 @@
     <div class="espace__gallery reveal">
       <div class="gphoto img-wrap">
         <div class="img-fallback">Salle principale</div>
-        <img src="https://images.unsplash.com/photo-1505373877841-8d25f7d46678?w=900&amp;auto=format&amp;q=80" alt="Salle de conférence aménagée" loading="lazy" onload="this.parentElement.classList.add('img-loaded')">
+        {% if images.espace_photo_1 %}<img src="{{ images.espace_photo_1.image.url }}" alt="{{ images.espace_photo_1.alt }}" loading="lazy" onload="this.parentElement.classList.add('img-loaded')">{% else %}<img src="https://images.unsplash.com/photo-1505373877841-8d25f7d46678?w=900&amp;auto=format&amp;q=80" alt="Salle de conférence aménagée" loading="lazy" onload="this.parentElement.classList.add('img-loaded')">{% endif %}
         <span class="gphoto__caption">Salle principale</span>
       </div>
       <div class="gphoto img-wrap">
         <div class="img-fallback">Conférence</div>
-        <img src="https://images.unsplash.com/photo-1540575467063-178a50c2df87?w=600&amp;auto=format&amp;q=80" alt="Configuration conférence" loading="lazy" onload="this.parentElement.classList.add('img-loaded')">
+        {% if images.espace_photo_2 %}<img src="{{ images.espace_photo_2.image.url }}" alt="{{ images.espace_photo_2.alt }}" loading="lazy" onload="this.parentElement.classList.add('img-loaded')">{% else %}<img src="https://images.unsplash.com/photo-1540575467063-178a50c2df87?w=600&amp;auto=format&amp;q=80" alt="Configuration conférence" loading="lazy" onload="this.parentElement.classList.add('img-loaded')">{% endif %}
         <span class="gphoto__caption">Conférence</span>
       </div>
       <div class="gphoto img-wrap">
         <div class="img-fallback">Banquet</div>
-        <img src="{% static 'website/assets/5adc936b-1c3b-473d-835e-523c57240fa4.jpg' %}" alt="Configuration banquet" loading="lazy" onload="this.parentElement.classList.add('img-loaded')">
+        {% if images.espace_photo_3 %}<img src="{{ images.espace_photo_3.image.url }}" alt="{{ images.espace_photo_3.alt }}" loading="lazy" onload="this.parentElement.classList.add('img-loaded')">{% else %}<img src="{% static 'website/assets/5adc936b-1c3b-473d-835e-523c57240fa4.jpg' %}" alt="Configuration banquet" loading="lazy" onload="this.parentElement.classList.add('img-loaded')">{% endif %}
         <span class="gphoto__caption">Banquet</span>
       </div>
       <div class="gphoto img-wrap">
         <div class="img-fallback">Cérémonie</div>
-        <img src="https://images.unsplash.com/photo-1511795409834-ef04bbd61622?w=600&amp;auto=format&amp;q=80" alt="Décoration de cérémonie" loading="lazy" onload="this.parentElement.classList.add('img-loaded')">
+        {% if images.espace_photo_4 %}<img src="{{ images.espace_photo_4.image.url }}" alt="{{ images.espace_photo_4.alt }}" loading="lazy" onload="this.parentElement.classList.add('img-loaded')">{% else %}<img src="https://images.unsplash.com/photo-1511795409834-ef04bbd61622?w=600&amp;auto=format&amp;q=80" alt="Décoration de cérémonie" loading="lazy" onload="this.parentElement.classList.add('img-loaded')">{% endif %}
         <span class="gphoto__caption">Cérémonie</span>
       </div>
     </div>

@@ -97,17 +97,17 @@
       <div class="hero__photos">
         <div class="hero__photo img-wrap">
           <div class="img-fallback">Solidarité</div>
-          <img src="https://images.unsplash.com/photo-1573497019940-1c28c88b4f3e?w=600&amp;auto=format&amp;q=80" alt="Entrepreneure haïtienne souriante" loading="lazy" onload="this.parentElement.classList.add('img-loaded')">
+          {% if images.hero_photo_1 %}<img src="{{ images.hero_photo_1.image.url }}" alt="{{ images.hero_photo_1.alt }}" loading="lazy" onload="this.parentElement.classList.add('img-loaded')">{% else %}<img src="https://images.unsplash.com/photo-1573497019940-1c28c88b4f3e?w=600&amp;auto=format&amp;q=80" alt="Entrepreneure haïtienne souriante" loading="lazy" onload="this.parentElement.classList.add('img-loaded')">{% endif %}
           <span class="hero__photo--label">Solidarité</span>
         </div>
         <div class="hero__photo img-wrap">
           <div class="img-fallback">Épargne</div>
-          <img src="{% static 'website/assets/6ec82bf6-262c-4d9d-b797-db1d9faa8fc0.jpg' %}" alt="Membre comptant son épargne" loading="lazy" onload="this.parentElement.classList.add('img-loaded')">
+          {% if images.hero_photo_2 %}<img src="{{ images.hero_photo_2.image.url }}" alt="{{ images.hero_photo_2.alt }}" loading="lazy" onload="this.parentElement.classList.add('img-loaded')">{% else %}<img src="{% static 'website/assets/6ec82bf6-262c-4d9d-b797-db1d9faa8fc0.jpg' %}" alt="Membre comptant son épargne" loading="lazy" onload="this.parentElement.classList.add('img-loaded')">{% endif %}
           <span class="hero__photo--label">Épargne</span>
         </div>
         <div class="hero__photo img-wrap">
           <div class="img-fallback">Croissance</div>
-          <img src="https://images.unsplash.com/photo-1531123897727-8f129e1688ce?w=500&amp;auto=format&amp;q=80" alt="Entrepreneur fier devant son commerce" loading="lazy" onload="this.parentElement.classList.add('img-loaded')">
+          {% if images.hero_photo_3 %}<img src="{{ images.hero_photo_3.image.url }}" alt="{{ images.hero_photo_3.alt }}" loading="lazy" onload="this.parentElement.classList.add('img-loaded')">{% else %}<img src="https://images.unsplash.com/photo-1531123897727-8f129e1688ce?w=500&amp;auto=format&amp;q=80" alt="Entrepreneur fier devant son commerce" loading="lazy" onload="this.parentElement.classList.add('img-loaded')">{% endif %}
           <span class="hero__photo--label">Croissance</span>
         </div>
       </div>

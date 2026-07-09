@@ -47,6 +47,7 @@ from .models import (
     Product,
     ProcessStep,
     Profile,
+    SiteImage,
     SiteSetting,
     SiteText,
     Testimonial,
@@ -2636,6 +2637,82 @@ def sitetext_create(request: HttpRequest) -> JsonResponse:
     return JsonResponse(_serialize_sitetext(t), status=201)
 
 
+# ── Images du site (registre editable) ───────────────────
+
+def _serialize_siteimage(t: SiteImage) -> dict[str, Any]:
+    return {
+        "id": t.pk,
+        "key": t.key,
+        "label": t.label,
+        "group": t.group,
+        "image": t.image.url if t.image else "",
+        "alt": t.alt,
+        "sort_order": t.sort_order,
+    }
+
+
+@staff_required
+@require_http_methods(["GET"])
+def siteimage_list(request: HttpRequest) -> JsonResponse:
+    qs = SiteImage.objects.all()
+    search = request.GET.get("search")
+    if search:
+        qs = qs.filter(Q(label__icontains=search) | Q(key__icontains=search) | Q(group__icontains=search) | Q(alt__icontains=search))
+    group = request.GET.get("group")
+    if group:
+        qs = qs.filter(group=group)
+    return _paginated_response(qs.order_by("group", "sort_order", "key"), request, _serialize_siteimage)
+
+
+@staff_required
+@require_http_methods(["GET", "PUT", "DELETE"])
+def siteimage_detail(request: HttpRequest, pk: int) -> JsonResponse:
+    try:
+        t = SiteImage.objects.get(pk=pk)
+    except SiteImage.DoesNotExist:
+        return _error("Image introuvable", 404)
+    if request.method == "GET":
+        return JsonResponse(_serialize_siteimage(t))
+    if request.method == "DELETE":
+        t.delete()
+        return _ok()
+    data = _json_body(request)
+    # La cle est stable (referencee par les templates) -> non modifiable ici.
+    # Le fichier image lui-meme transite par l'upload (api/upload/siteimage/<pk>/).
+    if "label" in data:
+        t.label = str(data.get("label") or "")[:200]
+    if "group" in data:
+        t.group = str(data.get("group") or "")[:60]
+    if "alt" in data:
+        t.alt = str(data.get("alt") or "")[:200]
+    if "sort_order" in data:
+        try:
+            t.sort_order = max(0, int(data.get("sort_order") or 0))
+        except (ValueError, TypeError):
+            return _error("L'ordre doit etre un nombre.")
+    t.save()
+    return JsonResponse(_serialize_siteimage(t))
+
+
+@staff_required
+@require_http_methods(["POST"])
+def siteimage_create(request: HttpRequest) -> JsonResponse:
+    data = _json_body(request)
+    key = str(data.get("key") or "").strip()
+    if not key:
+        return _error("La cle est obligatoire.")
+    if SiteImage.objects.filter(key=key).exists():
+        return _error("Cette cle existe deja.", 409)
+    t = SiteImage.objects.create(
+        key=key[:80],
+        label=str(data.get("label") or key)[:200],
+        group=str(data.get("group") or "")[:60],
+        alt=str(data.get("alt") or "")[:200],
+        sort_order=max(0, int(data.get("sort_order") or 0)) if str(data.get("sort_order") or "0").isdigit() else 0,
+    )
+    return JsonResponse(_serialize_siteimage(t), status=201)
+
+
 def _serialize_process_step(s: ProcessStep) -> dict[str, Any]:
     return {
         "id": s.pk,
@@ -3075,6 +3152,7 @@ _UPLOAD_TARGETS = {
     "site": (SiteSetting, "logo"),
     "course": (Course, "banner"),
     "provider": (PaymentProvider, "logo"),
+    "siteimage": (SiteImage, "image"),
 }
 _MAX_UPLOAD_BYTES = 5 * 1024 * 1024
 
