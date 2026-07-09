@@ -3,7 +3,7 @@
   <div class="container">
     <div class="footer__grid">
       <div>
-        <div class="brand-logo footer__brand-logo" style="margin-bottom: 18px;"><img src="{% static 'website/assets/9f2647f0-409d-40a1-969b-7969601ef459.png' %}" alt="IMSO"></div>
+        <div class="brand-logo footer__brand-logo" style="margin-bottom: 18px;"><img src="{% if site.logo %}{{ site.logo.url }}{% else %}{% static 'website/assets/9f2647f0-409d-40a1-969b-7969601ef459.png' %}{% endif %}" alt="IMSO"></div>
         <p class="footer__tagline">
           {% if site.footer_text %}{{ site.footer_text }}{% else %}Impact Mutuelle de Solidarité — épargne collective, microcrédit
           responsable et formation continue au service des communautés haïtiennes.{% endif %}
