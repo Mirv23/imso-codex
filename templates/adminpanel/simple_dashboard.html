@@ -1665,6 +1665,12 @@ const SECTIONS = {
     statusChips: [
       { v:'', l:'Toutes' }, { v:'pending', l:'En attente' }, { v:'confirmed', l:'Confirmées' }, { v:'cancelled', l:'Annulées' },
     ],
+    statsCards: s => [
+      { l:'Total', v:fmt(s.total||0), c:'#2D6A4F' },
+      { l:'En attente', v:fmt(s.pending||0), c:'#F59E0B' },
+      { l:'Confirmées', v:fmt(s.confirmed||0), c:'#16A34A' },
+      { l:'CA confirmé', v:fmt(s.confirmed_revenue||0)+' HTG', c:'#635BFF' },
+    ],
     helpBanner:
       '<div class="help-banner"><div>'
       + '<strong>Inscriptions mutuelle.</strong> Adhésions des <em>membres</em> de la mutuelle aux cours et activités IMSO. '
@@ -1672,14 +1678,21 @@ const SECTIONS = {
       + 'Les inscriptions des <em>étudiants</em> à la plateforme de formation (LMS) sont gérées dans '
       + '<a onclick="navigateTo(\'formationEnrollments\');return false;">Inscriptions formation</a>.'
       + '</div></div>',
-    // Actions en ligne : uniquement sur les inscriptions en attente.
-    rowActions: r => r.status === 'pending'
-      ? '<button class="btn btn-sm btn-ok" onclick="setEnrollmentStatus(' + r.id + ',\'confirmed\')" title="Confirmer l\'inscription">Confirmer</button>'
-        + '<button class="btn btn-sm btn-danger" onclick="setEnrollmentStatus(' + r.id + ',\'cancelled\')" title="Annuler l\'inscription">Annuler</button>'
-      : '',
+    // Actions en ligne : confirmer/annuler (en attente) + WhatsApp.
+    rowActions: r => {
+      let a = '';
+      if (r.status === 'pending') {
+        a += '<button class="btn btn-sm btn-ok" onclick="setEnrollmentStatus(' + r.id + ',\'confirmed\')" title="Confirmer l\'inscription">Confirmer</button>';
+        a += '<button class="btn btn-sm btn-danger" onclick="setEnrollmentStatus(' + r.id + ',\'cancelled\')" title="Annuler l\'inscription">Annuler</button>';
+      }
+      const ph = r.member && r.member.phone;
+      if (ph) { const wa = contactWaLink(ph); if (wa) a += '<a class="btn btn-sm ct-wa" href="' + esc(wa) + '" target="_blank" rel="noopener" title="Contacter sur WhatsApp"><svg viewBox="0 0 24 24" width="14" height="14" fill="none" stroke="currentColor" stroke-width="2"><path d="M21 15.5a2 2 0 0 1-2 2 16 16 0 0 1-13-13 2 2 0 0 1 2-2h2a2 2 0 0 1 2 1.7c.1.9.3 1.8.6 2.6a2 2 0 0 1-.5 2.1L13 10a12 12 0 0 0 4 4l1.1-1.1a2 2 0 0 1 2.1-.5c.8.3 1.7.5 2.6.6a2 2 0 0 1 1.7 2z"/></svg></a>'; }
+      return a;
+    },
     columns: [
-      { key:'member', label:'Membre', render: r => r.member ? esc(r.member.first_name + ' ' + r.member.last_name) : '<span style="color:var(--muted)">—</span>' },
-      { key:'course', label:'Cours', render: r => r.course ? esc(r.course.title) : '<span style="color:var(--muted)">—</span>' },
+      { key:'member', label:'Membre', render: r => r.member ? `<strong>${esc(r.member.first_name + ' ' + r.member.last_name)}</strong>${r.member.phone ? '<br><span style="font-size:11px;color:var(--muted)">' + esc(r.member.phone) + '</span>' : ''}` : '<span style="color:var(--muted)">—</span>' },
+      { key:'course', label:'Cours', render: r => r.course ? `${esc(r.course.title)}<br><span style="font-size:11px;color:var(--muted)">${esc(r.course.category || '')}</span>` : '<span style="color:var(--muted)">—</span>' },
+      { key:'amount', label:'Montant', render: r => r.course && r.course.price_htg ? fmt(r.course.price_htg) + ' HTG' : '<span style="color:var(--muted)">Gratuit</span>' },
       { key:'status', label:'Statut', render: r => statusBadge(r.status) },
       { key:'created_at', label:'Date', render: r => new Date(r.created_at).toLocaleDateString('fr-FR') },
     ],
@@ -2118,6 +2131,7 @@ function loadTable(sectionKey, page, search) {
   if (search !== undefined) currentSection.search = search;
   const params = new URLSearchParams({ page: p, per_page: 20 });
   if (s) params.set('search', s);
+  if (cfg.statsCards) params.set('stats', '1');  // section avec cartes de stats
   const _f = tableFilters[sectionKey];
   if (_f) Object.entries(_f).forEach(([k, v]) => { if (v != null && v !== '') params.set(k, v); });
 
@@ -2150,7 +2164,9 @@ function renderTable(sectionKey, data) {
   const page = data.page || 1;
   const totalPages = data.total_pages || 1;
 
-  let html = '<div class="toolbar">';
+  let html = '';
+  if (cfg.statsCards && data.stats) html += statsHtml(cfg.statsCards(data.stats));
+  html += '<div class="toolbar">';
   html += '<div class="search-wrap"><svg class="search-icon" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="11" cy="11" r="8"/><line x1="21" y1="21" x2="16.65" y2="16.65"/></svg>';
   html += '<input type="text" placeholder="Rechercher..." value="' + esc(currentSection.search) + '" onkeyup="if(event.key===\'Enter\')searchTable(\'' + sectionKey + '\',this.value)"></div>';
   if (tableFilters[sectionKey]) {
@@ -3140,7 +3156,15 @@ function moveTestimonial(id, dir) {
 // Reutilise la config SECTIONS.contacts (colonnes + modale d'edition) mais gere
 // ses propres onglets ?processed, un bouton WhatsApp et un bouton "Marquer traite"
 // en ligne (PUT is_processed=true) sans ouvrir la modale.
-const contactState = { tab: '0', page: 1, search: '' }; // tab: '0'=non traites, '1'=traites, ''=tous
+const contactState = { tab: '0', page: 1, search: '', subject: '' }; // tab: '0'=non traites, '1'=traites, ''=tous
+const CT_SUBJECTS = { membership:'Adhésion', course:'Cours', venue:'Location', mentor:'Mentorat', other:'Autre' };
+function contactSetSubject(v) { contactState.subject = v; loadContacts(1); }
+function contactDelete(id) {
+  if (!confirm('Supprimer définitivement ce message ?')) return;
+  api('/dashboard/api/contacts/' + id + '/', { method: 'DELETE' })
+    .then(() => { toast('Message supprimé', 'success'); loadContacts(); })
+    .catch(e => toast(e.message, 'error'));
+}
 
 // Construit un lien wa.me : chiffres seuls ; si numero local (<=8 chiffres) on
 // prefixe l'indicatif Haiti 509. Ajuster si numeros deja internationaux stockes.
@@ -3170,9 +3194,10 @@ function loadContacts(page) {
   delete tableFilters['contacts']; // handoff one-shot: onglets ensuite libres
   const p = page || contactState.page; contactState.page = p;
   document.getElementById('headerActions').innerHTML = ''; // pas de "Nouveau" pour les contacts
-  const params = new URLSearchParams({ page: p, per_page: 20 });
+  const params = new URLSearchParams({ page: p, per_page: 20, stats: 1 });
   if (contactState.search) params.set('search', contactState.search);
   if (contactState.tab !== '') params.set('processed', contactState.tab);
+  if (contactState.subject) params.set('subject', contactState.subject);
   const host = document.getElementById('card-contacts');
   if (!host.querySelector('.table-wrap')) host.innerHTML = '<div class="mloading"><span class="mspin"></span> Chargement des messages…</div>';
   api('/dashboard/api/contacts/?' + params.toString())
@@ -3188,7 +3213,16 @@ function renderContacts(d) {
   const total = d.total || 0, page = d.page || 1, totalPages = d.total_pages || 1;
   contactState.page = page;
 
-  let html = '<div class="toolbar">';
+  let html = '';
+  const s = d.stats;
+  if (s) {
+    html += statsHtml([
+      { l:'Total messages', v:fmt(s.total||0), c:'#2D6A4F' },
+      { l:'Non traités', v:fmt(s.unprocessed||0), c:'#F59E0B' },
+      { l:'Traités', v:fmt((s.total||0)-(s.unprocessed||0)), c:'#16A34A' },
+    ]);
+  }
+  html += '<div class="toolbar">';
   html += '<div class="search-wrap"><svg class="search-icon" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="11" cy="11" r="8"/><line x1="21" y1="21" x2="16.65" y2="16.65"/></svg>';
   html += '<input type="text" placeholder="Rechercher..." value="' + esc(contactState.search) + '" onkeyup="if(event.key===\'Enter\')contactSearch(this.value)"></div>';
   html += '<div class="spacer"></div>';
@@ -3201,9 +3235,16 @@ function renderContacts(d) {
   html += '</div></div>';
 
   // Onglets de triage (mappes sur ?processed).
-  const tabs = [ { v: '0', l: 'Non traites' }, { v: '1', l: 'Traites' }, { v: '', l: 'Tous' } ];
+  const tabs = [ { v: '0', l: 'Non traités' }, { v: '1', l: 'Traités' }, { v: '', l: 'Tous' } ];
   html += '<div class="chip-bar">' + tabs.map(t =>
     `<button class="fchip${t.v === contactState.tab ? ' fchip--on' : ''}" onclick="contactSetTab('${t.v}')">${esc(t.l)}</button>`
+  ).join('') + '</div>';
+
+  // Filtre par sujet (avec compteur si dispo).
+  const bs = (s && s.by_subject) || {};
+  const subs = [{ v:'', l:'Tous les sujets' }].concat(Object.keys(CT_SUBJECTS).map(k => ({ v:k, l:CT_SUBJECTS[k] + (bs[k] ? ' (' + bs[k] + ')' : '') })));
+  html += '<div class="chip-bar" style="margin-top:-4px">' + subs.map(t =>
+    `<button class="fchip${t.v === contactState.subject ? ' fchip--on' : ''}" onclick="contactSetSubject('${t.v}')">${esc(t.l)}</button>`
   ).join('') + '</div>';
 
   html += '<div class="table-wrap"><table class="table"><thead><tr>';
@@ -3220,7 +3261,9 @@ function renderContacts(d) {
       const wa = contactWaLink(r.phone);
       if (wa) html += '<a class="btn btn-sm ct-wa" href="' + esc(wa) + '" target="_blank" rel="noopener" title="Contacter sur WhatsApp"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M21 15.5a2 2 0 0 1-2 2 16 16 0 0 1-13-13 2 2 0 0 1 2-2h2a2 2 0 0 1 2 1.7c.1.9.3 1.8.6 2.6a2 2 0 0 1-.5 2.1L13 10a12 12 0 0 0 4 4l1.1-1.1a2 2 0 0 1 2.1-.5c.8.3 1.7.5 2.6.6a2 2 0 0 1 1.7 2z"/></svg>WhatsApp</a>';
       if (!r.is_processed) html += '<button class="btn btn-sm ct-done" onclick="contactMarkDone(' + r.id + ')" title="Marquer comme traite"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="20 6 9 17 4 12"/></svg> Traite</button>';
-      html += '<button class="btn btn-sm" onclick="editRow(\'contacts\',' + r.id + ')" title="Modifier / voir le detail"><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M11 4H4a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-7"/><path d="M18.5 2.5a2.121 2.121 0 0 1 3 3L12 15l-4 1 1-4 9.5-9.5z"/></svg></button>';
+      if (r.email) html += '<a class="btn btn-sm" href="mailto:' + esc(r.email) + '?subject=' + encodeURIComponent('Votre message à IMSO') + '" title="Répondre par email"><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="2" y="4" width="20" height="16" rx="2"/><path d="M22 6l-10 7L2 6"/></svg></a>';
+      html += '<button class="btn btn-sm" onclick="editRow(\'contacts\',' + r.id + ')" title="Voir le message complet"><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z"/><circle cx="12" cy="12" r="3"/></svg></button>';
+      html += '<button class="btn btn-sm btn-danger" onclick="contactDelete(' + r.id + ')" title="Supprimer"><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="3 6 5 6 21 6"/><path d="M19 6l-1 14a2 2 0 0 1-2 2H8a2 2 0 0 1-2-2L5 6m3 0V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2"/></svg></button>';
       html += '</td></tr>';
     });
   }
@@ -4019,9 +4062,21 @@ let _bkSelected = null;        // jour selectionne 'YYYY-MM-DD'
 
 function _bkISO(dt){ return dt.getFullYear() + '-' + String(dt.getMonth()+1).padStart(2,'0') + '-' + String(dt.getDate()).padStart(2,'0'); }
 
+function bkStatus(id, status){
+  api('/dashboard/api/bookings/' + id + '/', { method:'PUT', body: JSON.stringify({ status }) })
+    .then(() => { toast(status === 'confirmed' ? 'Réservation confirmée' : 'Réservation annulée', 'success'); loadBookings(); })
+    .catch(e => toast(e.message || 'Erreur', 'error'));
+}
+
 function loadBookings(){
   currentSection.name = 'bookings';
-  document.getElementById('headerActions').innerHTML = '';  // pas de creation cote admin
+  const actions = document.getElementById('headerActions');
+  actions.innerHTML = '';
+  const btn = document.createElement('button');
+  btn.className = 'btn btn-primary';
+  btn.innerHTML = '<svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/></svg> Nouvelle réservation';
+  btn.onclick = () => openModal('bookings', null);
+  actions.appendChild(btn);
   if (!_bkCal.y){ const n = new Date(); _bkCal.y = n.getFullYear(); _bkCal.m = n.getMonth(); }
   // Grille = du lundi precedant le 1er au dimanche suivant le dernier jour (42 cases).
   const first = new Date(_bkCal.y, _bkCal.m, 1);
@@ -4117,13 +4172,20 @@ function bkDayListHtml(iso){
     const m = bkMeta(b.status);
     const st = (b.start_time || '').slice(0,5), en = (b.end_time || '').slice(0,5);
     const time = st + (en ? ' - ' + en : '');
+    const wa = b.requester_phone ? contactWaLink(b.requester_phone) : '';
+    const canConfirm = b.status !== 'confirmed' && b.status !== 'cancelled';
+    let act = '';
+    if (canConfirm) act += `<button class="btn btn-sm btn-ok" onclick="bkStatus(${b.id},'confirmed')" title="Confirmer">✓</button>`;
+    if (b.status !== 'cancelled') act += `<button class="btn btn-sm btn-danger" onclick="bkStatus(${b.id},'cancelled')" title="Annuler">✕</button>`;
+    if (wa) act += `<a class="btn btn-sm ct-wa" href="${esc(wa)}" target="_blank" rel="noopener" title="WhatsApp"><svg viewBox="0 0 24 24" width="14" height="14" fill="none" stroke="currentColor" stroke-width="2"><path d="M21 15.5a2 2 0 0 1-2 2 16 16 0 0 1-13-13 2 2 0 0 1 2-2h2a2 2 0 0 1 2 1.7c.1.9.3 1.8.6 2.6a2 2 0 0 1-.5 2.1L13 10a12 12 0 0 0 4 4l1.1-1.1a2 2 0 0 1 2.1-.5c.8.3 1.7.5 2.6.6a2 2 0 0 1 1.7 2z"/></svg></a>`;
+    act += `<button class="btn btn-sm btn-primary" onclick="editRow('bookings',${b.id})">Gérer</button>`;
     return `<div class="bk-item" style="--bc:${m.c}">
       <div class="bk-item__time">${esc(time)}</div>
       <div class="bk-item__body">
-        <div class="bk-item__ttl">${esc(b.event_type || 'Evenement')} ${statusBadge(b.status)}</div>
-        <div class="bk-item__sub">${esc(b.requester_name || '')}${b.requester_phone ? ' - ' + esc(b.requester_phone) : ''} - ${fmt(b.guest_count || 0)} invite(s)</div>
+        <div class="bk-item__ttl">${esc(b.event_type || 'Événement')} ${statusBadge(b.status)}</div>
+        <div class="bk-item__sub">${esc(b.requester_name || '')}${b.requester_phone ? ' · ' + esc(b.requester_phone) : ''} · ${fmt(b.guest_count || 0)} invité(s)</div>
       </div>
-      <div class="bk-item__act"><button class="btn btn-sm btn-primary" onclick="editRow('bookings',${b.id})">Gerer</button></div>
+      <div class="bk-item__act">${act}</div>
     </div>`;
   }).join('') + '</div></div>';
   return h;

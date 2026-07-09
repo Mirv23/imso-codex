@@ -2011,16 +2011,32 @@ def _serialize_contact(c: ContactRequest) -> dict[str, Any]:
 def contact_list(request: HttpRequest) -> JsonResponse:
     qs = ContactRequest.objects.all()
     processed = request.GET.get("processed")
-    if processed is not None:
+    if processed is not None and processed != "":
         qs = qs.filter(is_processed=processed.lower() in ("1", "true"))
+    subject = request.GET.get("subject")
+    if subject:
+        qs = qs.filter(subject=subject)
     search = request.GET.get("search")
     if search:
         qs = qs.filter(
             Q(full_name__icontains=search) | Q(email__icontains=search)
             | Q(phone__icontains=search) | Q(subject__icontains=search)
+            | Q(message__icontains=search)
         )
-    qs = qs.order_by("-created_at")
-    return _paginated_response(qs, request, _serialize_contact)
+    resp = _paginated_response(qs.order_by("-created_at"), request, _serialize_contact)
+    if request.GET.get("stats"):
+        by_subject = {
+            row["subject"]: row["n"]
+            for row in ContactRequest.objects.values("subject").annotate(n=Count("id"))
+        }
+        payload = json.loads(resp.content)
+        payload["stats"] = {
+            "total": ContactRequest.objects.count(),
+            "unprocessed": ContactRequest.objects.filter(is_processed=False).count(),
+            "by_subject": by_subject,
+        }
+        return JsonResponse(payload)
+    return resp
 
 
 @ensure_csrf_cookie
@@ -2344,11 +2360,13 @@ def _serialize_enrollment(e: Enrollment) -> dict[str, Any]:
             "first_name": e.member.first_name,
             "last_name": e.member.last_name,
             "email": e.member.email,
+            "phone": e.member.phone,
         } if e.member else None,
         "course": {
             "id": e.course.pk,
             "title": e.course.title,
             "category": e.course.category,
+            "price_htg": e.course.price_htg,
         } if e.course else None,
         "status": e.status,
         "created_at": e.created_at.isoformat(),
@@ -2361,8 +2379,31 @@ def enrollment_list(request: HttpRequest) -> JsonResponse:
     status = request.GET.get("status")
     if status:
         qs = qs.filter(status=status)
-    qs = qs.order_by("-created_at")
-    return _paginated_response(qs, request, _serialize_enrollment)
+    search = request.GET.get("search")
+    if search:
+        qs = qs.filter(
+            Q(member__first_name__icontains=search) | Q(member__last_name__icontains=search)
+            | Q(member__phone__icontains=search) | Q(course__title__icontains=search)
+        )
+    resp = _paginated_response(qs.order_by("-created_at"), request, _serialize_enrollment)
+    # KPI pipeline (exacts, indépendants du filtre/pagination) quand ?stats=1.
+    if request.GET.get("stats"):
+        agg = Enrollment.objects.values("status").annotate(n=Count("id"))
+        by = {row["status"]: row["n"] for row in agg}
+        # CA potentiel des inscriptions confirmées (prix des cours).
+        confirmed_revenue = Enrollment.objects.filter(
+            status=Enrollment.Status.CONFIRMED
+        ).aggregate(t=Sum("course__price_htg"))["t"] or 0
+        payload = json.loads(resp.content)
+        payload["stats"] = {
+            "total": sum(by.values()),
+            "pending": by.get("pending", 0),
+            "confirmed": by.get("confirmed", 0),
+            "cancelled": by.get("cancelled", 0),
+            "confirmed_revenue": confirmed_revenue,
+        }
+        return JsonResponse(payload)
+    return resp
 
 
 @ensure_csrf_cookie
