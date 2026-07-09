@@ -1057,6 +1057,8 @@ textarea { resize: vertical; min-height: 80px; }
       <div class="section" id="section-testimonials"><div id="card-testimonials"></div></div>
       <div class="section" id="section-values"><div class="card" id="card-values"></div></div>
       <div class="section" id="section-steps"><div class="card" id="card-steps"></div></div>
+      <div class="section" id="section-sitetexts"><div class="card" id="card-sitetexts"></div></div>
+      <div class="section" id="section-siteimages"><div class="card" id="card-siteimages"></div></div>
       <div class="section" id="section-providers"><div id="card-providers"></div></div>
       <div class="section" id="section-products"><div class="card" id="card-products"></div></div>
       <div class="section" id="section-orders"><div class="card" id="card-orders"></div></div>
@@ -4733,13 +4735,42 @@ function saveModal() {
 // ============= PARAMÈTRES DU SITE =============
 const SETTINGS_BOOLS = ['show_shop','show_blog','show_courses','show_testimonials','maintenance_mode'];
 
-function _sf(label, name, val, type) {
+// ph = 5e argument : pour text/textarea c'est un PLACEHOLDER (montre le contenu
+// par défaut actuellement affiché sur le site, sans le persister). Pour un color
+// picker, c'est la couleur PAR DÉFAUT affichée quand le champ est vide (évite le
+// « noir » trompeur et reflète la vraie couleur du site).
+function _sf(label, name, val, type, ph) {
   type = type || 'text';
-  if (type === 'textarea') return '<div class="form-group"><label class="form-label">' + esc(label) + '</label><textarea name="' + name + '">' + esc(String(val ?? '')) + '</textarea></div>';
+  const phAttr = ph ? ' placeholder="' + esc(String(ph)) + '"' : '';
+  if (type === 'textarea') return '<div class="form-group"><label class="form-label">' + esc(label) + '</label><textarea name="' + name + '"' + phAttr + '>' + esc(String(val ?? '')) + '</textarea></div>';
   if (type === 'checkbox') return '<div class="form-group"><label style="display:flex;align-items:center;gap:8px;cursor:pointer"><input type="checkbox" name="' + name + '" ' + (val ? 'checked' : '') + ' style="width:auto"> ' + esc(label) + '</label></div>';
-  if (type === 'color') return '<div class="form-group"><label class="form-label">' + esc(label) + '</label><input type="color" name="' + name + '" value="' + esc(String(val || '#000000')) + '" style="height:40px;padding:3px"></div>';
-  return '<div class="form-group"><label class="form-label">' + esc(label) + '</label><input type="' + type + '" name="' + name + '" value="' + esc(String(val ?? '')) + '"></div>';
+  if (type === 'color') return '<div class="form-group"><label class="form-label">' + esc(label) + '</label><input type="color" name="' + name + '" value="' + esc(String(val || ph || '#000000')) + '" style="height:40px;padding:3px"></div>';
+  return '<div class="form-group"><label class="form-label">' + esc(label) + '</label><input type="' + type + '" name="' + name + '" value="' + esc(String(val ?? '')) + '"' + phAttr + '></div>';
 }
+
+// Valeurs par défaut réellement affichées sur le site (fallback des templates).
+// Utilisées pour : afficher la vraie couleur du thème dans les pickers, et
+// montrer le contenu actuel en placeholder des champs texte -> l'admin reflète
+// le site (« synchronisation » visible) sans écraser le rendu riche des defaults.
+const SETTINGS_DEFAULTS = {
+  color_primary:'#3C9626', color_primary_dark:'#2A6E1B', color_accent:'#5BB143', color_highlight:'#E87A18',
+  hero_title:'Ensemble, nous créons de la richesse',
+  hero_subtitle:"IMSO réunit entrepreneurs, épargnants et formateurs au sein de Groupes d'Entraide Intégrée. Épargne collective, microcrédit responsable et formation continue — un modèle bâti par et pour les communautés haïtiennes.",
+  hero_cta_text:'Rejoindre un GEI',
+  about_title:'Bâtir une économie solidaire portée par les communautés.',
+  about_text:"IMSO accompagne les Haïtiennes et Haïtiens dans la création de richesse collective grâce à l'épargne mutualisée, à la formation entrepreneuriale et à un microcrédit éthique adapté aux réalités locales.",
+  shop_intro:"Un livre et un cahier pratique pour maîtriser l'épargne, le budget et l'entrepreneuriat. Commandez en ligne, payez via nos moyens locaux ; nous vous livrons après confirmation du paiement.",
+  footer_text:'Impact Mutuelle de Solidarité — épargne collective, microcrédit responsable et formation continue au service des communautés haïtiennes.',
+  stat_members:'248 membres', stat_members_label:'Actifs en avril 2026',
+  stat_growth:'+38%', stat_growth_label:'Épargne collective',
+  stat_savings:'3.2M', stat_savings_label:"HTG d'épargne mobilisée",
+  stat_repayment:'96%', stat_repayment_label:'Taux de remboursement',
+  stat_workshops:'52', stat_workshops_label:'Ateliers tenus en 2025',
+  stat_women:'61%', stat_women_label:'Membres femmes',
+  formation_hero_title:'Développez vos compétences financières',
+  formation_hero_subtitle:'Des formations pratiques créées par IMSO. Inscrivez-vous et apprenez à votre rythme.',
+};
+const _D = k => SETTINGS_DEFAULTS[k] || '';
 
 // ===== SECTION SETTINGS — remplace l'ancienne renderSettings (lignes ~2084-2131). =====
 // _sf(...) et saveSettings(...) restent INCHANGES : les panneaux masques
@@ -4802,39 +4833,39 @@ function renderSettings() {
       _sf('TikTok','tiktok_url',s.tiktok_url,'url') + '</div>');
 
     const theme = pane('theme', '<div class="settings-grid2">' +
-      _sf('Principale','color_primary',s.color_primary,'color') +
-      _sf('Principale foncée','color_primary_dark',s.color_primary_dark,'color') +
-      _sf('Accent','color_accent',s.color_accent,'color') +
-      _sf('Highlight','color_highlight',s.color_highlight,'color') + '</div>');
+      _sf('Principale','color_primary',s.color_primary,'color',_D('color_primary')) +
+      _sf('Principale foncée','color_primary_dark',s.color_primary_dark,'color',_D('color_primary_dark')) +
+      _sf('Accent','color_accent',s.color_accent,'color',_D('color_accent')) +
+      _sf('Highlight','color_highlight',s.color_highlight,'color',_D('color_highlight')) + '</div>');
 
     const accueil = pane('accueil',
-      _sf('Titre héro','hero_title',s.hero_title) +
-      _sf('Sous-titre héro','hero_subtitle',s.hero_subtitle,'textarea') +
-      _sf('Texte du bouton héro','hero_cta_text',s.hero_cta_text) +
-      _sf('Titre section « À propos »','about_title',s.about_title) +
-      _sf('Texte « À propos »','about_text',s.about_text,'textarea') +
-      _sf('Intro boutique','shop_intro',s.shop_intro,'textarea') +
-      _sf('Texte du pied de page','footer_text',s.footer_text,'textarea'));
+      _sf('Titre héro','hero_title',s.hero_title,'text',_D('hero_title')) +
+      _sf('Sous-titre héro','hero_subtitle',s.hero_subtitle,'textarea',_D('hero_subtitle')) +
+      _sf('Texte du bouton héro','hero_cta_text',s.hero_cta_text,'text',_D('hero_cta_text')) +
+      _sf('Titre section « À propos »','about_title',s.about_title,'text',_D('about_title')) +
+      _sf('Texte « À propos »','about_text',s.about_text,'textarea',_D('about_text')) +
+      _sf('Intro boutique','shop_intro',s.shop_intro,'textarea',_D('shop_intro')) +
+      _sf('Texte du pied de page','footer_text',s.footer_text,'textarea',_D('footer_text')));
 
     const stats = pane('stats', '<div class="settings-grid2">' +
-      _sf('Héro — membres (valeur)','stat_members',s.stat_members) +
-      _sf('Héro — membres (libellé)','stat_members_label',s.stat_members_label) +
-      _sf('Héro — croissance (valeur)','stat_growth',s.stat_growth) +
-      _sf('Héro — croissance (libellé)','stat_growth_label',s.stat_growth_label) +
-      _sf('Épargne (valeur)','stat_savings',s.stat_savings) +
-      _sf('Épargne (libellé)','stat_savings_label',s.stat_savings_label) +
-      _sf('Remboursement (valeur)','stat_repayment',s.stat_repayment) +
-      _sf('Remboursement (libellé)','stat_repayment_label',s.stat_repayment_label) +
-      _sf('Ateliers (valeur)','stat_workshops',s.stat_workshops) +
-      _sf('Ateliers (libellé)','stat_workshops_label',s.stat_workshops_label) +
-      _sf('Femmes (valeur)','stat_women',s.stat_women) +
-      _sf('Femmes (libellé)','stat_women_label',s.stat_women_label) + '</div>');
+      _sf('Héro — membres (valeur)','stat_members',s.stat_members,'text',_D('stat_members')) +
+      _sf('Héro — membres (libellé)','stat_members_label',s.stat_members_label,'text',_D('stat_members_label')) +
+      _sf('Héro — croissance (valeur)','stat_growth',s.stat_growth,'text',_D('stat_growth')) +
+      _sf('Héro — croissance (libellé)','stat_growth_label',s.stat_growth_label,'text',_D('stat_growth_label')) +
+      _sf('Épargne (valeur)','stat_savings',s.stat_savings,'text',_D('stat_savings')) +
+      _sf('Épargne (libellé)','stat_savings_label',s.stat_savings_label,'text',_D('stat_savings_label')) +
+      _sf('Remboursement (valeur)','stat_repayment',s.stat_repayment,'text',_D('stat_repayment')) +
+      _sf('Remboursement (libellé)','stat_repayment_label',s.stat_repayment_label,'text',_D('stat_repayment_label')) +
+      _sf('Ateliers (valeur)','stat_workshops',s.stat_workshops,'text',_D('stat_workshops')) +
+      _sf('Ateliers (libellé)','stat_workshops_label',s.stat_workshops_label,'text',_D('stat_workshops_label')) +
+      _sf('Femmes (valeur)','stat_women',s.stat_women,'text',_D('stat_women')) +
+      _sf('Femmes (libellé)','stat_women_label',s.stat_women_label,'text',_D('stat_women_label')) + '</div>');
 
     const _subhead = (t, note) => '<div style="font-size:11.5px;font-weight:700;text-transform:uppercase;letter-spacing:.04em;color:var(--muted);margin:6px 0 10px">' + esc(t) + (note ? ' <span style="font-weight:500;text-transform:none;letter-spacing:0">' + esc(note) + '</span>' : '') + '</div>';
     const liens = pane('liens',
       _subhead('Héro de la page Formation') +
-      _sf('Titre héro formation','formation_hero_title',s.formation_hero_title) +
-      _sf('Sous-titre héro formation','formation_hero_subtitle',s.formation_hero_subtitle,'textarea') +
+      _sf('Titre héro formation','formation_hero_title',s.formation_hero_title,'text',_D('formation_hero_title')) +
+      _sf('Sous-titre héro formation','formation_hero_subtitle',s.formation_hero_subtitle,'textarea',_D('formation_hero_subtitle')) +
       _subhead('Liens du pied de page','(laisser vide = lien vers #contact)') +
       '<div class="settings-grid2">' +
       _sf('Lien — Statuts du GEI','url_statuts',s.url_statuts) +
