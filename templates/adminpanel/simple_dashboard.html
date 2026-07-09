@@ -999,6 +999,7 @@ textarea { resize: vertical; min-height: 80px; }
         <div class="hd-sub" id="pageSubtitle">{{ summary.active_members }} membre(s) actif(s) · {{ summary.active_courses }} cours actif(s)</div>
       </div>
       <div class="hd-actions">
+        <div id="bulkDeleteSlot"></div>
         <div id="headerActions"></div>
         <div class="notif-wrap">
           <button class="notif-bell" id="notifBell" onclick="toggleNotifs(event)" aria-label="Notifications" title="Notifications">
@@ -1247,6 +1248,56 @@ function getCSRF() { return CSRF; }
 // Navigate
 const currentSection = { name: 'dashboard', page: 1, search: '' };
 
+const SECTION_TITLES = { dashboard:'Tableau de bord', members:'Membres', geis:'GEIs', courses:'Cours', payments:'Paiements', bookings:'Réservations', enrollments:'Inscriptions', contacts:'Contacts', testimonials:'Témoignages', values:'Nos valeurs', steps:'Notre processus', providers:'Moyens de paiement', products:'Produits', orders:'Commandes', blog:'Blog', students:'Étudiants (formation)', teachers:'Professeurs', formationEnrollments:'Inscriptions formation', settings:'Paramètres', admins:'Administrateurs', audit:'Journal d\'audit', export:'Export CSV' };
+
+// Sections où « Tout supprimer » est proposé (doit refléter _BULK_DELETE_MODELS
+// côté serveur). Réservé au super-administrateur. Exclut volontairement admins,
+// audit, textes/images du site, étudiants/professeurs (comptes formation).
+const BULK_DELETABLE = new Set(['members','geis','courses','payments','bookings','enrollments','contacts','products','orders','testimonials','providers','blog','values','steps']);
+
+// Injecte (ou retire) le bouton « Tout supprimer » dans un emplacement dédié de
+// l'entête, persistant (les loaders n'effacent que #headerActions).
+function renderBulkDeleteButton(section) {
+  const slot = document.getElementById('bulkDeleteSlot');
+  if (!slot) return;
+  const allowed = window.ME && window.ME.superuser && BULK_DELETABLE.has(section);
+  slot.innerHTML = allowed
+    ? '<button class="btn btn-danger" onclick="bulkDeleteAll(\'' + section + '\')" title="Supprimer toutes les données de cette section">'
+      + '<svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="3 6 5 6 21 6"/><path d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6m3 0V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2"/></svg>'
+      + ' Tout supprimer</button>'
+    : '';
+}
+
+// Suppression en masse d'une section (super-admin). Confirmation forte : il faut
+// taper « SUPPRIMER » pour activer le bouton.
+function bulkDeleteAll(section) {
+  const label = SECTION_TITLES[section] || section;
+  document.getElementById('modalTitle').textContent = 'Tout supprimer — ' + label;
+  const saveBtn = document.getElementById('modalSaveBtn');
+  saveBtn.textContent = 'Tout supprimer';
+  saveBtn.className = 'btn btn-danger';
+  saveBtn.disabled = true;
+  document.getElementById('modalBody').innerHTML =
+    '<div class="confirm-body"><div class="confirm-icon">⚠</div><div class="confirm-text">'
+    + '<strong>Action irréversible.</strong> Ceci supprime <strong>TOUTES</strong> les données de la section « ' + esc(label) + ' »'
+    + ' ainsi que les données liées en cascade.<br><br>Tapez <code>SUPPRIMER</code> pour confirmer&nbsp;:'
+    + '<input id="bulkConfirmInput" type="text" autocomplete="off" spellcheck="false" placeholder="SUPPRIMER" style="margin-top:8px;width:100%;text-transform:uppercase">'
+    + '</div></div>';
+  document.getElementById('modalFoot').querySelector('.btn:first-child').textContent = 'Annuler';
+  document.getElementById('modalOverlay').classList.add('open');
+  const inp = document.getElementById('bulkConfirmInput');
+  const ok = () => inp.value.trim().toUpperCase() === 'SUPPRIMER';
+  inp.addEventListener('input', () => { saveBtn.disabled = !ok(); });
+  setTimeout(() => inp.focus(), 150);
+  saveBtn.onclick = () => {
+    if (!ok()) return;
+    saveBtn.disabled = true;
+    api('/dashboard/api/bulk-delete/' + section + '/', { method: 'POST', body: JSON.stringify({ confirm: 'SUPPRIMER' }) })
+      .then(r => { toast('Section vidée : ' + (r.deleted || 0) + ' élément(s) supprimé(s)', 'success'); closeModal(); refreshSection(section); })
+      .catch(e => { toast(e.message, 'error'); saveBtn.disabled = false; });
+  };
+}
+
 function navigateTo(section, resetPage = true) {
   // Garde permissions (admin simple) : une section non autorisee renvoie a
   // l'accueil. Le vrai controle reste cote serveur (403 sur l'API).
@@ -1267,9 +1318,9 @@ function navigateTo(section, resetPage = true) {
   // « À traiter ». gotoFiltered arme _keepFilter pour le conserver.
   if (!_keepFilter) delete tableFilters[section];
   if (resetPage) { currentSection.page = 1; currentSection.search = ''; }
-  const titles = { dashboard:'Tableau de bord', members:'Membres', geis:'GEIs', courses:'Cours', payments:'Paiements', bookings:'Réservations', enrollments:'Inscriptions', contacts:'Contacts', testimonials:'Témoignages', values:'Nos valeurs', steps:'Notre processus', providers:'Moyens de paiement', products:'Produits', orders:'Commandes', blog:'Blog', students:'Étudiants (formation)', teachers:'Professeurs', formationEnrollments:'Inscriptions formation', settings:'Paramètres', admins:'Administrateurs', audit:'Journal d\'audit', export:'Export CSV' };
-  document.getElementById('pageTitle').textContent = titles[section] || section;
+  document.getElementById('pageTitle').textContent = SECTION_TITLES[section] || section;
   document.getElementById('headerActions').innerHTML = '';
+  renderBulkDeleteButton(section);
   if (section === 'dashboard') { loadMetrics(); loadCharts(); }
   else if (section === 'export') renderExport();
   else if (section === 'settings') renderSettings();
@@ -4113,6 +4164,12 @@ function loadBookings(){
   btn.innerHTML = '<svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/></svg> Nouvelle réservation';
   btn.onclick = () => openModal('bookings', null);
   actions.appendChild(btn);
+  const resetBtn = document.createElement('button');
+  resetBtn.className = 'btn';
+  resetBtn.title = 'Libère toutes les dates : annule toutes les réservations (historique conservé)';
+  resetBtn.innerHTML = '<svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M3 2v6h6"/><path d="M3 13a9 9 0 1 0 3-7.7L3 8"/></svg> Réinitialiser';
+  resetBtn.onclick = bookingsReset;
+  actions.appendChild(resetBtn);
   if (!_bkCal.y){ const n = new Date(); _bkCal.y = n.getFullYear(); _bkCal.m = n.getMonth(); }
   // Grille = du lundi precedant le 1er au dimanche suivant le dernier jour (42 cases).
   const first = new Date(_bkCal.y, _bkCal.m, 1);
@@ -4127,6 +4184,29 @@ function loadBookings(){
   api('/dashboard/api/bookings/?' + params.toString())
     .then(d => { _bkItems = d.items || []; renderBookingCalendar(); })
     .catch(e => { host.innerHTML = '<div class="card"><div style="padding:24px;color:var(--danger)">' + esc(e.message) + '</div></div>'; });
+}
+
+// Réinitialise le calendrier : annule TOUTES les réservations -> toutes les dates
+// redeviennent disponibles (historique conservé). Confirmation simple (réversible).
+function bookingsReset(){
+  document.getElementById('modalTitle').textContent = 'Réinitialiser le calendrier';
+  const saveBtn = document.getElementById('modalSaveBtn');
+  saveBtn.textContent = 'Libérer toutes les dates';
+  saveBtn.className = 'btn btn-danger';
+  saveBtn.disabled = false;
+  document.getElementById('modalBody').innerHTML =
+    '<div class="confirm-body"><div class="confirm-icon">⚠</div><div class="confirm-text">'
+    + 'Ceci <strong>annule toutes les réservations</strong> : chaque date redevient <strong>disponible</strong>.'
+    + '<br>L\'historique est conservé (statut « Annulée ») — aucune donnée n\'est supprimée.<br><br>Continuer&nbsp;?'
+    + '</div></div>';
+  document.getElementById('modalFoot').querySelector('.btn:first-child').textContent = 'Annuler';
+  document.getElementById('modalOverlay').classList.add('open');
+  saveBtn.onclick = () => {
+    saveBtn.disabled = true;
+    api('/dashboard/api/bookings/reset/', { method: 'POST', body: JSON.stringify({ confirm: true }) })
+      .then(r => { toast((r.cancelled || 0) + ' réservation(s) annulée(s) — toutes les dates sont libérées', 'success'); closeModal(); loadBookings(); })
+      .catch(e => { toast(e.message, 'error'); saveBtn.disabled = false; });
+  };
 }
 
 function bkPrevMonth(){ if(--_bkCal.m < 0){ _bkCal.m = 11; _bkCal.y--; } _bkSelected = null; loadBookings(); }
@@ -4568,6 +4648,7 @@ function openModal(sectionKey, record) {
   const _saveBtn = document.getElementById('modalSaveBtn');
   _saveBtn.textContent = record ? 'Enregistrer' : 'Créer';
   _saveBtn.className = 'btn btn-primary';
+  _saveBtn.disabled = false;  // bulkDeleteAll() peut l'avoir désactivé — on réarme.
   _saveBtn.onclick = saveModal;
 
   let body = '';
@@ -4938,6 +5019,7 @@ function confirmDelete(sectionKey, id) {
   document.getElementById('modalTitle').textContent = 'Confirmer la suppression';
   document.getElementById('modalSaveBtn').textContent = 'Supprimer';
   document.getElementById('modalSaveBtn').className = 'btn btn-danger';
+  document.getElementById('modalSaveBtn').disabled = false;
   document.getElementById('modalBody').innerHTML = '<div class="confirm-body"><div class="confirm-icon">⚠</div><div class="confirm-text">Supprimer <strong>' + esc(label) + '</strong> ?<br>Cette action est irréversible.</div></div>';
   document.getElementById('modalFoot').querySelector('.btn:first-child').textContent = 'Annuler';
 

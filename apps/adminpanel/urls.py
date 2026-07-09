@@ -9,9 +9,11 @@ from .views import (
     blog_create,
     blog_detail,
     blog_list,
+    bulk_delete_section,
     booking_create,
     booking_detail,
     booking_list,
+    bookings_reset,
     site_settings_detail,
     upload_image,
     contact_detail,
@@ -132,6 +134,7 @@ urlpatterns = [
     path("api/v1/courses/<int:pk>/", course_detail, name="course-detail-v1"),
     path("api/bookings/", booking_list, name="booking-list"),
     path("api/bookings/create/", booking_create, name="booking-create"),
+    path("api/bookings/reset/", bookings_reset, name="booking-reset"),
     path("api/v1/bookings/", booking_list, name="booking-list-v1"),
     path("api/bookings/<int:pk>/", booking_detail, name="booking-detail"),
     path("api/v1/bookings/<int:pk>/", booking_detail, name="booking-detail-v1"),
@@ -205,6 +208,7 @@ urlpatterns = [
     path("api/admins/create/", admin_user_create, name="admin-create"),
     path("api/admins/<int:pk>/", admin_user_detail, name="admin-detail"),
     path("api/export/<str:model_name>/", export_csv, name="export-csv"),
+    path("api/bulk-delete/<str:section>/", bulk_delete_section, name="bulk-delete"),
 ]
 
 from .routers import router

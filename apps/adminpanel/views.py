@@ -3319,6 +3319,78 @@ def site_settings_detail(request: HttpRequest) -> JsonResponse:
     return JsonResponse(_serialize_settings(s))
 
 
+# ── Suppression en masse (« Tout supprimer » par section) ────────────────
+# Opération DESTRUCTIVE et irréversible : réservée au super-administrateur et
+# protégée par un jeton de confirmation ("SUPPRIMER"). L'url_name "bulk-delete"
+# n'est mappé sur aucune section connue -> section_for_urlname renvoie
+# "__unknown__" -> staff_required la refuse déjà à tout admin simple (fail-closed) ;
+# on revérifie is_superuser ici par défense en profondeur.
+_BULK_DELETE_MODELS = {
+    "members": Member,
+    "geis": GEI,
+    "courses": Course,
+    "payments": Payment,
+    "bookings": VenueBooking,
+    "enrollments": Enrollment,
+    "contacts": ContactRequest,
+    "products": Product,
+    "orders": Order,
+    "testimonials": Testimonial,
+    "providers": PaymentProvider,
+    "blog": BlogPost,
+    "values": CoreValue,
+    "steps": ProcessStep,
+}
+
+
+@staff_required
+def bulk_delete_section(request: HttpRequest, section: str) -> JsonResponse:
+    if request.method != "POST":
+        return _error("Method not allowed", 405)
+    if not getattr(request.user, "is_superuser", False):
+        return _error("Réservé au super-administrateur.", 403)
+    model = _BULK_DELETE_MODELS.get(section)
+    if model is None:
+        return _error("Section non prise en charge pour la suppression en masse.", 400)
+    data = _json_body(request)
+    if str(data.get("confirm") or "").strip().upper() != "SUPPRIMER":
+        return _error("Confirmation invalide. Tapez SUPPRIMER pour confirmer.", 400)
+    count = model.objects.count()
+    # .delete() sur le QuerySet déclenche les signaux/cascade (nettoyage des
+    # fichiers, annulation des paiements matérialisés, etc.) — comportement voulu.
+    model.objects.all().delete()
+    logger.warning(
+        "BULK DELETE: %d ligne(s) de la section '%s' supprimées par le super-admin %s",
+        count, section, request.user.username,
+    )
+    return JsonResponse({"ok": True, "deleted": count})
+
+
+@staff_required
+def bookings_reset(request: HttpRequest) -> JsonResponse:
+    """Réinitialise le calendrier de réservation : annule TOUTES les réservations
+    non déjà annulées -> toutes les dates redeviennent disponibles. L'historique
+    est conservé (statut « Annulée »), contrairement à « Tout supprimer ».
+
+    On utilise .update() (et non save() par ligne) pour NE PAS déclencher les
+    signaux post_save (sinon une notification + un email « Réservation annulée »
+    partiraient pour chaque réservation)."""
+    if request.method != "POST":
+        return _error("Method not allowed", 405)
+    data = _json_body(request)
+    if not data.get("confirm"):
+        return _error("Confirmation requise.", 400)
+    freed = (
+        VenueBooking.objects.exclude(status=VenueBooking.Status.CANCELLED)
+        .update(status=VenueBooking.Status.CANCELLED, updated_at=timezone.now())
+    )
+    logger.warning(
+        "BOOKINGS RESET: %d réservation(s) annulées (dates libérées) par %s",
+        freed, request.user.username,
+    )
+    return JsonResponse({"ok": True, "cancelled": freed})
+
+
 # ── Upload d'images ──────────────────────────────────────
 
 _UPLOAD_TARGETS = {
