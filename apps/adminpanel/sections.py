@@ -34,16 +34,17 @@ SECTION_LABELS: dict[str, str] = {
     "settings": "Paramètres du site",
     "export": "Exports CSV",
     "admins": "Administrateurs",
+    "audit": "Journal d'audit",
 }
 
 # Sections attribuables à un admin simple (exclut « dashboard » toujours dispo et
-# « admins » réservé aux super-administrateurs).
-GRANTABLE_SECTIONS: list[str] = [k for k in SECTION_LABELS if k not in ("dashboard", "admins")]
+# « admins »/« audit » réservés aux super-administrateurs).
+GRANTABLE_SECTIONS: list[str] = [k for k in SECTION_LABELS if k not in ("dashboard", "admins", "audit")]
 
 # url_name toujours accessibles à tout membre du personnel (coquille du dashboard,
 # entête, listes déroulantes partagées) — jamais gatés par section.
 ALWAYS_ALLOWED: set[str] = {
-    "dashboard", "summary", "summary-v1", "charts", "audit-log",
+    "dashboard", "summary", "summary-v1", "charts",
     "notification-list", "notification-list-v1",
     "notification-check", "notification-check-v1",
     "notification-read", "notification-read-v1",
@@ -77,6 +78,7 @@ _PREFIX_MAP: list[tuple[str, str]] = [
     ("site-text", "sitetexts"),
     ("site-image", "siteimages"),
     ("export", "export"),
+    ("audit", "audit"),
     ("admin", "admins"),
 ]
 
@@ -110,6 +112,6 @@ def user_can(user, section: str | None) -> bool:
         return True
     if getattr(user, "is_superuser", False):
         return True
-    if section in ("admins", "__unknown__"):
-        return False  # gestion des admins = super-admin uniquement ; inconnu = refus
+    if section in ("admins", "audit", "__unknown__"):
+        return False  # admins/audit = super-admin uniquement ; inconnu = refus
     return section in user_sections(user)

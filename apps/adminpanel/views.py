@@ -561,6 +561,14 @@ def member_overview(request: HttpRequest) -> JsonResponse:
             "active": scoped.filter(status="active").count(),
             "savings": scoped.aggregate(s=Sum("monthly_saving_htg"))["s"] or 0,
         }
+    # Agrégats par GEI sur TOUT le queryset filtré (pas seulement la page) : la
+    # vue « Par GEI » affiche ainsi des compteurs/épargne EXACTS même au-delà de
+    # 100 membres (sinon la somme des items paginés est fausse).
+    gei_groups = list(
+        qs.values("gei_id", "gei__name", "gei__city")
+        .annotate(count=Count("id"), savings=Sum("monthly_saving_htg"))
+        .order_by("gei__city", "gei__name")
+    )
     return JsonResponse({
         "items": items,
         "total": total,
@@ -568,6 +576,7 @@ def member_overview(request: HttpRequest) -> JsonResponse:
         "per_page": per_page,
         "total_pages": (total + per_page - 1) // per_page if total else 0,
         "gei_stats": gei_stats,
+        "gei_groups": gei_groups,
         "stats": {
             "total": sum(status_counts.values()),
             "active": status_counts.get("active", 0),
@@ -1221,6 +1230,11 @@ def learner_detail(request: HttpRequest, pk: int) -> JsonResponse:
         if "kyc_status" in data:
             status = data.get("kyc_status")
             if status in Profile.KycStatus.values:
+                # Rejeter sans motif n'aide pas le professeur -> motif obligatoire.
+                if status == Profile.KycStatus.REJECTED and not (
+                    str(data.get("kyc_note") or "").strip() or p.kyc_note
+                ):
+                    return _error("Un motif de rejet est obligatoire.")
                 p.kyc_status = status
                 # Le statut KYC pilote l'approbation : « Vérifié » = accès débloqué.
                 p.is_approved = (status == Profile.KycStatus.APPROVED)
@@ -1231,7 +1245,27 @@ def learner_detail(request: HttpRequest, pk: int) -> JsonResponse:
         if "kyc_note" in data:
             p.kyc_note = str(data.get("kyc_note") or "")[:200]
         if "phone" in data:
-            p.phone = str(data.get("phone") or "")
+            p.phone = str(data.get("phone") or "")[:40]
+        # Edition du compte utilisateur (nom / email / reset mot de passe).
+        u = p.user
+        touched_user = False
+        if "full_name" in data:
+            name = str(data.get("full_name") or "").strip()
+            parts = name.split()
+            u.first_name = (parts[0] if parts else "")[:150]
+            u.last_name = (" ".join(parts[1:]) if len(parts) > 1 else "")[:150]
+            touched_user = True
+        if "email" in data:
+            email = str(data.get("email") or "").strip()
+            if email and User.objects.filter(email=email).exclude(pk=u.pk).exists():
+                return _error("Cet email est déjà utilisé par un autre compte.", 409)
+            u.email = email[:254]
+            touched_user = True
+        if data.get("password"):
+            u.set_password(data["password"])
+            touched_user = True
+        if touched_user:
+            u.save()
         p.save()
         logger.info("Profile %d updated by %s", pk, request.user.username)
         return JsonResponse(_serialize_profile(p))
@@ -1699,6 +1733,46 @@ def booking_list(request: HttpRequest) -> JsonResponse:
     return _paginated_response(qs, request, _serialize_booking)
 
 
+@staff_required
+@require_http_methods(["POST"])
+def booking_create(request: HttpRequest) -> JsonResponse:
+    """Réservation de salle saisie manuellement par un admin (demande hors-ligne).
+    Contrôle anti double-réservation identique au flux public."""
+    from django.utils.dateparse import parse_date, parse_time
+    from apps.core.venue import slot_taken, OCCUPIED_STATUSES
+    data = _json_body(request)
+    name = str(data.get("requester_name") or "").strip()
+    if not name:
+        return _error("Le nom du demandeur est obligatoire.")
+    d = parse_date(str(data.get("event_date") or "")) if data.get("event_date") else None
+    if not d:
+        return _error("La date de l'événement est invalide.")
+    start = parse_time(str(data.get("start_time") or "")) or None
+    end = parse_time(str(data.get("end_time") or "")) or None
+    if not start or not end:
+        return _error("Les heures de début et de fin sont obligatoires.")
+    status = data.get("status") or VenueBooking.Status.REQUESTED
+    if status not in VenueBooking.Status.values:
+        return _error("Statut de réservation invalide.")
+    if status in OCCUPIED_STATUSES and slot_taken(d, start, end):
+        return _error("Ce créneau est déjà occupé par une autre réservation.", 409)
+    try:
+        guests = max(0, int(data.get("guest_count") or 0))
+    except (ValueError, TypeError):
+        guests = 0
+    b = VenueBooking.objects.create(
+        requester_name=name[:140],
+        requester_phone=str(data.get("requester_phone") or "")[:40],
+        requester_email=str(data.get("requester_email") or "")[:254],
+        event_type=str(data.get("event_type") or "")[:120],
+        event_date=d, start_time=start, end_time=end,
+        guest_count=guests, setup=str(data.get("setup") or "")[:120],
+        notes=str(data.get("notes") or ""), status=status,
+    )
+    logger.info("Booking %d created manually by %s", b.pk, request.user.username)
+    return JsonResponse(_serialize_booking(b), status=201)
+
+
 @ensure_csrf_cookie
 @staff_required
 @require_http_methods(["GET", "PUT"])
@@ -1840,6 +1914,10 @@ def payment_detail(request: HttpRequest, pk: int) -> JsonResponse:
             if amount < 0:
                 return _error("Le montant ne peut pas être négatif.")
             p.amount_htg = amount
+        if "purpose" in data:
+            if data["purpose"] not in Payment.Purpose.values:
+                return _error("Motif de paiement invalide.")
+            p.purpose = data["purpose"]
         # Bornes de longueur : un save() nu n'applique PAS max_length et laisse
         # remonter une DataError Postgres -> 500. On tronque comme provider_detail.
         _pay_maxlen = {"payer_name": 140, "payer_phone": 40,
@@ -3177,7 +3255,11 @@ def site_settings_detail(request: HttpRequest) -> JsonResponse:
     data = _json_body(request)
     for f in SETTINGS_TEXT_FIELDS:
         if f in data:
-            val = str(data[f] or "")
+            val = str(data[f] or "").strip()
+            # Normalise les URLs (réseaux sociaux, liens footer) : préfixe https://
+            # si l'utilisateur a oublié le schéma, sinon le lien est cassé (relatif).
+            if f.endswith("_url") and val and not val.startswith(("http://", "https://")):
+                val = "https://" + val
             # Tronque à la max_length du champ : un save() nu n'applique PAS la
             # limite et laisse remonter une DataError Postgres -> 500 qui casse
             # TOUTE la sauvegarde des paramètres (comme sitetext/siteimage).
