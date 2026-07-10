@@ -426,8 +426,8 @@ class PaymentProcessView(View):
         # Preuve de paiement (capture mobile money) televersee en multipart :
         # la persister sur le paiement, sinon l'admin ne voit jamais la preuve.
         if screenshot_file:
-            ct = getattr(screenshot_file, "content_type", "") or ""
-            if ct.startswith("image/") and screenshot_file.size <= 5 * 1024 * 1024:
+            from .upload_validation import validate_image_upload
+            if validate_image_upload(screenshot_file) is None:
                 try:
                     payment.screenshot.save(screenshot_file.name, screenshot_file)
                 except Exception:
@@ -479,9 +479,12 @@ import os
 @require_http_methods(["POST"])
 def confirm_manual_payment(request: HttpRequest) -> JsonResponse:
     """Confirms a manual payment with transaction ID and optional screenshot."""
+    import hmac
     api_key = request.META.get("HTTP_X_API_KEY")
     expected_key = os.environ.get("PAYMENT_CONFIRM_KEY")
-    if not api_key or api_key != expected_key:
+    # Comparaison a temps constant (evite l'oracle temporel) + fail-closed si la
+    # cle n'est pas configuree cote serveur.
+    if not expected_key or not hmac.compare_digest(api_key or "", expected_key):
         return JsonResponse({"ok": False, "error": "Clé API invalide"}, status=403)
 
     try:

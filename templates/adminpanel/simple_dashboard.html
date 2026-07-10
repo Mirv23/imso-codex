@@ -46,7 +46,7 @@ textarea { resize: vertical; min-height: 80px; }
 .sb-name { font-weight: 700; font-size: 15px; color: #fff; }
 .sb-tag { background: rgba(255,255,255,0.08); color: #94A3B8; font-size: 10px; font-weight: 600; padding: 2px 7px; border-radius: 999px; margin-left: auto; }
 .sb-nav { padding: 8px; flex: 1; overflow-y: auto; }
-.sb-section { font-size: 10px; font-weight: 600; color: #64748B; text-transform: uppercase; letter-spacing: 0.08em; padding: 16px 12px 6px; }
+.sb-section { font-size: 10px; font-weight: 600; color: #8B97A8; text-transform: uppercase; letter-spacing: 0.08em; padding: 16px 12px 6px; }
 .sb-item {
   display: flex; align-items: center; gap: 11px; padding: 9px 12px; margin: 1px 0;
   border-radius: var(--radius); color: #CBD5E1; font-size: 13px; font-weight: 500;
@@ -110,17 +110,7 @@ textarea { resize: vertical; min-height: 80px; }
 .btn-danger:hover { background: #DC2626; }
 .btn-sm { padding: 4px 10px; font-size: 12px; }
 
-/* Dashboard metrics */
-.metric-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(200px, 1fr)); gap: 14px; }
-.metric {
-  background: var(--card);
-  border-radius: var(--radius-lg); padding: 18px 20px;
-  box-shadow: var(--shadow-sm); transition: box-shadow .15s;
-}
-.metric:hover { box-shadow: var(--shadow-md); }
-.metric-label { font-size: 12px; color: var(--muted); margin-bottom: 2px; font-weight: 500; text-transform: uppercase; letter-spacing: 0.04em; }
-.metric-value { font-size: 26px; font-weight: 700; letter-spacing: -0.02em; font-feature-settings: 'tnum'; line-height: 1.2; margin-top: 2px; }
-.metric-helper { font-size: 12px; color: var(--muted); margin-top: 4px; }
+/* (Ancien système de cartes .metric retiré — remplacé partout par .stat/.mstat.) */
 
 /* Card */
 .card {
@@ -186,12 +176,15 @@ textarea { resize: vertical; min-height: 80px; }
 .form-label { display: block; font-size: 12.5px; font-weight: 600; color: var(--text); margin-bottom: 4px; }
 .form-hint { font-size: 11px; color: var(--muted); margin-top: 3px; }
 .form-row { display: grid; grid-template-columns: 1fr 1fr; gap: 12px; }
+/* Modale étroite : les champs 2-colonnes repassent en 1 colonne sur mobile
+   (sinon labels et champs écrasés à ~140px). */
+@media (max-width: 520px) { .form-row { grid-template-columns: 1fr; } }
 
 /* Toast */
 .toast-container { position: fixed; top: 20px; right: 20px; z-index: 200; display: flex; flex-direction: column; gap: 8px; }
 .toast {
   padding: 12px 18px; border-radius: var(--radius); font-size: 13px; font-weight: 500;
-  box-shadow: var(--shadow-lg); animation: slideIn .25s ease; max-width: 380px;
+  box-shadow: var(--shadow-lg); animation: slideIn .25s ease; max-width: min(380px, calc(100vw - 40px));
 }
 .toast.success { background: #065F46; color: #fff; }
 .toast.error { background: #991B1B; color: #fff; }
@@ -225,6 +218,16 @@ textarea { resize: vertical; min-height: 80px; }
   .sb-scrim.open { opacity: 1; pointer-events: auto; }
   /* Empeche le zoom automatique iOS au focus (police >= 16px). */
   input, select, textarea { font-size: 16px !important; }
+  /* En-tête allégé : on masque le sous-titre pour laisser respirer titre + actions. */
+  .hd-sub { display: none; }
+  .header { gap: 8px; }
+}
+/* Accessibilité : anneau de focus clavier visible et cohérent sur les éléments
+   interactifs (boutons, items de menu, puces de filtre) — pas seulement les inputs. */
+.btn:focus-visible, .sb-item:focus-visible, .fchip:focus-visible, .mchip:focus-visible,
+.settings-tab:focus-visible, .modal-close:focus-visible, .values__arrow:focus-visible {
+  outline: none;
+  box-shadow: 0 0 0 3px rgba(45,106,79,0.30);
 }
 /* ===== Tableau de bord — refonte (cartes + graphiques animés) ===== */
 /* File de travail « À traiter » */
@@ -711,7 +714,7 @@ textarea { resize: vertical; min-height: 80px; }
 /* ===== SECTION ETUDIANTS (fiche drawer + progression) ===== */
 /* A inserer dans le <style>, juste APRES la ligne .tkyc-toolbar { margin-bottom:14px; } (~ligne 566) */
 .stu-row { cursor:pointer; }
-.stu-row:hover { border-color:var(--primary); box-shadow:var(--shadow); }
+.stu-row:hover { border-color:var(--primary); box-shadow:var(--shadow-md); }
 .stu-courses { display:flex; flex-direction:column; gap:12px; }
 .stu-course { border:1px solid var(--border); border-radius:12px; padding:14px 16px; background:var(--card); }
 .stu-course__hd { display:flex; align-items:center; justify-content:space-between; gap:10px; margin-bottom:3px; }
@@ -1080,7 +1083,7 @@ textarea { resize: vertical; min-height: 80px; }
   <div class="modal" id="modalContent">
     <div class="modal-head">
       <div class="modal-title" id="modalTitle">Titre</div>
-      <button class="modal-close" onclick="closeModal()">✕</button>
+      <button class="modal-close" onclick="closeModal()" aria-label="Fermer" title="Fermer">✕</button>
     </div>
     <div class="modal-body" id="modalBody"></div>
     <div class="modal-foot" id="modalFoot">

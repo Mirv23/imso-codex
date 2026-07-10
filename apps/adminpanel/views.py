@@ -3433,11 +3433,13 @@ def upload_image(request: HttpRequest, target: str, pk: int) -> JsonResponse:
     f = request.FILES.get("file")
     if not f:
         return _error("Aucun fichier fourni", 400)
-    if f.size > _MAX_UPLOAD_BYTES:
-        return _error("Fichier trop volumineux (max 5 Mo)", 400)
-    content_type = getattr(f, "content_type", "") or ""
-    if not content_type.startswith("image/"):
-        return _error("Le fichier doit être une image", 400)
+    # Validation robuste par octets magiques + allowlist d'extension (refuse SVG
+    # et fichiers déguisés) — ne pas se fier au content_type fourni par le client.
+    from apps.core.upload_validation import validate_image_upload
+
+    _err = validate_image_upload(f, max_bytes=_MAX_UPLOAD_BYTES)
+    if _err:
+        return _error(_err, 400)
 
     old = getattr(obj, field)
     old_name = old.name if old else ""
@@ -3654,6 +3656,15 @@ def _csv_stream(queryset: QuerySet, fields: list[str]) -> Generator[str, None, N
 def export_csv(request: HttpRequest, model_name: str) -> HttpResponse:
     if model_name not in ALLOWED_EXPORT_MODELS:
         return _error(f"Modèle non autorisé: {model_name}", 404)
+    # Croise la permission avec la SECTION du modèle exporté : un admin délégué à
+    # qui l'on n'a donné que « export » ne doit pas pouvoir aspirer la PII de
+    # sections qu'il ne détient pas (membres, paiements, contacts…). Les clés de
+    # ALLOWED_EXPORT_MODELS coïncident avec les clés de section.
+    if not request.user.is_superuser:
+        from .sections import user_can
+
+        if not user_can(request.user, model_name):
+            return _error("Vous n'avez pas accès à l'export de ces données.", 403)
     model_class = ALLOWED_EXPORT_MODELS[model_name]
     qs = model_class.objects.all()
     _model_fields = {f.name for f in model_class._meta.fields}

@@ -316,9 +316,21 @@ LOGIN_URL = "/login/"
 LOGIN_REDIRECT_URL = "/dashboard/"
 LOGOUT_REDIRECT_URL = "/"
 
+# Défense en profondeur : sans permission par défaut, DRF retombe sur AllowAny et
+# toute future vue DRF serait publique. Les ViewSets v2 fixent déjà leur propre
+# permission (HasSectionPermission) ; ceci n'est qu'un filet de sécurité. Aucune
+# vue DRF publique n'existe (les endpoints publics de apps/core sont des vues
+# Django classiques, non concernées par ce réglage).
+REST_FRAMEWORK = {
+    "DEFAULT_PERMISSION_CLASSES": ["rest_framework.permissions.IsAdminUser"],
+}
+
 SPECTACULAR_SETTINGS = {
     "TITLE": "IMSO Haiti API",
     "DESCRIPTION": "API REST pour la plateforme IMSO (Impact Mutuelle de Solidarité)",
     "VERSION": "1.0.0",
     "SERVE_INCLUDE_SCHEMA": False,
+    # Schéma/Swagger/ReDoc réservés au personnel : évite l'énumération anonyme de
+    # toute la surface de l'API admin.
+    "SERVE_PERMISSIONS": ["rest_framework.permissions.IsAdminUser"],
 }

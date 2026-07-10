@@ -14,6 +14,7 @@ from django.shortcuts import get_object_or_404, redirect, render
 from django.views.decorators.http import require_http_methods
 
 from apps.adminpanel import views as av
+from apps.core.upload_validation import validate_image_upload as _validate_image_upload
 from apps.adminpanel.models import (
     AdminNotification,
     Chapter,
@@ -210,10 +211,8 @@ def kyc(request: HttpRequest) -> HttpResponse:
             messages.error(request, "Le numéro de votre pièce d'identité est obligatoire.")
         elif not doc and not profile.id_document:
             messages.error(request, "Veuillez joindre une photo de votre pièce d'identité.")
-        elif doc and doc.size > 5 * 1024 * 1024:
-            messages.error(request, "Le fichier est trop volumineux (max 5 Mo).")
-        elif doc and not (getattr(doc, "content_type", "") or "").startswith("image/"):
-            messages.error(request, "Le document doit être une image (photo de la pièce).")
+        elif doc and _validate_image_upload(doc):
+            messages.error(request, "Le document doit être une image valide (JPG, PNG, WEBP ou GIF, max 5 Mo).")
         else:
             profile.id_number = id_number[:60]
             if doc:
@@ -439,10 +438,9 @@ def t_banner_upload(request: HttpRequest, pk: int) -> HttpResponse:
     f = request.FILES.get("file")
     if not f:
         return JsonResponse({"error": "Aucun fichier fourni."}, status=400)
-    if f.size > av._MAX_UPLOAD_BYTES:
-        return JsonResponse({"error": "Image trop volumineuse (max 5 Mo)."}, status=400)
-    if not (getattr(f, "content_type", "") or "").startswith("image/"):
-        return JsonResponse({"error": "Le fichier doit être une image."}, status=400)
+    _err = _validate_image_upload(f, max_bytes=av._MAX_UPLOAD_BYTES)
+    if _err:
+        return JsonResponse({"error": _err}, status=400)
     old_name = course.banner.name if course.banner else ""
     course.banner = f
     course.save(update_fields=["banner"])

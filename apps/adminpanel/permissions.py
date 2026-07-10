@@ -91,3 +91,29 @@ class IsStaff(BasePermission):
     def has_permission(self, request, view) -> bool:
         user = getattr(request, "user", None)
         return bool(user and user.is_authenticated and user.is_staff)
+
+
+class HasSectionPermission(BasePermission):
+    """Permission DRF pour l'API v2 : `is_staff` requis + contrôle par SECTION,
+    exactement comme l'API v1 (`staff_required`). Sans cela, un admin délégué
+    pourrait faire du CRUD complet sur TOUS les modèles via /dashboard/api/v2/,
+    hors de son périmètre attribué (élévation de privilèges).
+
+    Chaque ViewSet DOIT déclarer `section = "<clef>"` (voir sections.py) ou
+    `section = None` pour un endpoint permis à tout le staff (ex. notifications,
+    résumé du dashboard). Fail-closed : un ViewSet sans attribut `section` est
+    traité comme « __unknown__ » et refusé à tout admin non super-administrateur.
+    """
+
+    message = _FORBIDDEN_MESSAGE
+
+    def has_permission(self, request, view) -> bool:
+        user = getattr(request, "user", None)
+        if not (user and user.is_authenticated and user.is_staff):
+            return False
+        if user.is_superuser:
+            return True
+        from .sections import user_can
+
+        section = getattr(view, "section", "__unknown__")
+        return user_can(user, section)

@@ -58,11 +58,10 @@
 <section class="section process" id="processus">
   <div class="container">
     <div class="section__head reveal">
-      <span class="label"><span class="label__bullet"></span>Notre processus</span>
-      <h2 class="section__title">Trois étapes simples pour rejoindre un GEI.</h2>
+      <span class="label"><span class="label__bullet"></span>{{ texts.process_label|default:"Notre processus" }}</span>
+      <h2 class="section__title">{{ texts.process_title|default:"Trois étapes simples pour rejoindre un GEI." }}</h2>
       <p class="section__intro">
-        Un parcours pensé pour vous accueillir progressivement, le temps de
-        comprendre les règles communes et de bâtir des liens avec votre groupe.
+        {{ texts.process_intro|default:"Un parcours pensé pour vous accueillir progressivement, le temps de comprendre les règles communes et de bâtir des liens avec votre groupe." }}
       </p>
     </div>
     <div class="process__timeline">
