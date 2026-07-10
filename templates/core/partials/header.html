@@ -941,6 +941,7 @@ a { color: inherit; text-decoration: none; }
   margin-top: 2px;
 }
 .check svg { width: 14px; height: 14px; }
+.check__emoji { font-size: 15px; line-height: 1; }
 
 .mission__visual {
   aspect-ratio: 1/1;
@@ -1351,10 +1352,19 @@ a { color: inherit; text-decoration: none; }
   display: inline-flex; align-items: center; justify-content: center;
   box-shadow: 0 0 0 6px var(--surface);
 }
+.step__emoji { font-size: 26px; line-height: 1; }
 .step__content {
   flex: 1;
   padding-top: 4px;
 }
+.step__media {
+  margin: 12px 0 4px;
+  border-radius: 14px;
+  overflow: hidden;
+  max-width: 320px;
+  border: 1px solid var(--border);
+}
+.step__media img { width: 100%; height: auto; display: block; }
 .step__title {
   font-weight: 700;
   font-size: 20px;

@@ -2881,6 +2881,8 @@ def _serialize_process_step(s: ProcessStep) -> dict[str, Any]:
         "title": s.title,
         "text": s.text,
         "meta": s.meta,
+        "icon": s.icon,
+        "image": s.image.url if s.image else "",
         "sort_order": s.sort_order,
         "is_active": s.is_active,
         "created_at": s.created_at.isoformat(),
@@ -2910,7 +2912,7 @@ def process_step_detail(request: HttpRequest, pk: int) -> JsonResponse:
         s.delete()
         return _ok()
     data = _json_body(request)
-    for field in ("title", "text", "meta", "is_active"):
+    for field in ("title", "text", "meta", "icon", "is_active"):
         if field in data:
             setattr(s, field, data[field])
     if "sort_order" in data:
@@ -2936,6 +2938,7 @@ def process_step_create(request: HttpRequest) -> JsonResponse:
         title=str(data.get("title") or "").strip(),
         text=data.get("text", ""),
         meta=str(data.get("meta") or "").strip(),
+        icon=str(data.get("icon") or "").strip()[:8],
         sort_order=sort_order,
         is_active=data.get("is_active", True),
     )
@@ -3433,12 +3436,13 @@ _UPLOAD_TARGETS = {
     "course": (Course, "banner"),
     "provider": (PaymentProvider, "logo"),
     "siteimage": (SiteImage, "image"),
+    "processstep": (ProcessStep, "image"),
 }
 # Section RBAC associée à chaque cible d'upload (contrôle par section).
 _UPLOAD_TARGET_SECTION = {
     "product": "products", "blog": "blog", "testimonial": "testimonials",
     "site": "settings", "course": "courses", "provider": "providers",
-    "siteimage": "siteimages",
+    "siteimage": "siteimages", "processstep": "steps",
 }
 _MAX_UPLOAD_BYTES = 5 * 1024 * 1024
 

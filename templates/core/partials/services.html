@@ -67,10 +67,11 @@
     <div class="process__timeline">
       {% for s in process_steps %}
       <div class="step reveal" data-delay="{{ forloop.counter }}">
-        <div class="step__num">{{ forloop.counter }}</div>
+        <div class="step__num">{% if s.icon %}<span class="step__emoji">{{ s.icon }}</span>{% else %}{{ forloop.counter }}{% endif %}</div>
         <div class="step__content">
           <h3 class="step__title">{{ s.title }}</h3>
           <p class="step__text">{{ s.text }}</p>
+          {% if s.image %}<div class="step__media"><img src="{{ s.image.url }}" alt="{{ s.title }}" loading="lazy"></div>{% endif %}
           {% if s.meta %}<span class="step__meta">{{ s.meta }}</span>{% endif %}
         </div>
       </div>

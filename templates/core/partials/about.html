@@ -3,7 +3,7 @@
   <div class="container">
     <div class="mission__grid">
       <div class="reveal">
-        <span class="label"><span class="label__bullet"></span>Notre mission</span>
+        <span class="label"><span class="label__bullet"></span>{{ texts.mission_label|default:"Notre mission" }}</span>
         <h2 class="section__title">
           {% if site.about_title %}{{ site.about_title }}{% else %}Bâtir une <span class="section__title-underline">économie solidaire</span> portée par les communautés.{% endif %}
         </h2>
@@ -14,19 +14,19 @@
         </p>
         <ul class="mission__list">
           <li>
-            <span class="check"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3" stroke-linecap="round" stroke-linejoin="round"><polyline points="20 6 9 17 4 12"></polyline></svg></span>
+            <span class="check">{% if texts.mission_icon_1 %}<span class="check__emoji">{{ texts.mission_icon_1 }}</span>{% else %}<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3" stroke-linecap="round" stroke-linejoin="round"><polyline points="20 6 9 17 4 12"></polyline></svg>{% endif %}</span>
             <span>{{ texts.val_mission_1|default:"Mobiliser l'épargne locale pour financer les projets de proximité." }}</span>
           </li>
           <li>
-            <span class="check"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3" stroke-linecap="round" stroke-linejoin="round"><polyline points="20 6 9 17 4 12"></polyline></svg></span>
+            <span class="check">{% if texts.mission_icon_2 %}<span class="check__emoji">{{ texts.mission_icon_2 }}</span>{% else %}<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3" stroke-linecap="round" stroke-linejoin="round"><polyline points="20 6 9 17 4 12"></polyline></svg>{% endif %}</span>
             <span>{{ texts.val_mission_2|default:"Former chaque membre aux fondamentaux de la gestion et de la comptabilité." }}</span>
           </li>
           <li>
-            <span class="check"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3" stroke-linecap="round" stroke-linejoin="round"><polyline points="20 6 9 17 4 12"></polyline></svg></span>
+            <span class="check">{% if texts.mission_icon_3 %}<span class="check__emoji">{{ texts.mission_icon_3 }}</span>{% else %}<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3" stroke-linecap="round" stroke-linejoin="round"><polyline points="20 6 9 17 4 12"></polyline></svg>{% endif %}</span>
             <span>{{ texts.val_mission_3|default:"Garantir un accès équitable au microcrédit, sans collatéral abusif." }}</span>
           </li>
           <li>
-            <span class="check"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3" stroke-linecap="round" stroke-linejoin="round"><polyline points="20 6 9 17 4 12"></polyline></svg></span>
+            <span class="check">{% if texts.mission_icon_4 %}<span class="check__emoji">{{ texts.mission_icon_4 }}</span>{% else %}<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3" stroke-linecap="round" stroke-linejoin="round"><polyline points="20 6 9 17 4 12"></polyline></svg>{% endif %}</span>
             <span>{{ texts.val_mission_4|default:"Renforcer la cohésion sociale par l'entraide et la transparence." }}</span>
           </li>
         </ul>

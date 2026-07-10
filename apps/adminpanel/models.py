@@ -503,6 +503,14 @@ class ProcessStep(TimestampedModel):
         max_length=80, blank=True,
         help_text="Duree / info courte (ex. « ⏱ 1 semaine »).",
     )
+    icon = models.CharField(
+        max_length=8, blank=True,
+        help_text="Emoji optionnel (ex. 📝) affiche a la place du numero d'etape.",
+    )
+    image = models.FileField(
+        upload_to="site/steps/", blank=True,
+        help_text="Image optionnelle illustrant l'etape.",
+    )
     sort_order = models.PositiveIntegerField(default=0)
     is_active = models.BooleanField(default=True)
 
