@@ -133,14 +133,24 @@ class TestAuditLog:
 
 @pytest.mark.django_db
 class TestLoginRateLimit:
-    # Cache isolé pour ce test : évite toute contamination du compteur de
-    # rate-limit par les autres tests qui partagent le LocMemCache par défaut.
-    @override_settings(CACHES={"default": {
-        "BACKEND": "django.core.cache.backends.locmem.LocMemCache",
-        "LOCATION": "ratelimit-login-isolated",
-    }})
+    # Cache isolé pour ce test : le rate-limiting utilise désormais le cache
+    # "ratelimit" (RATELIMIT_USE_CACHE) — on l'isole en LocMem dédié pour éviter
+    # toute contamination du compteur entre tests et ne pas dépendre de la table DB.
+    @override_settings(
+        RATELIMIT_USE_CACHE="ratelimit",
+        CACHES={
+            "default": {
+                "BACKEND": "django.core.cache.backends.locmem.LocMemCache",
+                "LOCATION": "default-isolated",
+            },
+            "ratelimit": {
+                "BACKEND": "django.core.cache.backends.locmem.LocMemCache",
+                "LOCATION": "ratelimit-login-isolated",
+            },
+        },
+    )
     def test_login_brute_force_blocked(self):
-        caches["default"].clear()
+        caches["ratelimit"].clear()
         client = Client()
         statuses = []
         for _ in range(8):
