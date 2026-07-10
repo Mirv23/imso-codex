@@ -241,6 +241,29 @@ window.addEventListener('resize', () => {
 });
 } // fin garde témoignages
 
+// Carrousel « Nos valeurs » : flèches de navigation (desktop surtout ; le scroll
+// tactile reste actif sur mobile). Garde anti-crash si la section est absente.
+if (document.getElementById('valNext')) {
+  const vwrap = document.querySelector('.values__wrap');
+  const vprev = document.getElementById('valPrev');
+  const vnext = document.getElementById('valNext');
+  const vstep = () => {
+    const card = vwrap && vwrap.querySelector('.value-card');
+    return card ? card.getBoundingClientRect().width + 18 : 300;
+  };
+  const vUpdate = () => {
+    if (!vwrap) return;
+    const max = vwrap.scrollWidth - vwrap.clientWidth - 2;
+    vprev.disabled = vwrap.scrollLeft <= 2;
+    vnext.disabled = vwrap.scrollLeft >= max;
+  };
+  vprev.addEventListener('click', () => vwrap.scrollBy({ left: -vstep(), behavior: 'smooth' }));
+  vnext.addEventListener('click', () => vwrap.scrollBy({ left: vstep(), behavior: 'smooth' }));
+  if (vwrap) vwrap.addEventListener('scroll', vUpdate, { passive: true });
+  window.addEventListener('resize', vUpdate);
+  vUpdate();
+}
+
 // Ripple
 document.querySelectorAll('.btn').forEach(btn => {
   btn.addEventListener('click', (e) => {

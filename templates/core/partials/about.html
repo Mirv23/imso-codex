@@ -128,5 +128,15 @@
         {% endfor %}
       </div>
     </div>
+    {% if core_values|length > 3 %}
+    <div class="values__nav reveal" data-delay="1">
+      <button class="values__arrow" id="valPrev" aria-label="Valeurs précédentes" type="button">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round"><path d="M15 18l-6-6 6-6"></path></svg>
+      </button>
+      <button class="values__arrow" id="valNext" aria-label="Valeurs suivantes" type="button">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round"><path d="M9 6l6 6-6 6"></path></svg>
+      </button>
+    </div>
+    {% endif %}
   </div>
 </section>
