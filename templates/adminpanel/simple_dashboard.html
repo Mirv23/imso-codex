@@ -4882,6 +4882,7 @@ const SETTINGS_TABS = [
   { key:'liens',     label:'Liens'     },
   { key:'affichage', label:'Affichage' },
   { key:'seo',       label:'SEO'       },
+  { key:'securite',  label:'Sécurité'  },
 ];
 let _settingsTab = 'identite';
 
@@ -4984,7 +4985,24 @@ function renderSettings() {
       _sf('Meta description','meta_description',s.meta_description,'textarea') +
       _sf('Mots-clés','meta_keywords',s.meta_keywords));
 
-    const panes = identite + contact + reseaux + theme + accueil + stats + liens + affichage + seo;
+    // Sécurité : changement du mot de passe de VOTRE compte (self-service). Formulaire
+    // à part (bouton dédié) — les champs mot de passe ne partent PAS dans saveSettings.
+    const securite = pane('securite',
+      _subhead('Mon mot de passe', '(change le mot de passe de votre compte connecté)') +
+      '<div class="pwd-form">' +
+        '<div class="form-group"><label class="form-label">Mot de passe actuel</label><input type="password" id="pwdCurrent" autocomplete="current-password"></div>' +
+        '<div class="settings-grid2">' +
+          '<div class="form-group"><label class="form-label">Nouveau mot de passe</label><input type="password" id="pwdNew" autocomplete="new-password"></div>' +
+          '<div class="form-group"><label class="form-label">Confirmer le nouveau</label><input type="password" id="pwdConfirm" autocomplete="new-password"></div>' +
+        '</div>' +
+        '<div style="font-size:12px;color:var(--muted);margin:-4px 0 12px">Au moins 8 caractères, pas trop courant, pas uniquement des chiffres.</div>' +
+        '<div style="display:flex;align-items:center;gap:12px;flex-wrap:wrap">' +
+          '<button type="button" class="btn btn-primary" onclick="changePassword()">Changer mon mot de passe</button>' +
+          '<span id="pwdMsg" style="font-size:13px;font-weight:500"></span>' +
+        '</div>' +
+      '</div>');
+
+    const panes = identite + contact + reseaux + theme + accueil + stats + liens + affichage + seo + securite;
     const tabs = SETTINGS_TABS.map(t => '<button type="button" class="settings-tab" data-tab="' + t.key + '" onclick="settingsTab(\'' + t.key + '\')">' + esc(t.label) + '</button>').join('');
     const modif = s.updated_at ? 'Dernière modification : ' + new Date(s.updated_at).toLocaleDateString('fr-FR') : '';
 
@@ -5005,11 +5023,31 @@ function renderSettings() {
     root.innerHTML = '<div class="card"><div style="padding:24px;color:var(--danger)">' + esc(e.message) + '</div></div>';
   });
 }
+function changePassword() {
+  const cur = document.getElementById('pwdCurrent').value;
+  const nw = document.getElementById('pwdNew').value;
+  const cf = document.getElementById('pwdConfirm').value;
+  const msg = document.getElementById('pwdMsg');
+  const fail = (t) => { msg.textContent = t; msg.style.color = 'var(--danger)'; };
+  if (!cur || !nw) return fail('Remplissez tous les champs.');
+  if (nw !== cf) return fail('La confirmation ne correspond pas.');
+  if (nw.length < 8) return fail('Au moins 8 caractères.');
+  msg.textContent = 'Modification…'; msg.style.color = 'var(--muted)';
+  api('/dashboard/api/account/password/', { method: 'POST', body: JSON.stringify({ current_password: cur, new_password: nw }) })
+    .then(() => {
+      toast('Mot de passe changé avec succès.', 'success');
+      ['pwdCurrent', 'pwdNew', 'pwdConfirm'].forEach(id => { document.getElementById(id).value = ''; });
+      msg.textContent = '✓ Mot de passe mis à jour'; msg.style.color = 'var(--success)';
+    })
+    .catch(e => fail(e.message));
+}
+
 function saveSettings() {
   const root = document.getElementById('card-settings');
   const data = {};
   root.querySelectorAll('input, textarea').forEach(inp => {
     if (inp.type === 'file') return;
+    if (inp.type === 'password') return;  // les champs de mot de passe ne partent PAS dans les paramètres du site
     if (inp.type === 'checkbox') data[inp.name] = inp.checked;
     else data[inp.name] = inp.value;
   });

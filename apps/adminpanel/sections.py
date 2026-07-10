@@ -50,6 +50,7 @@ ALWAYS_ALLOWED: set[str] = {
     "notification-read", "notification-read-v1",
     "notification-read-all", "notification-read-all-v1",
     "teacher-options",
+    "account-password",  # self-service : chaque membre du staff change SON mot de passe
 }
 
 # Résolution url_name -> section. Ordre important : préfixes les plus spécifiques

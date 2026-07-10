@@ -6,6 +6,7 @@ from .views import (
     admin_user_create,
     admin_user_detail,
     admin_user_list,
+    account_change_password,
     blog_create,
     blog_detail,
     blog_list,
@@ -209,6 +210,7 @@ urlpatterns = [
     path("api/admins/<int:pk>/", admin_user_detail, name="admin-detail"),
     path("api/export/<str:model_name>/", export_csv, name="export-csv"),
     path("api/bulk-delete/<str:section>/", bulk_delete_section, name="bulk-delete"),
+    path("api/account/password/", account_change_password, name="account-password"),
 ]
 
 from .routers import router

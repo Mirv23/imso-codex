@@ -3391,6 +3391,38 @@ def bookings_reset(request: HttpRequest) -> JsonResponse:
     return JsonResponse({"ok": True, "cancelled": freed})
 
 
+@staff_required
+def account_change_password(request: HttpRequest) -> JsonResponse:
+    """Change le mot de passe du COMPTE CONNECTÉ (self-service). Accessible à tout
+    membre du personnel pour SON propre compte (url_name dans ALWAYS_ALLOWED).
+    Exige le mot de passe actuel + valide le nouveau via les validateurs Django
+    (longueur mini, pas trop courant, pas 100% numérique) — impossible de remettre
+    un mot de passe faible. La session reste active après le changement."""
+    if request.method != "POST":
+        return _error("Method not allowed", 405)
+    data = _json_body(request)
+    current = str(data.get("current_password") or "")
+    new = str(data.get("new_password") or "")
+    user = request.user
+    if not user.check_password(current):
+        return _error("Mot de passe actuel incorrect.", 400)
+    if not new:
+        return _error("Le nouveau mot de passe est vide.", 400)
+    from django.contrib.auth import update_session_auth_hash
+    from django.contrib.auth.password_validation import validate_password
+    from django.core.exceptions import ValidationError
+
+    try:
+        validate_password(new, user=user)
+    except ValidationError as exc:
+        return _error(" ".join(exc.messages), 400)
+    user.set_password(new)
+    user.save(update_fields=["password"])
+    update_session_auth_hash(request, user)  # évite la déconnexion immédiate
+    logger.info("Mot de passe changé par l'utilisateur %s", user.username)
+    return JsonResponse({"ok": True})
+
+
 # ── Upload d'images ──────────────────────────────────────
 
 _UPLOAD_TARGETS = {
