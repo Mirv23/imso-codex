@@ -128,6 +128,11 @@ textarea { resize: vertical; min-height: 80px; }
 .table th { font-size: 11px; font-weight: 600; color: var(--muted); text-transform: uppercase; letter-spacing: 0.04em; border-bottom: 1px solid var(--border); background: #FAFBFC; }
 .table tbody tr:hover { background: #FAFBFC; }
 .table td.actions { white-space: nowrap; text-align: right; }
+.table tbody tr { transition: background .12s ease; }
+.table tbody tr:hover td { background: var(--bg); }
+/* Badge de sujet coloré (Contacts) */
+.ct-subj { display:inline-flex; align-items:center; gap:6px; padding:3px 10px 3px 8px; border-radius:999px; font-size:11.5px; font-weight:600; color:var(--text); background:var(--bg); border:1px solid var(--border); white-space:nowrap; }
+.ct-subj__dot { width:7px; height:7px; border-radius:50%; flex-shrink:0; }
 /* Groupe de boutons d'action aligné proprement sur une même ligne (fini les boutons collés/décalés) */
 .row-actions { display: inline-flex; align-items: center; justify-content: flex-end; gap: 6px; flex-wrap: wrap; }
 .row-actions > * { margin: 0; }
@@ -279,7 +284,8 @@ textarea { resize: vertical; min-height: 80px; }
 .bk-day__hd span { font-size:12.5px; color:var(--muted); font-weight:600; }
 .bk-day__empty { padding:28px 16px; text-align:center; color:var(--muted); font-size:13.5px; }
 .bk-day__list { display:flex; flex-direction:column; }
-.bk-item { display:flex; align-items:center; gap:14px; padding:12px 16px; border-bottom:1px solid var(--border); border-left:4px solid var(--bc,#9CA3AF); }
+.bk-item { display:flex; align-items:center; gap:14px; padding:12px 16px; border-bottom:1px solid var(--border); border-left:4px solid var(--bc,#9CA3AF); transition:background .12s ease; }
+.bk-item:hover { background:var(--bg); }
 .bk-item:last-child { border-bottom:0; }
 .bk-item__time { min-width:96px; font-size:13px; font-weight:700; color:var(--text); white-space:nowrap; }
 .bk-item__body { flex:1 1 auto; min-width:0; }
@@ -480,10 +486,13 @@ textarea { resize: vertical; min-height: 80px; }
 
 /* ===== Section Membres — refonte premium ===== */
 .mstats { display:grid; grid-template-columns:repeat(auto-fit,minmax(180px,1fr)); gap:14px; margin-bottom:18px; }
-.mstat { background:var(--card); border-radius:var(--radius-lg); padding:15px 17px; box-shadow:var(--shadow-sm); position:relative; overflow:hidden; opacity:0; transform:translateY(10px); animation:dashIn .45s cubic-bezier(.4,0,.2,1) forwards; }
-.mstat::after { content:''; position:absolute; right:-14px; top:-14px; width:56px; height:56px; border-radius:50%; background:var(--mc,var(--primary)); opacity:.09; }
-.mstat__v { font-size:24px; font-weight:800; letter-spacing:-.02em; color:var(--text); font-variant-numeric:tabular-nums; line-height:1; }
-.mstat__l { font-size:12px; color:var(--muted); margin-top:6px; font-weight:500; }
+.mstat { background:var(--card); border:1px solid var(--border); border-radius:var(--radius-lg); padding:16px 18px 16px 22px; box-shadow:var(--shadow-sm); position:relative; overflow:hidden; opacity:0; transform:translateY(10px); animation:dashIn .45s cubic-bezier(.4,0,.2,1) forwards; transition:box-shadow .2s ease, transform .2s ease; }
+.mstat:hover { box-shadow:var(--shadow-md); transform:translateY(-2px); }
+/* Barre d'accent verticale colorée (couleur = --mc de la carte) */
+.mstat::before { content:''; position:absolute; left:0; top:11px; bottom:11px; width:3px; border-radius:0 3px 3px 0; background:var(--mc,var(--primary)); }
+.mstat::after { content:''; position:absolute; right:-16px; top:-16px; width:60px; height:60px; border-radius:50%; background:var(--mc,var(--primary)); opacity:.08; }
+.mstat__v { font-size:26px; font-weight:800; letter-spacing:-.02em; color:var(--mc,var(--text)); font-variant-numeric:tabular-nums; line-height:1; }
+.mstat__l { font-size:11.5px; color:var(--muted); margin-top:7px; font-weight:600; text-transform:uppercase; letter-spacing:.03em; }
 .mstat__v small { font-size:12px; font-weight:600; color:var(--muted); }
 
 .mtoolbar { display:flex; flex-wrap:wrap; gap:10px; align-items:center; margin-bottom:16px; }
@@ -523,6 +532,7 @@ textarea { resize: vertical; min-height: 80px; }
 .mempty { text-align:center; padding:54px 20px; color:var(--muted); }
 .mempty svg { width:46px; height:46px; opacity:.4; margin-bottom:12px; }
 .mempty h4 { font-size:15px; color:var(--text); margin:0 0 4px; }
+.mempty p { font-size:13px; color:var(--muted); margin:0; max-width:340px; margin-left:auto; margin-right:auto; line-height:1.5; }
 .mpager { display:flex; align-items:center; justify-content:space-between; margin-top:18px; font-size:13px; color:var(--muted); }
 .mpager__nav { display:flex; align-items:center; gap:8px; }
 .mloading { display:flex; align-items:center; justify-content:center; gap:10px; padding:60px 20px; color:var(--muted); font-size:14px; }
@@ -1798,7 +1808,7 @@ const SECTIONS = {
     canCreate: false, canEdit: true, canDelete: true,
     columns: [
       { key:'full_name', label:'Nom', render: r => `<strong>${esc(r.full_name)}</strong><br><span style="font-size:11px;color:var(--muted)">${esc(r.phone)}</span>` },
-      { key:'subject', label:'Sujet', render: r => ({membership:'Adhésion',course:'Cours',venue:'Location',mentor:'Mentorat',other:'Autre'}[r.subject] || r.subject) },
+      { key:'subject', label:'Sujet', render: r => ctSubjectBadge(r.subject) },
       { key:'message', label:'Message', render: r => r.message ? esc(r.message).slice(0,80) + (r.message.length > 80 ? '…' : '') : '' },
       { key:'is_processed', label:'Traité', render: r => r.is_processed ? '<span class="pill green">Oui</span>' : '<span class="pill amber">Non</span>' },
       { key:'created_at', label:'Reçu le', render: r => new Date(r.created_at).toLocaleDateString('fr-FR') },
@@ -2286,7 +2296,7 @@ function renderTable(sectionKey, data) {
   html += '</tr></thead><tbody>';
 
   if (items.length === 0) {
-    html += '<tr><td class="empty" colspan="' + (cfg.columns.length + (cfg.canEdit || cfg.canDelete || cfg.rowActions ? 1 : 0)) + '">Aucune donnée</td></tr>';
+    html += '<tr><td class="empty" colspan="' + (cfg.columns.length + (cfg.canEdit || cfg.canDelete || cfg.rowActions ? 1 : 0)) + '"><div class="mempty"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6"><path d="M22 12h-6l-2 3h-4l-2-3H2"/><path d="M5.45 5.11 2 12v6a2 2 0 0 0 2 2h16a2 2 0 0 0 2-2v-6l-3.45-6.89A2 2 0 0 0 16.76 4H7.24a2 2 0 0 0-1.79 1.11z"/></svg><h4>Aucune donnée</h4><p>Rien à afficher pour l\'instant.</p></div></td></tr>';
   } else {
     items.forEach(r => {
       html += '<tr data-id="' + r.id + '">';
@@ -3248,6 +3258,8 @@ function moveTestimonial(id, dir) {
 // en ligne (PUT is_processed=true) sans ouvrir la modale.
 const contactState = { tab: '0', page: 1, search: '', subject: '' }; // tab: '0'=non traites, '1'=traites, ''=tous
 const CT_SUBJECTS = { membership:'Adhésion', course:'Cours', venue:'Location', mentor:'Mentorat', other:'Autre' };
+const CT_SUBJECT_COLORS = { membership:'#16A34A', course:'#2563EB', venue:'#7C3AED', mentor:'#F59E0B', other:'#6B7280' };
+function ctSubjectBadge(s){ const c = CT_SUBJECT_COLORS[s] || '#6B7280'; const l = CT_SUBJECTS[s] || s; return '<span class="ct-subj"><span class="ct-subj__dot" style="background:'+c+'"></span>'+esc(l)+'</span>'; }
 function contactSetSubject(v) { contactState.subject = v; loadContacts(1); }
 function contactDelete(id) {
   if (!confirm('Supprimer définitivement ce message ?')) return;
@@ -3342,7 +3354,7 @@ function renderContacts(d) {
   html += '<th style="text-align:right">Actions</th></tr></thead><tbody>';
 
   if (!items.length) {
-    html += '<tr><td class="empty" colspan="' + (cfg.columns.length + 1) + '">Aucun message</td></tr>';
+    html += '<tr><td class="empty" colspan="' + (cfg.columns.length + 1) + '"><div class="mempty"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6"><rect x="2" y="4" width="20" height="16" rx="2"/><path d="M22 6l-10 7L2 6"/></svg><h4>Aucun message</h4><p>Les messages envoyés depuis le formulaire de contact du site apparaîtront ici.</p></div></td></tr>';
   } else {
     items.forEach(r => {
       html += '<tr data-id="' + r.id + '">';

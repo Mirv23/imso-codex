@@ -304,8 +304,20 @@ else:
         "default": {
             "BACKEND": "django.core.cache.backends.locmem.LocMemCache",
             "LOCATION": "imso-cache",
-        }
+        },
+        # Cache PARTAGÉ entre instances serverless via Postgres. Indispensable au
+        # rate-limiting (anti-force-brute) : en serverless (Vercel), chaque lambda
+        # a sa propre mémoire, donc un LocMemCache n'agrège PAS les compteurs entre
+        # instances -> protection contournable. Le DatabaseCache écrit dans une
+        # table partagée par toutes les lambdas. Table créée par la migration
+        # adminpanel 0029 (createcachetable, idempotent).
+        "ratelimit": {
+            "BACKEND": "django.core.cache.backends.db.DatabaseCache",
+            "LOCATION": "imso_ratelimit_cache",
+            "TIMEOUT": 3600,
+        },
     }
+    RATELIMIT_USE_CACHE = "ratelimit"
 
 # ── File Storage ─────────────────────────────────────────
 # Le backend est configuré dans STORAGES["default"] (via DJANGO_FILE_STORAGE).
