@@ -274,18 +274,25 @@ def _serialize_revenue_for_react() -> list[dict[str, Any]]:
             m, y = 12, y - 1
     months.reverse()
 
-    result = []
-    for (yy, mm) in months:
-        total = Payment.objects.filter(
-            status=Payment.Status.PAID,
-            created_at__year=yy,
-            created_at__month=mm,
-        ).aggregate(total=Sum("amount_htg"))["total"] or 0
-        result.append({
-            "m": _month_abbr(now.replace(year=yy, month=mm, day=1)),
-            "v": total,
-        })
-    return result
+    # Une SEULE requête (groupby mois) au lieu de 6 : on regroupe les paiements
+    # PAID depuis le 1er du plus ancien mois de la fenêtre, puis on projette sur
+    # la liste `months` (mois sans paiement -> 0). Résultat identique.
+    from django.db.models.functions import TruncMonth
+
+    oldest_y, oldest_m = months[0]
+    start = now.replace(year=oldest_y, month=oldest_m, day=1,
+                        hour=0, minute=0, second=0, microsecond=0)
+    rows = (
+        Payment.objects.filter(status=Payment.Status.PAID, created_at__gte=start)
+        .annotate(_month=TruncMonth("created_at"))
+        .values("_month")
+        .annotate(total=Sum("amount_htg"))
+    )
+    by_month = {(r["_month"].year, r["_month"].month): (r["total"] or 0) for r in rows if r["_month"]}
+    return [
+        {"m": _month_abbr(now.replace(year=yy, month=mm, day=1)), "v": by_month.get((yy, mm), 0)}
+        for (yy, mm) in months
+    ]
 
 
 def _serialize_categories_for_react() -> list[dict[str, Any]]:
@@ -559,11 +566,16 @@ def member_overview(request: HttpRequest) -> JsonResponse:
     gei_param = request.GET.get("gei")
     gei_stats = None
     if gei_param and str(gei_param).isdigit():
-        scoped = Member.objects.filter(gei_id=int(gei_param))
+        # 3 requêtes (count + count actif + sum) regroupées en UNE seule.
+        agg = Member.objects.filter(gei_id=int(gei_param)).aggregate(
+            total=Count("id"),
+            active=Count("id", filter=Q(status="active")),
+            savings=Sum("monthly_saving_htg"),
+        )
         gei_stats = {
-            "total": scoped.count(),
-            "active": scoped.filter(status="active").count(),
-            "savings": scoped.aggregate(s=Sum("monthly_saving_htg"))["s"] or 0,
+            "total": agg["total"],
+            "active": agg["active"],
+            "savings": agg["savings"] or 0,
         }
     # Agrégats par GEI sur TOUT le queryset filtré (pas seulement la page) : la
     # vue « Par GEI » affiche ainsi des compteurs/épargne EXACTS même au-delà de
@@ -775,6 +787,20 @@ def course_overview(request: HttpRequest) -> JsonResponse:
     total = qs.count()
     items = [_serialize_course(c) for c in qs[offset: offset + per_page]]
     all_courses = Course.objects.all()
+    # Compteurs cours (total/actif/inactif) en UNE requête au lieu de 3.
+    c_agg = all_courses.aggregate(
+        total=Count("id"),
+        active=Count("id", filter=Q(is_active=True)),
+        inactive=Count("id", filter=Q(is_active=False)),
+    )
+    # KPI plateforme formation (students/active_access/revenu) en UNE requête au
+    # lieu de 3 (le Sum filtré ne compte que les accès ACTIVE).
+    _ACTIVE = CourseEnrollment.Status.ACTIVE
+    ce_agg = CourseEnrollment.objects.aggregate(
+        students=Count("id"),
+        active_access=Count("id", filter=Q(status=_ACTIVE)),
+        revenue_confirmed=Sum("course__price_htg", filter=Q(status=_ACTIVE)),
+    )
     return JsonResponse({
         "items": items,
         "total": total,
@@ -782,21 +808,17 @@ def course_overview(request: HttpRequest) -> JsonResponse:
         "per_page": per_page,
         "total_pages": (total + per_page - 1) // per_page if total else 0,
         "stats": {
-            "total": all_courses.count(),
-            "active": all_courses.filter(is_active=True).count(),
-            "inactive": all_courses.filter(is_active=False).count(),
+            "total": c_agg["total"],
+            "active": c_agg["active"],
+            "inactive": c_agg["inactive"],
             "enrollments": Enrollment.objects.count(),
-            # KPI plateforme formation (CourseEnrollment).
-            "students": CourseEnrollment.objects.count(),
-            "active_access": CourseEnrollment.objects.filter(
-                status=CourseEnrollment.Status.ACTIVE
-            ).count(),
-            "revenue_confirmed": CourseEnrollment.objects.filter(
-                status=CourseEnrollment.Status.ACTIVE
-            ).aggregate(s=Sum("course__price_htg"))["s"] or 0,
+            "students": ce_agg["students"],
+            "active_access": ce_agg["active_access"],
+            "revenue_confirmed": ce_agg["revenue_confirmed"] or 0,
         },
+        # DISTINCT côté DB (au lieu de charger toutes les lignes puis dédupliquer).
         "categories": sorted(
-            {c for c in all_courses.values_list("category", flat=True) if c}
+            c for c in all_courses.exclude(category="").values_list("category", flat=True).distinct() if c
         ),
     })
 
@@ -2137,7 +2159,12 @@ def gei_overview(request: HttpRequest) -> JsonResponse:
     page, per_page, offset = _get_page_params(request)
     total = qs.count()
     items = [_serialize_gei(g) for g in qs[offset: offset + per_page]]
-    all_geis = GEI.objects.all()
+    # Compteurs GEI (total/actif/inactif) en UNE requête au lieu de 3.
+    g_agg = GEI.objects.aggregate(
+        total=Count("id"),
+        active=Count("id", filter=Q(is_active=True)),
+        inactive=Count("id", filter=Q(is_active=False)),
+    )
     return JsonResponse({
         "items": items,
         "total": total,
@@ -2145,9 +2172,9 @@ def gei_overview(request: HttpRequest) -> JsonResponse:
         "per_page": per_page,
         "total_pages": (total + per_page - 1) // per_page if total else 0,
         "stats": {
-            "total": all_geis.count(),
-            "active": all_geis.filter(is_active=True).count(),
-            "inactive": all_geis.filter(is_active=False).count(),
+            "total": g_agg["total"],
+            "active": g_agg["active"],
+            "inactive": g_agg["inactive"],
             "members": Member.objects.filter(gei__isnull=False).count(),
         },
     })

@@ -176,3 +176,41 @@ def test_stock_tracking_optin():
     untracked = Product.objects.create(name="NonSuivi", price_htg=500, stock=0, track_stock=False)
     assert _order(untracked.id, 5).status_code == 201
 
+
+# ── A-8 : agrégations optimisées -> valeurs correctes (aucun chiffre changé) ─
+def test_a8_overview_aggregations_correct():
+    from apps.adminpanel.models import Course, CourseEnrollment
+    c = _admin()
+    GEI.objects.all().delete()
+    GEI.objects.create(name="G1", city="PAP", is_active=True)
+    GEI.objects.create(name="G2", city="PAP", is_active=False)
+    gstats = c.get("/dashboard/api/geis/overview/").json()["stats"]
+    assert gstats["total"] == 2 and gstats["active"] == 1 and gstats["inactive"] == 1
+
+    Course.objects.all().delete()
+    co1 = Course.objects.create(title="C1", category="Fin", instructor="P", city="V", is_active=True, price_htg=1000)
+    Course.objects.create(title="C2", category="Ges", instructor="P", city="V", is_active=False, price_htg=500)
+    stu = User.objects.create_user("stuB", "sb@x.com", "password123")
+    CourseEnrollment.objects.create(student=stu, course=co1, status=CourseEnrollment.Status.ACTIVE)
+    cstats = c.get("/dashboard/api/courses/overview/").json()
+    assert cstats["stats"]["total"] == 2 and cstats["stats"]["active"] == 1
+    assert cstats["stats"]["students"] == 1 and cstats["stats"]["active_access"] == 1
+    assert cstats["stats"]["revenue_confirmed"] == 1000
+    assert cstats["categories"] == ["Fin", "Ges"]
+
+
+def test_a8_revenue_buckets_by_calendar_month():
+    from datetime import timedelta
+    from django.utils import timezone
+    from apps.adminpanel.models import Payment
+    from apps.adminpanel.views import _serialize_revenue_for_react
+    now = timezone.now()
+    Payment.objects.create(purpose="course", status=Payment.Status.PAID, payer_name="X", amount_htg=700)
+    Payment.objects.create(purpose="course", status=Payment.Status.PAID, payer_name="Y", amount_htg=300)
+    p = Payment.objects.create(purpose="course", status=Payment.Status.PAID, payer_name="Z", amount_htg=400)
+    Payment.objects.filter(pk=p.pk).update(created_at=now.replace(day=1) - timedelta(days=1))
+    rev = _serialize_revenue_for_react()
+    assert len(rev) == 6
+    assert rev[-1]["v"] == 1000   # mois courant (700+300)
+    assert rev[-2]["v"] == 400    # mois précédent
+
