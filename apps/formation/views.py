@@ -276,9 +276,10 @@ def dashboard(request: HttpRequest) -> HttpResponse:
 
 def _json(request: HttpRequest) -> dict:
     try:
-        return json.loads(request.body)
+        data = json.loads(request.body)
     except (ValueError, TypeError):
         return {}
+    return data if isinstance(data, dict) else {}
 
 
 def _can_manage(user, course: Course) -> bool:

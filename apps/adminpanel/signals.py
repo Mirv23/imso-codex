@@ -1,5 +1,6 @@
 from __future__ import annotations
 
+import logging
 from typing import Any
 
 from django.conf import settings
@@ -7,6 +8,8 @@ from django.core.mail import send_mail
 from django.db import transaction
 from django.db.models.signals import post_delete, post_save, pre_delete, pre_save
 from django.dispatch import receiver
+
+logger = logging.getLogger(__name__)
 
 from .models import (
     AdminNotification,
@@ -32,7 +35,7 @@ def cancel_materialized_course_payment(sender, instance, **kwargs):
     try:
         Payment.objects.filter(external_reference=f"CE-{instance.pk}").delete()
     except Exception:
-        pass
+        logger.exception("Echec suppression du paiement materialise CE-%s", instance.pk)
 
 
 # ── Nettoyage automatique des fichiers du stockage ───────────────────────
@@ -50,13 +53,20 @@ _MEDIA_FIELDS = {
 
 
 def _cleanup_media(sender: type, instance: Any, **kwargs: Any) -> None:
+    # Suppression du fichier distant APRES commit de la transaction de delete :
+    # sinon un rollback laisse une ligne qui pointe vers un fichier detruit, et
+    # une cascade (ex. suppression d'un cours -> N videos) enchainerait N appels
+    # reseau Supabase DANS la transaction -> risque de timeout Vercel.
+    def _remove(f):
+        try:
+            f.delete(save=False)
+        except Exception:
+            logger.exception("Echec suppression du fichier media %s", getattr(f, "name", "?"))
+
     for field_name in _MEDIA_FIELDS.get(sender, []):
         f = getattr(instance, field_name, None)
         if f:
-            try:
-                f.delete(save=False)
-            except Exception:
-                pass
+            transaction.on_commit(lambda f=f: _remove(f))
 
 
 for _model in _MEDIA_FIELDS:
@@ -144,6 +154,12 @@ def venue_booking_notification(sender: type[VenueBooking], instance: VenueBookin
 
 @receiver(post_save, sender=Payment)
 def payment_notification(sender: type[Payment], instance: Payment, created: bool, **kwargs: Any) -> None:
+    # Les paiements synthetiques de CA formation (external_reference='CE-<id>')
+    # sont crees automatiquement quand une inscription devient active : ils ne
+    # correspondent a aucun encaissement reel -> ne pas alerter comme un "nouveau
+    # paiement" (fausse notification).
+    if (instance.external_reference or "").startswith("CE-"):
+        return
     if created:
         AdminNotification.objects.create(
             message=f"Nouveau paiement de {instance.payer_name} - {instance.amount_htg} HTG",

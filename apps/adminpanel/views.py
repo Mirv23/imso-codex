@@ -347,9 +347,12 @@ def _paginated_response(queryset: QuerySet, request: HttpRequest, serializer: Ca
 
 def _json_body(request: HttpRequest) -> dict[str, Any]:
     try:
-        return json.loads(request.body)
-    except (json.JSONDecodeError, AttributeError):
+        data = json.loads(request.body)
+    except (json.JSONDecodeError, AttributeError, ValueError):
         return {}
+    # Un corps JSON valide mais non-objet ([], 5, "x") ferait planter les .get()
+    # ensuite (AttributeError -> 500). On ne renvoie qu'un dict.
+    return data if isinstance(data, dict) else {}
 
 
 def _error(msg: str, status: int = 400) -> JsonResponse:
@@ -1744,7 +1747,12 @@ def booking_create(request: HttpRequest) -> JsonResponse:
     name = str(data.get("requester_name") or "").strip()
     if not name:
         return _error("Le nom du demandeur est obligatoire.")
-    d = parse_date(str(data.get("event_date") or "")) if data.get("event_date") else None
+    # parse_date leve ValueError sur une date au bon format mais hors-plage
+    # (ex. 2026-02-30) -> on rattrape pour renvoyer 400, pas 500.
+    try:
+        d = parse_date(str(data.get("event_date") or "")) if data.get("event_date") else None
+    except ValueError:
+        d = None
     if not d:
         return _error("La date de l'événement est invalide.")
     start = parse_time(str(data.get("start_time") or "")) or None
@@ -1764,9 +1772,9 @@ def booking_create(request: HttpRequest) -> JsonResponse:
         requester_name=name[:140],
         requester_phone=str(data.get("requester_phone") or "")[:40],
         requester_email=str(data.get("requester_email") or "")[:254],
-        event_type=str(data.get("event_type") or "")[:120],
+        event_type=str(data.get("event_type") or "")[:80],
         event_date=d, start_time=start, end_time=end,
-        guest_count=guests, setup=str(data.get("setup") or "")[:120],
+        guest_count=guests, setup=str(data.get("setup") or "")[:80],
         notes=str(data.get("notes") or ""), status=status,
     )
     logger.info("Booking %d created manually by %s", b.pk, request.user.username)
@@ -2969,9 +2977,13 @@ def product_list(request: HttpRequest) -> JsonResponse:
     search = request.GET.get("search")
     if search:
         qs = qs.filter(Q(name__icontains=search) | Q(description__icontains=search))
-    active = request.GET.get("active")
-    if active is not None:
-        qs = qs.filter(is_active=active.lower() in ("1", "true"))
+    active = (request.GET.get("active") or "").lower()
+    # Ne filtrer QUE sur une valeur reconnue : sinon « ?active= » (vide) tombait
+    # sur is_active=False et masquait TOUS les produits actifs.
+    if active in ("1", "true"):
+        qs = qs.filter(is_active=True)
+    elif active in ("0", "false"):
+        qs = qs.filter(is_active=False)
     qs = qs.order_by("sort_order", "name")
     return _paginated_response(qs, request, _serialize_product)
 
@@ -3526,7 +3538,9 @@ def _require_superuser(request):
 
 @staff_required
 def admin_user_list(request: HttpRequest) -> JsonResponse:
-    qs = User.objects.filter(is_staff=True).order_by("-is_superuser", "username")
+    # select_related(admin_access) : _serialize_admin lit u.admin_access par ligne
+    # -> sans ça, 1+N requetes sur la liste des administrateurs.
+    qs = User.objects.filter(is_staff=True).select_related("admin_access").order_by("-is_superuser", "username")
     search = request.GET.get("search")
     if search:
         qs = qs.filter(Q(username__icontains=search) | Q(email__icontains=search))

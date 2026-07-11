@@ -156,6 +156,8 @@ class ContactRequestCreateView(View):
             except json.JSONDecodeError:
                 return JsonResponse({"ok": False, "errors": {"body": ["JSON invalide"]}}, status=400)
 
+        if not hasattr(payload, "get"):
+            payload = {}
         form = ContactRequestForm(payload)
         if not form.is_valid():
             return JsonResponse({"ok": False, "errors": form.errors}, status=400)
@@ -174,6 +176,8 @@ class VenueBookingCreateView(View):
             except json.JSONDecodeError:
                 return JsonResponse({"ok": False, "errors": {"body": ["JSON invalide"]}}, status=400)
 
+        if not hasattr(payload, "get"):
+            payload = {}
         form = VenueBookingRequestForm(payload)
         if not form.is_valid():
             return JsonResponse({"ok": False, "errors": form.errors}, status=400)
@@ -206,6 +210,8 @@ class CourseEnrollmentCreateView(View):
             except json.JSONDecodeError:
                 return JsonResponse({"ok": False, "errors": {"body": ["JSON invalide"]}}, status=400)
 
+        if not hasattr(payload, "get"):
+            payload = {}
         form = CourseEnrollmentRequestForm(payload)
         if not form.is_valid():
             return JsonResponse({"ok": False, "errors": form.errors}, status=400)
@@ -339,6 +345,8 @@ class PaymentProcessView(View):
             except json.JSONDecodeError:
                 return JsonResponse({"ok": False, "error": "JSON invalide"}, status=400)
 
+        if not isinstance(data, dict):
+            data = {}
         provider_id = data.get("provider_id")
         if not provider_id:
             return JsonResponse({"ok": False, "error": "Mode de paiement requis"}, status=400)
@@ -413,9 +421,9 @@ class PaymentProcessView(View):
             provider=provider,
             status=Payment.Status.PENDING,
             entry_mode=Payment.EntryMode.CLIENT,
-            payer_name=payer_name,
-            payer_phone=payer_phone,
-            payer_email=payer_email,
+            payer_name=str(payer_name or "")[:140],
+            payer_phone=str(payer_phone or "")[:40],
+            payer_email=str(payer_email or "")[:254],
             amount_htg=amount,
             venue_booking=booking,
             enrollment=enrollment,
@@ -492,6 +500,8 @@ def confirm_manual_payment(request: HttpRequest) -> JsonResponse:
     except json.JSONDecodeError:
         # Try multipart form data
         data = request.POST.dict()
+    if not isinstance(data, dict):
+        data = {}
 
     reference = data.get("payment_reference")
     if not reference:
@@ -564,6 +574,8 @@ class OrderCreateView(View):
         except json.JSONDecodeError:
             return JsonResponse({"ok": False, "error": "JSON invalide"}, status=400)
 
+        if not isinstance(data, dict):
+            data = {}
         name = (data.get("customer_name") or "").strip()
         phone = (data.get("customer_phone") or "").strip()
         address = (data.get("delivery_address") or "").strip()
