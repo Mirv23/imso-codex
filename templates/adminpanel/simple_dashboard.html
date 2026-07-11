@@ -138,6 +138,15 @@ textarea { resize: vertical; min-height: 80px; }
 .ct-subj__dot { width:7px; height:7px; border-radius:50%; flex-shrink:0; }
 /* Groupe de boutons d'action aligné proprement sur une même ligne (fini les boutons collés/décalés) */
 .row-actions { display: inline-flex; align-items: center; justify-content: flex-end; gap: 6px; flex-wrap: wrap; }
+/* Polish responsive : tableaux plus denses sur tablette/mobile (moins de scroll
+   horizontal) + cibles tactiles agrandies pour les mini-boutons. */
+@media (max-width: 900px) {
+  .table th, .table td { padding: 10px 14px; }
+}
+@media (max-width: 640px) {
+  .btn-sm { min-height: 34px; }
+  .row-actions .btn-sm { min-width: 34px; justify-content: center; }
+}
 .row-actions > * { margin: 0; }
 .table .empty { text-align: center; padding: 48px 22px; color: var(--muted); }
 
@@ -2286,7 +2295,7 @@ function renderTable(sectionKey, data) {
   if (cfg.statsCards && data.stats) html += statsHtml(cfg.statsCards(data.stats));
   html += '<div class="toolbar">';
   html += '<div class="search-wrap"><svg class="search-icon" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="11" cy="11" r="8"/><line x1="21" y1="21" x2="16.65" y2="16.65"/></svg>';
-  html += '<input type="text" placeholder="Rechercher..." value="' + esc(currentSection.search) + '" onkeyup="if(event.key===\'Enter\')searchTable(\'' + sectionKey + '\',this.value)"></div>';
+  html += '<input type="text" placeholder="Rechercher… (Entrée)" value="' + esc(currentSection.search) + '" onkeyup="if(event.key===\'Enter\')searchTable(\'' + sectionKey + '\',this.value)"></div>';
   if (tableFilters[sectionKey]) {
     html += '<button class="btn btn-sm" style="background:var(--primary);color:#fff;border-color:var(--primary)" onclick="clearTableFilter(\'' + sectionKey + '\')" title="Retirer le filtre">Filtre actif · tout afficher ✕</button>';
   }
@@ -3344,7 +3353,7 @@ function renderContacts(d) {
   }
   html += '<div class="toolbar">';
   html += '<div class="search-wrap"><svg class="search-icon" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="11" cy="11" r="8"/><line x1="21" y1="21" x2="16.65" y2="16.65"/></svg>';
-  html += '<input type="text" placeholder="Rechercher..." value="' + esc(contactState.search) + '" onkeyup="if(event.key===\'Enter\')contactSearch(this.value)"></div>';
+  html += '<input type="text" placeholder="Rechercher… (Entrée)" value="' + esc(contactState.search) + '" onkeyup="if(event.key===\'Enter\')contactSearch(this.value)"></div>';
   html += '<div class="spacer"></div>';
   html += '<div class="pagination"><span>' + total + ' resultat(s)</span>';
   if (totalPages > 1) {

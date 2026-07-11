@@ -78,7 +78,7 @@ class HomeView(TemplateView):
         context["process_steps"] = ProcessStep.objects.filter(is_active=True)
 
         context["products"] = Product.objects.filter(is_active=True).only(
-            "id", "name", "slug", "kind", "description", "price_htg", "stock", "sort_order", "image"
+            "id", "name", "slug", "kind", "description", "price_htg", "stock", "track_stock", "sort_order", "image"
         )
 
         return context
