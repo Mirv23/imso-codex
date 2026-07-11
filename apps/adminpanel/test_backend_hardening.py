@@ -214,3 +214,23 @@ def test_a8_revenue_buckets_by_calendar_month():
     assert rev[-1]["v"] == 1000   # mois courant (700+300)
     assert rev[-2]["v"] == 400    # mois précédent
 
+
+# ── Prix de location de salle paramétrable (fin du montant réservation = 0) ─
+def test_venue_price_setting_applies_to_reservation_payment():
+    import datetime
+    from apps.adminpanel.models import SiteSetting, VenueBooking, PaymentProvider, Payment
+    from apps.core.payment_tokens import make_payment_token
+    s = SiteSetting.load()
+    s.venue_price_htg = 15000
+    s.save()
+    prov = PaymentProvider.objects.create(name="MonCash", provider_type=PaymentProvider.ProviderType.MONCASH, is_active=True)
+    bk = VenueBooking.objects.create(requester_name="R", requester_phone="509", event_type="Mariage",
+                                     event_date=datetime.date(2026, 9, 20), start_time="08:00", end_time="12:00",
+                                     status=VenueBooking.Status.REQUESTED)
+    tok = make_payment_token("reservation", bk.id)
+    r = Client().post(f"/api/paiement/reservation/{tok}/",
+                      data=json.dumps({"provider_id": prov.id}), content_type="application/json")
+    assert r.status_code == 200
+    p = Payment.objects.filter(venue_booking=bk).order_by("-id").first()
+    assert p is not None and p.amount_htg == 15000
+

@@ -28,6 +28,7 @@ from apps.adminpanel.models import (
     PaymentProvider,
     Product,
     ProcessStep,
+    SiteSetting,
     Testimonial,
     VenueBooking,
 )
@@ -371,6 +372,9 @@ class PaymentProcessView(View):
         if type == "reservation":
             booking = get_object_or_404(VenueBooking, id=id)
             purpose = Payment.Purpose.VENUE
+            # Prix de location paramétré par l'admin (Paramètres → Location).
+            # 0 tant qu'il n'est pas défini (comportement historique).
+            amount = SiteSetting.load().venue_price_htg
             payer_name = payer_name or booking.requester_name
             payer_phone = payer_phone or booking.requester_phone
             payer_email = payer_email or booking.requester_email

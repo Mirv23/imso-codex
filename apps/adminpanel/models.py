@@ -734,6 +734,12 @@ class SiteSetting(models.Model):
     show_testimonials = models.BooleanField(default=True)
     maintenance_mode = models.BooleanField(default=False, help_text="Affiche un bandeau maintenance")
 
+    # ── Location de salle ──
+    venue_price_htg = models.PositiveIntegerField(
+        default=0,
+        help_text="Prix de location de la salle (HTG) facturé lors d'une réservation. 0 = aucun montant.",
+    )
+
     # ── SEO ──
     meta_description = models.CharField(max_length=300, blank=True)
     meta_keywords = models.CharField(max_length=300, blank=True)

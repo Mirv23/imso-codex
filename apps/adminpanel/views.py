@@ -3355,10 +3355,11 @@ SETTINGS_TEXT_FIELDS = [
     "meta_description", "meta_keywords",
 ]
 SETTINGS_BOOL_FIELDS = ["show_shop", "show_blog", "show_courses", "show_testimonials", "maintenance_mode"]
+SETTINGS_INT_FIELDS = ["venue_price_htg"]
 
 
 def _serialize_settings(s: SiteSetting) -> dict[str, Any]:
-    data = {f: getattr(s, f) for f in SETTINGS_TEXT_FIELDS + SETTINGS_BOOL_FIELDS}
+    data = {f: getattr(s, f) for f in SETTINGS_TEXT_FIELDS + SETTINGS_BOOL_FIELDS + SETTINGS_INT_FIELDS}
     data["logo"] = s.logo.url if s.logo else ""
     data["updated_at"] = s.updated_at.isoformat()
     return data
@@ -3392,6 +3393,12 @@ def site_settings_detail(request: HttpRequest) -> JsonResponse:
     for f in SETTINGS_BOOL_FIELDS:
         if f in data:
             setattr(s, f, bool(data[f]))
+    for f in SETTINGS_INT_FIELDS:
+        if f in data:
+            try:
+                setattr(s, f, max(0, int(data[f] or 0)))
+            except (ValueError, TypeError):
+                return _error(f"« {f} » doit être un nombre entier positif.")
     s.save()
     logger.info("Site settings updated by user %s", request.user.username)
     return JsonResponse(_serialize_settings(s))

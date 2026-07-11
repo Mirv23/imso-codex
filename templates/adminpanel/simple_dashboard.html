@@ -4960,7 +4960,9 @@ function renderSettings() {
       _sf('Titre section « À propos »','about_title',s.about_title,'text',_D('about_title')) +
       _sf('Texte « À propos »','about_text',s.about_text,'textarea',_D('about_text')) +
       _sf('Intro boutique','shop_intro',s.shop_intro,'textarea',_D('shop_intro')) +
-      _sf('Texte du pied de page','footer_text',s.footer_text,'textarea',_D('footer_text')));
+      _sf('Texte du pied de page','footer_text',s.footer_text,'textarea',_D('footer_text')) +
+      '<div style="font-size:11.5px;font-weight:700;text-transform:uppercase;letter-spacing:.04em;color:var(--muted);margin:10px 0 10px">Location de salle</div>' +
+      _sf('Prix de location de la salle (HTG) — 0 = aucun montant facturé','venue_price_htg',s.venue_price_htg,'number'));
 
     const stats = pane('stats', '<div class="settings-grid2">' +
       _sf('Héro — membres (valeur)','stat_members',s.stat_members,'text',_D('stat_members')) +
