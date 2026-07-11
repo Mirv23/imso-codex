@@ -9,7 +9,7 @@ import pytest
 from django.contrib.auth import get_user_model
 from django.test import Client
 
-from apps.adminpanel.models import AdminNotification, Product
+from apps.adminpanel.models import AdminNotification, AuditLog, GEI, Product
 
 User = get_user_model()
 pytestmark = pytest.mark.django_db
@@ -87,4 +87,41 @@ def test_notifications_clear_empties_panel_and_badge():
     assert AdminNotification.objects.count() == 0
     assert c.get("/dashboard/api/notifications/").json() == []
     assert c.get("/dashboard/api/notifications/check/").json()["unread_count"] == 0
+
+
+# ── B-3 : matérialisation du CA formation idempotente (get_or_create) ─────
+def test_materialize_course_payment_idempotent():
+    from apps.adminpanel.models import Course, CourseEnrollment, Payment
+    from apps.adminpanel.views import _materialize_course_payment
+    course = Course.objects.create(title="Cours payant", category="F", instructor="P", city="V", price_htg=1500)
+    student = User.objects.create_user("etu1", "e1@x.com", "password123")
+    enr = CourseEnrollment.objects.create(student=student, course=course,
+                                          status=CourseEnrollment.Status.ACTIVE)
+    _materialize_course_payment(enr)
+    _materialize_course_payment(enr)  # 2e appel (TOCTOU) -> ne doit PAS créer un doublon
+    assert Payment.objects.filter(external_reference=f"CE-{enr.pk}").count() == 1
+
+
+# ── B-6 : traçabilité des actions sensibles (AuditLog explicite) ─────────
+def test_sensitive_actions_are_audited():
+    c = _admin()
+    # suppression de masse -> une entrée d'audit "delete"
+    GEI.objects.create(name="GEI X", city="PAP")
+    AuditLog.objects.all().delete()
+    c.post("/dashboard/api/bulk-delete/geis/",
+           data=json.dumps({"confirm": "SUPPRIMER"}), content_type="application/json")
+    assert AuditLog.objects.filter(action="delete", model_name="geis").exists()
+
+    # réinitialisation du calendrier -> audit "update"
+    AuditLog.objects.all().delete()
+    c.post("/dashboard/api/bookings/reset/", data=json.dumps({"confirm": True}),
+           content_type="application/json")
+    assert AuditLog.objects.filter(action="update", model_name="VenueBooking").exists()
+
+    # changement de mot de passe self-service -> audit "update" sur Admin
+    AuditLog.objects.all().delete()
+    c.post("/dashboard/api/account/password/",
+           data=json.dumps({"current_password": "password123", "new_password": "NouveauFort456!"}),
+           content_type="application/json")
+    assert AuditLog.objects.filter(action="update", model_name="Admin").exists()
 

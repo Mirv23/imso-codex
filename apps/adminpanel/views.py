@@ -1431,21 +1431,23 @@ def _materialize_course_payment(enrollment: CourseEnrollment) -> None:
     if not course or not course.price_htg:
         return
     ref = f"CE-{enrollment.pk}"
-    # Anti-doublon : un Payment existe deja pour cette inscription -> on sort.
-    if Payment.objects.filter(external_reference=ref).exists():
-        return
     student = enrollment.student
     payer_name = (student.get_full_name() or student.username or "Etudiant")[:140]
     try:
-        Payment.objects.create(
-            purpose=Payment.Purpose.COURSE,
-            status=Payment.Status.PAID,
-            entry_mode=Payment.EntryMode.MANUAL,
-            payer_name=payer_name,
-            payer_email=getattr(student, "email", "") or "",
-            amount_htg=course.price_htg,
+        # Anti-doublon ATOMIQUE : get_or_create (au lieu de exists()+create qui
+        # laissait une fenetre TOCTOU -> deux CA 'CE-<id>' pour la meme inscription
+        # = revenu formation double-compte). La cle external_reference sert d'ancre.
+        Payment.objects.get_or_create(
             external_reference=ref,
-            notes=f"Inscription formation · {course.title}",
+            defaults={
+                "purpose": Payment.Purpose.COURSE,
+                "status": Payment.Status.PAID,
+                "entry_mode": Payment.EntryMode.MANUAL,
+                "payer_name": payer_name,
+                "payer_email": getattr(student, "email", "") or "",
+                "amount_htg": course.price_htg,
+                "notes": f"Inscription formation · {course.title}",
+            },
         )
     except Exception:
         # La materialisation du CA ne doit jamais casser l'activation d'un acces.
@@ -3392,6 +3394,8 @@ def bulk_delete_section(request: HttpRequest, section: str) -> JsonResponse:
         "BULK DELETE: %d ligne(s) de la section '%s' supprimées par le super-admin %s",
         count, section, request.user.username,
     )
+    from .audit import log_action
+    log_action("delete", section, "", section, f"Suppression EN MASSE de {count} enregistrement(s).")
     return JsonResponse({"ok": True, "deleted": count})
 
 
@@ -3417,6 +3421,8 @@ def bookings_reset(request: HttpRequest) -> JsonResponse:
         "BOOKINGS RESET: %d réservation(s) annulées (dates libérées) par %s",
         freed, request.user.username,
     )
+    from .audit import log_action
+    log_action("update", "VenueBooking", "", "Calendrier", f"Réinitialisation : {freed} réservation(s) annulée(s).")
     return JsonResponse({"ok": True, "cancelled": freed})
 
 
@@ -3449,6 +3455,8 @@ def account_change_password(request: HttpRequest) -> JsonResponse:
     user.save(update_fields=["password"])
     update_session_auth_hash(request, user)  # évite la déconnexion immédiate
     logger.info("Mot de passe changé par l'utilisateur %s", user.username)
+    from .audit import log_action
+    log_action("update", "Admin", user.pk, user.get_username(), "Mot de passe changé (self-service).")
     return JsonResponse({"ok": True})
 
 
@@ -3590,6 +3598,9 @@ def admin_user_create(request: HttpRequest) -> JsonResponse:
         AdminAccess.objects.create(user=user, sections=clean, note=(data.get("note") or "")[:200])
     logger.info("Admin user '%s' created by %s (superuser=%s, %d sections)",
                 username, request.user.username, user.is_superuser, len(data.get("sections") or []))
+    from .audit import log_action
+    log_action("create", "Admin", user.pk, username,
+               f"Nouvel administrateur — superuser={user.is_superuser}, sections={data.get('sections') or []}")
     return JsonResponse(_serialize_admin(user), status=201)
 
 
@@ -3638,6 +3649,10 @@ def admin_user_detail(request: HttpRequest, pk: int) -> JsonResponse:
                 acc.note = (data.get("note") or "")[:200]
             acc.save()
         logger.info("Admin user '%s' updated by %s", user.username, request.user.username)
+        from .audit import log_action
+        _changed = [k for k in ("is_active", "is_superuser", "password", "sections", "note") if k in data]
+        log_action("update", "Admin", user.pk, user.username,
+                   "Compte admin modifié — champs : " + (", ".join(_changed) or "aucun"))
         return JsonResponse(_serialize_admin(user))
 
     if request.method == "DELETE":
@@ -3646,6 +3661,9 @@ def admin_user_detail(request: HttpRequest, pk: int) -> JsonResponse:
         if user.is_superuser and User.objects.filter(is_superuser=True).count() <= 1:
             return _error("Impossible de supprimer le dernier super-administrateur.", 400)
         logger.info("Admin user '%s' deleted by %s", user.username, request.user.username)
+        from .audit import log_action
+        log_action("delete", "Admin", user.pk, user.username,
+                   f"Administrateur supprimé (superuser={user.is_superuser}).")
         user.delete()
         return _ok()
 

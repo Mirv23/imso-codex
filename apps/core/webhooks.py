@@ -3,6 +3,7 @@ import json
 import logging
 import os
 
+from django.db import transaction
 from django.http import JsonResponse
 from django.utils import timezone
 from django.views.decorators.csrf import csrf_exempt
@@ -79,18 +80,29 @@ def webhook_receiver(request, provider):
         )
         return JsonResponse({"error": "Montant incohérent"}, status=400)
 
-    if payment.status == Payment.Status.PENDING:
-        payment.status = Payment.Status.PAID
-        payment.paid_at = timezone.now()
-        payment.save(update_fields=["status", "paid_at"])
-        logger.info(
-            "Payment %s marked PAID from webhook (provider=%s)",
-            payment.reference, provider,
-        )
-    else:
-        logger.info(
-            "Payment %s already in status %s (provider=%s)",
-            payment.reference, payment.status, provider,
-        )
+    # Transition PENDING -> PAID SÉRIALISÉE par un verrou de ligne : deux
+    # livraisons webhook concurrentes (ou un rejeu) pour la meme reference sont
+    # mises en file ; la 2e voit deja PAID et devient un no-op. La cascade
+    # (post_save payment_cascade_status : booking/inscription/commande + stock)
+    # ne se declenche donc QU'UNE fois. transaction.atomic englobe la cascade
+    # -> tout-ou-rien.
+    with transaction.atomic():
+        locked = Payment.objects.select_for_update().get(pk=payment.pk)
+        if locked.status == Payment.Status.PENDING:
+            locked.status = Payment.Status.PAID
+            locked.paid_at = timezone.now()
+            locked.save(update_fields=["status", "paid_at"])
+            logger.info(
+                "Payment %s marked PAID from webhook (provider=%s)",
+                locked.reference, provider,
+            )
+            from apps.adminpanel.audit import log_action
+            log_action("update", "Payment", locked.pk, locked.reference,
+                       f"Encaissé via webhook {provider} — {locked.amount_htg} HTG.")
+        else:
+            logger.info(
+                "Payment %s already in status %s (provider=%s)",
+                locked.reference, locked.status, provider,
+            )
 
     return JsonResponse({"status": "ok", "payment": payment.reference})

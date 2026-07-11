@@ -34,12 +34,6 @@ class TestStaffSeparation:
         response = client.get(reverse("adminpanel:member-list"))
         assert response.status_code == 403
 
-    def test_non_staff_forbidden_v2(self):
-        client = Client()
-        _regular(client)
-        response = client.get("/dashboard/api/v2/members/")
-        assert response.status_code == 403
-
     def test_non_staff_dashboard_redirects_to_login(self):
         # Un non-staff connecté (ex. étudiant/prof de la plateforme formation,
         # session partagée) est redirigé vers la connexion admin plutôt que de
@@ -54,7 +48,6 @@ class TestStaffSeparation:
         client = Client()
         _staff(client)
         assert client.get(reverse("adminpanel:member-list")).status_code == 200
-        assert client.get("/dashboard/api/v2/members/").status_code == 200
 
 
 # ── A4 : l'export CSV ne fuit pas les secrets ────────────────────

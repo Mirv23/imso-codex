@@ -61,6 +61,34 @@ def _record(action: str, instance) -> None:
     )
 
 
+def log_action(action: str, model_name: str, object_id="", object_label: str = "", detail: str = "") -> None:
+    """Ecrit une entree d'audit EXPLICITE pour les actions sensibles NON couvertes
+    par les signaux ORM : comptes administrateurs (creation/promotion/desactivation/
+    suppression), changement de mot de passe, suppressions de masse, reset du
+    calendrier, encaissement webhook. On n'audite pas `auth.User` par signal (un
+    save a chaque login inonderait le journal) : ces appels ciblent l'evenement utile.
+
+    Utilise l'utilisateur courant (thread-local) s'il existe ; sinon 'systeme'
+    (ex. webhook serveur-a-serveur, sans requete authentifiee)."""
+    from .models import AuditLog
+
+    user = get_current_user()
+    is_user = bool(user and getattr(user, "is_authenticated", False))
+    try:
+        AuditLog.objects.create(
+            user=user if is_user else None,
+            username=(user.get_username() if is_user else "systeme"),
+            action=action,
+            model_name=model_name[:80],
+            object_id=str(object_id or "")[:40],
+            object_label=str(object_label or "")[:200],
+            detail=str(detail or ""),
+        )
+    except Exception:  # l'audit ne doit jamais casser l'action metier
+        import logging
+        logging.getLogger(__name__).exception("Ecriture AuditLog echouee (%s %s)", action, model_name)
+
+
 def _on_save(sender, instance, created, **kwargs) -> None:
     _record(AuditLogAction.CREATE if created else AuditLogAction.UPDATE, instance)
 

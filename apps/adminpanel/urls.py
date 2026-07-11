@@ -1,4 +1,4 @@
-from django.urls import include, path
+from django.urls import path
 
 from .views import (
     DashboardView,
@@ -214,9 +214,5 @@ urlpatterns = [
     path("api/bulk-delete/<str:section>/", bulk_delete_section, name="bulk-delete"),
     path("api/account/password/", account_change_password, name="account-password"),
 ]
-
-from .routers import router
-
-urlpatterns += [
-    path("api/v2/", include(router.urls)),
-]
+# API v2 (DRF) retirée : elle n'était appelée par aucun front, divergeait de l'API
+# v1 et doublait la surface à sécuriser. Tout le dashboard consomme l'API v1 JSON.
