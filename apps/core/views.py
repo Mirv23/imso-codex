@@ -593,45 +593,63 @@ class OrderCreateView(View):
         if errors:
             return JsonResponse({"ok": False, "errors": errors}, status=400)
 
-        with transaction.atomic():
-            order = Order.objects.create(
-                customer_name=name,
-                customer_phone=phone,
-                customer_email=(data.get("customer_email") or "").strip(),
-                delivery_address=address,
-                city=(data.get("city") or "").strip(),
-                note=(data.get("note") or "").strip(),
-            )
-            total = 0
-            for raw in items:
-                try:
-                    qty = int(raw.get("quantity", 1))
-                except (TypeError, ValueError, AttributeError):
-                    continue
-                if qty < 1:
-                    continue
-                qty = min(qty, 1000)  # borne haute (evite le depassement d'entier / commandes absurdes)
-                try:
-                    product = Product.objects.get(id=raw.get("product_id"), is_active=True)
-                except (Product.DoesNotExist, ValueError, TypeError):
-                    continue
-                OrderItem.objects.create(
-                    order=order,
-                    product=product,
-                    product_name=product.name,
-                    quantity=qty,
-                    unit_price_htg=product.price_htg,
-                )
-                total += qty * product.price_htg
+        # Quantités demandées agrégées par produit (un produit peut apparaître
+        # plusieurs fois dans le panier) -> permet un contrôle de stock correct.
+        wanted: dict = {}
+        for raw in items:
+            try:
+                qty = int(raw.get("quantity", 1))
+            except (TypeError, ValueError, AttributeError):
+                continue
+            if qty < 1:
+                continue
+            wanted[raw.get("product_id")] = wanted.get(raw.get("product_id"), 0) + min(qty, 1000)
 
-            if total <= 0:
-                order.delete()
-                return JsonResponse(
-                    {"ok": False, "error": "Aucun produit valide dans la commande."},
-                    status=400,
+        class _StockError(Exception):
+            pass
+
+        try:
+            with transaction.atomic():
+                order = Order.objects.create(
+                    customer_name=name,
+                    customer_phone=phone,
+                    customer_email=(data.get("customer_email") or "").strip(),
+                    delivery_address=address,
+                    city=(data.get("city") or "").strip(),
+                    note=(data.get("note") or "").strip(),
                 )
-            order.total_htg = total
-            order.save(update_fields=["total_htg", "updated_at"])
+                total = 0
+                for pid, qty in wanted.items():
+                    try:
+                        # Verrou de ligne : le controle de stock (opt-in) est
+                        # serialise avec les commandes concurrentes du meme produit.
+                        product = Product.objects.select_for_update().get(id=pid, is_active=True)
+                    except (Product.DoesNotExist, ValueError, TypeError):
+                        continue
+                    # Suivi de stock OPT-IN (Product.track_stock) : on refuse une
+                    # commande qui depasse le stock disponible. Les produits non
+                    # suivis (defaut) restent sans limite.
+                    if product.track_stock and qty > product.stock:
+                        raise _StockError(
+                            f"Stock insuffisant pour « {product.name} » (disponible : {product.stock})."
+                        )
+                    OrderItem.objects.create(
+                        order=order,
+                        product=product,
+                        product_name=product.name,
+                        quantity=qty,
+                        unit_price_htg=product.price_htg,
+                    )
+                    total += qty * product.price_htg
+
+                if total <= 0:
+                    raise _StockError("Aucun produit valide dans la commande.")
+                order.total_htg = total
+                order.save(update_fields=["total_htg", "updated_at"])
+        except _StockError as exc:
+            # 409 pour un conflit de stock, 400 pour un panier vide.
+            code = 400 if "Aucun produit" in str(exc) else 409
+            return JsonResponse({"ok": False, "error": str(exc)}, status=code)
 
         return JsonResponse(
             {

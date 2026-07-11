@@ -158,3 +158,21 @@ def test_formation_logout_get_not_allowed():
     r = Client().get("/formation/deconnexion/")
     assert r.status_code == 405
 
+
+# ── B-2 : suivi de stock OPT-IN par produit ──────────────────────────────
+def _order(pid, qty):
+    return Client().post("/api/orders/", data=json.dumps({
+        "customer_name": "Cli", "customer_phone": "509", "delivery_address": "Rue X",
+        "items": [{"product_id": pid, "quantity": qty}],
+    }), content_type="application/json")
+
+
+def test_stock_tracking_optin():
+    # Produit SUIVI : commande au-delà du stock -> refusée (409) ; dans la limite -> OK
+    tracked = Product.objects.create(name="Suivi", price_htg=500, stock=2, track_stock=True)
+    assert _order(tracked.id, 3).status_code == 409
+    assert _order(tracked.id, 2).status_code == 201
+    # Produit NON suivi (défaut, stock=0) : aucune limite -> commande acceptée
+    untracked = Product.objects.create(name="NonSuivi", price_htg=500, stock=0, track_stock=False)
+    assert _order(untracked.id, 5).status_code == 201
+

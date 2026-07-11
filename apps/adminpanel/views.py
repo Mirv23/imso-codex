@@ -2997,6 +2997,7 @@ def _serialize_product(p: Product) -> dict[str, Any]:
         "description": p.description,
         "price_htg": p.price_htg,
         "stock": p.stock,
+        "track_stock": p.track_stock,
         "is_active": p.is_active,
         "sort_order": p.sort_order,
         "image": p.image.url if p.image else "",
@@ -3055,6 +3056,8 @@ def _clean_product_data(data: dict, *, partial: bool):
         cleaned["is_active"] = bool(data.get("is_active"))
     elif not partial:
         cleaned["is_active"] = True
+    if "track_stock" in data:
+        cleaned["track_stock"] = bool(data.get("track_stock"))
     if "sort_order" in data:
         try:
             cleaned["sort_order"] = max(0, int(data.get("sort_order") or 0))

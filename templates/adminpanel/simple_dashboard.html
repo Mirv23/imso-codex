@@ -2007,6 +2007,7 @@ const SECTIONS = {
       { name:'description', label:'Description', type:'textarea', value: r?.description || '' },
       { name:'price_htg', label:'Prix (HTG)', type:'number', value: r?.price_htg || 0 },
       { name:'stock', label:'Stock', type:'number', value: r?.stock || 0 },
+      { name:'track_stock', label:'Suivre le stock (refuser une commande au-delà du stock disponible)', type:'checkbox', value: r?.track_stock ?? false },
       { name:'sort_order', label:'Ordre d\'affichage', type:'number', value: r?.sort_order || 0 },
       { name:'is_active', label:'Actif', type:'checkbox', value: r?.is_active ?? true },
       { name:'image', label:'Image du produit (livre/cahier)', type:'image', value: r?.image || '' },

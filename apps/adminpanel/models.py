@@ -263,8 +263,10 @@ class Enrollment(TimestampedModel):
     status = models.CharField(max_length=20, choices=Status.choices, default=Status.PENDING)
 
     class Meta:
-        # unique_together retiré : redondant avec la UniqueConstraint ci-dessous
-        # (qui, elle, traite NULL comme égal via nulls_distinct=False).
+        # unique_together CONSERVÉ : la UniqueConstraint nulls_distinct=False n'est
+        # pas honorée sur SQLite (tests) -> sans unique_together, l'unicité (member,
+        # course) ne serait plus garantie en test. Redondance inoffensive en prod.
+        unique_together = ["member", "course"]
         constraints = [
             models.UniqueConstraint(
                 fields=["member", "course"],
@@ -572,6 +574,10 @@ class Product(TimestampedModel):
     description = models.TextField(blank=True)
     price_htg = models.PositiveIntegerField(default=0)
     stock = models.PositiveIntegerField(default=0)
+    track_stock = models.BooleanField(
+        default=False,
+        help_text="Si activé, la boutique refuse une commande dépassant le stock disponible.",
+    )
     image = models.FileField(upload_to="products/", blank=True)
     is_active = models.BooleanField(default=True)
     sort_order = models.PositiveIntegerField(default=0)
