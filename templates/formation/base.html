@@ -81,7 +81,7 @@ img{max-width:100%;display:block}
       {% if user.is_authenticated %}
         <div class="fuser">
           <div class="favatar">{{ user.first_name.0|default:user.username.0|upper }}</div>
-          <a class="btn btn--o btn--sm" href="/formation/deconnexion/">Déconnexion</a>
+          <form method="post" action="/formation/deconnexion/" style="display:inline">{% csrf_token %}<button type="submit" class="btn btn--o btn--sm">Déconnexion</button></form>
         </div>
       {% else %}
         <a class="btn btn--o btn--sm" href="/formation/connexion/">Connexion</a>

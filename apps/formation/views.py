@@ -190,8 +190,10 @@ def login_view(request: HttpRequest) -> HttpResponse:
     return render(request, "formation/login.html", {"form": form})
 
 
-@require_http_methods(["POST", "GET"])
+@require_http_methods(["POST"])
 def logout_view(request: HttpRequest) -> HttpResponse:
+    # POST uniquement : en GET, un `<img src="/formation/deconnexion/">` sur un
+    # site tiers deconnecterait l'utilisateur (CSRF). Le bouton est un form POST.
     auth_logout(request)
     return redirect("formation:catalog")
 
@@ -283,8 +285,17 @@ def _json(request: HttpRequest) -> dict:
 
 
 def _can_manage(user, course: Course) -> bool:
-    """Un prof ne gère que ses propres cours (l'admin peut tout)."""
-    return bool(course.teacher_id == user.id or user.is_staff)
+    """Un prof ne gère que SES propres cours ET uniquement s'il est APPROUVÉ
+    (même règle que le tableau de bord formation, l.243). Sans ça, un prof non
+    approuvé (KYC en attente/rejeté) pouvait créer des chapitres et publier des
+    vidéos payantes sur les cours qui lui sont attribués. L'admin (is_staff) garde
+    un accès total."""
+    if user.is_staff:
+        return True
+    if course.teacher_id != user.id:
+        return False
+    profile = _profile(user)
+    return bool(profile and profile.is_approved)
 
 
 def _owned_course(request: HttpRequest, pk: int):

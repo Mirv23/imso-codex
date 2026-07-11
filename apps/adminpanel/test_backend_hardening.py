@@ -125,3 +125,36 @@ def test_sensitive_actions_are_audited():
            content_type="application/json")
     assert AuditLog.objects.filter(action="update", model_name="Admin").exists()
 
+
+# ── B-9 : un prof NON approuvé ne peut pas gérer ses cours ────────────────
+def test_unapproved_teacher_cannot_manage():
+    from apps.adminpanel.models import Course, Profile
+    from apps.formation.views import _can_manage
+    teacher = User.objects.create_user("prof1", "p1@x.com", "password123")
+    prof = Profile.objects.create(user=teacher, role=Profile.Role.TEACHER, is_approved=False)
+    course = Course.objects.create(title="C", category="F", instructor="P", city="V", teacher=teacher)
+    assert _can_manage(teacher, course) is False  # non approuvé -> refusé
+    prof.is_approved = True
+    prof.save()
+    assert _can_manage(teacher, course) is True   # approuvé -> autorisé
+
+
+# ── B-8 : le compteur d'étudiants formation (LMS) est distinct des inscriptions mutuelle
+def test_course_exposes_student_enrollment_count():
+    from apps.adminpanel.models import Course, CourseEnrollment, Enrollment, Member
+    course = Course.objects.create(title="Cours LMS", category="F", instructor="P", city="V", price_htg=0)
+    # 1 étudiant LMS + 1 inscription mutuelle -> comptés séparément
+    student = User.objects.create_user("etu2", "e2@x.com", "password123")
+    CourseEnrollment.objects.create(student=student, course=course)
+    Enrollment.objects.create(member=Member.objects.create(first_name="A", last_name="B", phone="509"), course=course)
+    d = _admin().get("/dashboard/api/courses/").json()
+    row = next(c for c in d["items"] if c["id"] == course.id)
+    assert row["student_enrollment_count"] == 1
+    assert row["enrollment_count"] == 1
+
+
+# ── B-10 : logout formation en GET -> 405 (POST uniquement) ───────────────
+def test_formation_logout_get_not_allowed():
+    r = Client().get("/formation/deconnexion/")
+    assert r.status_code == 405
+

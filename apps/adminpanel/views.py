@@ -13,6 +13,7 @@ from django.core.cache import cache
 from django.core.exceptions import ValidationError
 from django.core.files.storage import default_storage
 from django.core.validators import validate_email
+from django.db import transaction
 from django.db.models import Count, Max, Sum, Q
 from django.db.models.query import QuerySet
 from django.http import HttpRequest, HttpResponse, JsonResponse, StreamingHttpResponse
@@ -691,6 +692,12 @@ def _serialize_course(c: Course, enroll_count: int | None = None) -> dict[str, A
     chap = getattr(c, 'chapter_count', None)
     if chap is None:
         chap = c.chapters.count()
+    # Vrais étudiants de la plateforme formation (CourseEnrollment = LMS), distinct
+    # des inscriptions mutuelle (Enrollment via le site). L'admin voyait le mauvais
+    # compteur -> on expose les DEUX.
+    student_count = getattr(c, 'student_enrollment_count', None)
+    if student_count is None:
+        student_count = c.student_enrollments.count()
     return {
         "id": c.pk,
         "title": c.title,
@@ -707,6 +714,7 @@ def _serialize_course(c: Course, enroll_count: int | None = None) -> dict[str, A
         "teacher": c.teacher_id,
         "teacher_name": (c.teacher.get_full_name() or c.teacher.username) if c.teacher else "",
         "enrollment_count": enroll_count,
+        "student_enrollment_count": student_count,
         "chapter_count": chap,
         "created_at": c.created_at.isoformat(),
     }
@@ -728,6 +736,7 @@ def _serialize_chapter(ch: Chapter) -> dict[str, Any]:
 def _filtered_courses(request: HttpRequest) -> QuerySet:
     qs = Course.objects.select_related("teacher").annotate(
         enrollment_count=Count("enrollments", distinct=True),
+        student_enrollment_count=Count("student_enrollments", distinct=True),
         chapter_count=Count("chapters", distinct=True),
     ).all()
     search = request.GET.get("search")
@@ -1830,13 +1839,21 @@ def booking_detail(request: HttpRequest, pk: int) -> JsonResponse:
                 return _error("Le nombre d'invités doit être un nombre.")
         # Anti double-réservation : si ce créneau devient occupant (validé/confirmé
         # /en paiement) ou si l'horaire change, refuser s'il chevauche une AUTRE
-        # réservation déjà occupante.
+        # réservation déjà occupante. Vérif + save dans UNE transaction avec verrou
+        # de ligne sur les réservations occupantes du jour : deux confirmations
+        # concurrentes sur la même date sont sérialisées (la 2e re-teste après la
+        # 1re et voit le conflit) -> plus de double-réservation par course.
         from apps.core.venue import slot_taken, OCCUPIED_STATUSES
-        if b.status in OCCUPIED_STATUSES and slot_taken(
-            b.event_date, b.start_time, b.end_time, exclude_pk=b.pk
-        ):
-            return _error("Ce créneau est déjà occupé par une autre réservation.", 409)
-        b.save()
+        with transaction.atomic():
+            if b.status in OCCUPIED_STATUSES:
+                list(
+                    VenueBooking.objects.select_for_update()
+                    .filter(event_date=b.event_date, status__in=OCCUPIED_STATUSES)
+                    .exclude(pk=b.pk)
+                )
+                if slot_taken(b.event_date, b.start_time, b.end_time, exclude_pk=b.pk):
+                    return _error("Ce créneau est déjà occupé par une autre réservation.", 409)
+            b.save()
         logger.info("Booking %d updated by user %s (status: %s)", pk, request.user.username, b.status)
         return JsonResponse(_serialize_booking(b))
 

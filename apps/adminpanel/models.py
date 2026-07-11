@@ -207,6 +207,7 @@ class Profile(TimestampedModel):
 
     class Meta:
         ordering = ["-created_at"]
+        indexes = [models.Index(fields=["role", "kyc_status"])]
 
     def __str__(self) -> str:
         return f"{self.user.username} ({self.role})"
@@ -262,7 +263,8 @@ class Enrollment(TimestampedModel):
     status = models.CharField(max_length=20, choices=Status.choices, default=Status.PENDING)
 
     class Meta:
-        unique_together = ["member", "course"]
+        # unique_together retiré : redondant avec la UniqueConstraint ci-dessous
+        # (qui, elle, traite NULL comme égal via nulls_distinct=False).
         constraints = [
             models.UniqueConstraint(
                 fields=["member", "course"],
@@ -430,19 +432,6 @@ class ContactRequest(TimestampedModel):
 
     def __str__(self) -> str:
         return f"{self.full_name} - {self.get_subject_display()}"
-
-
-class DashboardMetric(TimestampedModel):
-    label = models.CharField(max_length=120)
-    value = models.CharField(max_length=40)
-    helper = models.CharField(max_length=160, blank=True)
-    sort_order = models.PositiveIntegerField(default=0)
-
-    class Meta:
-        ordering = ["sort_order", "label"]
-
-    def __str__(self) -> str:
-        return self.label
 
 
 class Testimonial(TimestampedModel):
@@ -828,6 +817,7 @@ class AdminNotification(models.Model):
 
     class Meta:
         ordering = ["-created_at"]
+        indexes = [models.Index(fields=["is_read"]), models.Index(fields=["-created_at"])]
 
     def __str__(self) -> str:
         return f"[{self.get_notification_type_display()}] {self.message}"
@@ -889,6 +879,11 @@ class AuditLog(models.Model):
 
     class Meta:
         ordering = ["-created_at"]
+        indexes = [
+            models.Index(fields=["-created_at"]),
+            models.Index(fields=["model_name"]),
+            models.Index(fields=["action"]),
+        ]
 
     def __str__(self) -> str:
         return f"{self.created_at:%Y-%m-%d %H:%M} · {self.username} · {self.action} {self.model_name}#{self.object_id}"
