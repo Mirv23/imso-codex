@@ -9,7 +9,7 @@ import pytest
 from django.contrib.auth import get_user_model
 from django.test import Client
 
-from apps.adminpanel.models import Product
+from apps.adminpanel.models import AdminNotification, Product
 
 User = get_user_model()
 pytestmark = pytest.mark.django_db
@@ -70,3 +70,21 @@ def test_product_list_empty_active_filter_shows_active():
     # filtre explicite toujours fonctionnel
     assert _admin().get("/dashboard/api/products/?active=1").json()["total"] >= 1
     assert _admin().get("/dashboard/api/products/?active=0").json()["total"] == 0
+
+
+# ── Notifications : « Tout effacer » vide vraiment le panneau ─────────────
+def test_notifications_clear_empties_panel_and_badge():
+    for i in range(4):
+        AdminNotification.objects.create(message=f"N{i}", notification_type="new_booking", is_read=(i < 1))
+    c = _admin()
+    assert c.get("/dashboard/api/notifications/check/").json()["unread_count"] == 3
+    # scope=read ne retire que les lues
+    c.post("/dashboard/api/notifications/clear/?scope=read")
+    assert AdminNotification.objects.count() == 3
+    # tout effacer -> panneau vide + badge 0
+    r = c.post("/dashboard/api/notifications/clear/")
+    assert r.status_code == 200
+    assert AdminNotification.objects.count() == 0
+    assert c.get("/dashboard/api/notifications/").json() == []
+    assert c.get("/dashboard/api/notifications/check/").json()["unread_count"] == 0
+

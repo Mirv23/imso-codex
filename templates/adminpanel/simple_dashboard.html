@@ -84,7 +84,10 @@ textarea { resize: vertical; min-height: 80px; }
 .notif-panel { position: absolute; top: 48px; right: 0; width: 340px; max-width: calc(100vw - 24px); background: var(--card); border: 1px solid var(--border); border-radius: 14px; box-shadow: var(--shadow-lg); z-index: 60; overflow: hidden; }
 .notif-panel[hidden] { display: none; }
 .notif-panel__hd { display: flex; align-items: center; justify-content: space-between; padding: 12px 14px; border-bottom: 1px solid var(--border); }
-.notif-mark { border: none; background: none; color: var(--primary); font-size: 12px; font-weight: 600; cursor: pointer; }
+.notif-actions { display: inline-flex; align-items: center; gap: 12px; }
+.notif-mark { border: none; background: none; color: var(--primary); font-size: 12px; font-weight: 600; cursor: pointer; padding: 0; }
+.notif-mark:hover { text-decoration: underline; }
+.notif-mark--danger { color: var(--danger); }
 .notif-panel__list { max-height: 380px; overflow-y: auto; }
 .notif-item { display: flex; gap: 10px; padding: 11px 14px; border-bottom: 1px solid var(--border); font-size: 13px; cursor: pointer; }
 .notif-item:hover { background: var(--bg); }
@@ -1022,7 +1025,10 @@ textarea { resize: vertical; min-height: 80px; }
           <div class="notif-panel" id="notifPanel" hidden>
             <div class="notif-panel__hd">
               <strong>Notifications</strong>
-              <button type="button" class="notif-mark" onclick="markAllNotifs()">Tout marquer lu</button>
+              <span class="notif-actions">
+                <button type="button" class="notif-mark" onclick="markAllNotifs()">Tout marquer lu</button>
+                <button type="button" class="notif-mark notif-mark--danger" onclick="clearNotifs()">Tout effacer</button>
+              </span>
             </div>
             <div class="notif-panel__list" id="notifList"><div class="notif-empty">Chargement…</div></div>
           </div>
@@ -1184,6 +1190,14 @@ function markNotifRead(id) {
 function markAllNotifs() {
   api('/dashboard/api/notifications/read-all/', { method: 'POST', body: '{}' })
     .then(() => { loadNotifs(); pollNotifs(); }).catch(() => {});
+}
+// Supprime réellement toutes les notifications (vide le panneau ET remet le badge
+// à zéro), contrairement à « marquer lu » qui ne fait que griser.
+function clearNotifs() {
+  if (!confirm('Effacer toutes les notifications ?')) return;
+  api('/dashboard/api/notifications/clear/', { method: 'POST', body: '{}' })
+    .then(r => { toast('Notifications effacées (' + (r.deleted || 0) + ')', 'success'); loadNotifs(); pollNotifs(); })
+    .catch(e => toast(e.message, 'error'));
 }
 document.addEventListener('click', (e) => {
   const w = document.querySelector('.notif-wrap'), p = document.getElementById('notifPanel');

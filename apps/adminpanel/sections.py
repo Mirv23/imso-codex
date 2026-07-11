@@ -49,6 +49,7 @@ ALWAYS_ALLOWED: set[str] = {
     "notification-check", "notification-check-v1",
     "notification-read", "notification-read-v1",
     "notification-read-all", "notification-read-all-v1",
+    "notification-clear",
     "teacher-options",
     "account-password",  # self-service : chaque membre du staff change SON mot de passe
 }

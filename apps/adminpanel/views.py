@@ -2582,6 +2582,20 @@ def notification_read_all(request: HttpRequest) -> JsonResponse:
     return _ok()
 
 
+@staff_required
+@require_http_methods(["POST", "DELETE"])
+def notification_clear(request: HttpRequest) -> JsonResponse:
+    """Efface (supprime) les notifications. ?scope=read supprime uniquement les
+    notifications deja lues ; sinon TOUTES. « Marquer lu » ne fait que griser :
+    ceci vide reellement le panneau."""
+    qs = AdminNotification.objects.all()
+    if request.GET.get("scope") == "read":
+        qs = qs.filter(is_read=True)
+    deleted, _ = qs.delete()
+    logger.info("Notifications effacees (%s) par %s", request.GET.get("scope") or "toutes", request.user.username)
+    return JsonResponse({"ok": True, "deleted": deleted})
+
+
 # ── Testimonials (v1) ─────────────────────────────────────
 
 
