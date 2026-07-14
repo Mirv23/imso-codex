@@ -8,26 +8,24 @@
           {% if site.about_title %}{{ site.about_title }}{% else %}Bâtir une <span class="section__title-underline">économie solidaire</span> portée par les communautés.{% endif %}
         </h2>
         <p class="section__intro">
-          {% if site.about_text %}{{ site.about_text }}{% else %}IMSO accompagne les Haïtiennes et Haïtiens dans la création de richesse
-          collective grâce à l'épargne mutualisée, à la formation entrepreneuriale
-          et à un microcrédit éthique adapté aux réalités locales.{% endif %}
+          {% if site.about_text %}{{ site.about_text }}{% else %}Une mutuelle haïtienne où l'épargne de chacun devient l'opportunité de tous.{% endif %}
         </p>
         <ul class="mission__list">
           <li>
             <span class="check">{% if texts.mission_icon_1 %}<span class="check__emoji">{{ texts.mission_icon_1 }}</span>{% else %}<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3" stroke-linecap="round" stroke-linejoin="round"><polyline points="20 6 9 17 4 12"></polyline></svg>{% endif %}</span>
-            <span>{{ texts.val_mission_1|default:"Mobiliser l'épargne locale pour financer les projets de proximité." }}</span>
+            <span>{{ texts.val_mission_1|default:"Épargne collective, investie près de chez vous." }}</span>
           </li>
           <li>
             <span class="check">{% if texts.mission_icon_2 %}<span class="check__emoji">{{ texts.mission_icon_2 }}</span>{% else %}<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3" stroke-linecap="round" stroke-linejoin="round"><polyline points="20 6 9 17 4 12"></polyline></svg>{% endif %}</span>
-            <span>{{ texts.val_mission_2|default:"Former chaque membre aux fondamentaux de la gestion et de la comptabilité." }}</span>
+            <span>{{ texts.val_mission_2|default:"Formation à la gestion pour chaque membre." }}</span>
           </li>
           <li>
             <span class="check">{% if texts.mission_icon_3 %}<span class="check__emoji">{{ texts.mission_icon_3 }}</span>{% else %}<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3" stroke-linecap="round" stroke-linejoin="round"><polyline points="20 6 9 17 4 12"></polyline></svg>{% endif %}</span>
-            <span>{{ texts.val_mission_3|default:"Garantir un accès équitable au microcrédit, sans collatéral abusif." }}</span>
+            <span>{{ texts.val_mission_3|default:"Microcrédit équitable, sans garantie abusive." }}</span>
           </li>
           <li>
             <span class="check">{% if texts.mission_icon_4 %}<span class="check__emoji">{{ texts.mission_icon_4 }}</span>{% else %}<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3" stroke-linecap="round" stroke-linejoin="round"><polyline points="20 6 9 17 4 12"></polyline></svg>{% endif %}</span>
-            <span>{{ texts.val_mission_4|default:"Renforcer la cohésion sociale par l'entraide et la transparence." }}</span>
+            <span>{{ texts.val_mission_4|default:"Gouvernance transparente, décidée ensemble." }}</span>
           </li>
         </ul>
       </div>
@@ -98,10 +96,7 @@
             <svg viewBox="0 0 24 24" width="26" height="26" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 21s-7-4.5-9.5-9A5 5 0 0112 7a5 5 0 019.5 5C19 16.5 12 21 12 21z"></path></svg>
           </span>
           <h3 class="value-card__title">Solidarité</h3>
-          <p class="value-card__text">
-            Nous mutualisons risques et opportunités. Chaque membre soutient
-            l'élan collectif et profite des progrès du groupe.
-          </p>
+          <p class="value-card__text">Le risque se partage, l'opportunité aussi.</p>
         </article>
         <article class="value-card reveal" data-delay="2">
           <span class="value-card__num">02</span>
@@ -109,10 +104,7 @@
             <svg viewBox="0 0 24 24" width="26" height="26" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="8" r="4"></circle><path d="M4 21c0-4.4 3.6-8 8-8s8 3.6 8 8"></path></svg>
           </span>
           <h3 class="value-card__title">Respect humain</h3>
-          <p class="value-card__text">
-            La dignité passe avant tout. Décisions transparentes, écoute active
-            et gouvernance partagée à toutes les étapes.
-          </p>
+          <p class="value-card__text">La personne avant le dossier. Toujours.</p>
         </article>
         <article class="value-card reveal" data-delay="3">
           <span class="value-card__num">03</span>
@@ -120,10 +112,7 @@
             <svg viewBox="0 0 24 24" width="26" height="26" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 22V12"></path><path d="M5 12a7 7 0 0114 0"></path><path d="M9 8c0-3 1.5-6 3-6s3 3 3 6"></path></svg>
           </span>
           <h3 class="value-card__title">Croissance collective</h3>
-          <p class="value-card__text">
-            Apprendre, entreprendre, partager. Le succès d'un membre devient
-            une marche pour toute la communauté.
-          </p>
+          <p class="value-card__text">Apprendre, entreprendre, transmettre.</p>
         </article>
         {% endfor %}
       </div>
