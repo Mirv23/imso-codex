@@ -938,6 +938,24 @@ a { color: inherit; text-decoration: none; }
   line-height: 1.2;
 }
 
+/* ===== Mobile : le hero occupait 100dvh de force alors que son contenu est bien
+   plus haut, et les cartes flottantes en offsets NEGATIFS (left:-16px/right:-20px)
+   debordaient du visuel etroit puis se faisaient rogner par overflow-x:hidden —
+   effet "sections superposees / elements coupes". On repasse le hero en hauteur
+   naturelle et on ramene les cartes A L'INTERIEUR du visuel. ===== */
+@media (max-width: 899px) {
+  .hero { min-height: auto; padding: 104px 0 56px; }
+  .hero__grid { gap: 40px; }
+  .hero__visual { max-width: 360px; }
+  .float-card { padding: 12px 15px; }
+  .float-card--members { bottom: 8px; left: 6px; }
+  .float-card--growth { top: 14px; right: 6px; }
+}
+@media (max-width: 380px) {
+  .float-card { padding: 10px 12px; gap: 10px; }
+  .float-card__icon { width: 36px; height: 36px; }
+}
+
 /* Section heading */
 .section {
   padding: 112px 0;
