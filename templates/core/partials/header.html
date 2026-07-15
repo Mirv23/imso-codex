@@ -3,6 +3,21 @@
 {% load static %}<head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<script>
+/* Anti-FOUC : pose data-theme sur <html> AVANT tout rendu, pour eviter le flash
+   blanc au chargement en mode nuit. Choix memorise, sinon preference systeme. */
+(function () {
+  try {
+    var t = localStorage.getItem('imso-theme');
+    if (t !== 'dark' && t !== 'light') {
+      t = (window.matchMedia && window.matchMedia('(prefers-color-scheme: dark)').matches) ? 'dark' : 'light';
+    }
+    document.documentElement.setAttribute('data-theme', t);
+  } catch (e) {
+    document.documentElement.setAttribute('data-theme', 'light');
+  }
+})();
+</script>
 <title>{% if page_title %}{{ page_title }} — {{ site.site_name|default:"IMSO" }}{% else %}{{ site.site_name|default:"IMSO" }} — {{ site.tagline|default:"Impact Mutuelle de Solidarité" }}{% endif %}</title>
 {% with metadesc=site.meta_description|default:"IMSO Haiti — Impact Mutuelle de Solidarité : mutuelle solidaire, formations, kit d'éducation financière et réservation de salle en Haïti." %}
 <meta name="description" content="{{ metadesc }}">
@@ -254,22 +269,50 @@
 </style>
 <style>
 :root {
-  /* Palette dérivée du logo IMSO — synchronisée avec le groupe « Thème » du
-     panel admin (Paramètres). Vide dans l'admin = couleur par défaut ci-dessous. */
+  color-scheme: light;
+  /* ---- Marque : pilotée par l'admin (Paramètres > Thème). Vide = defaut. ---- */
   --primary: {{ site.color_primary|default:"#3C9626" }};        /* logo green (frame + IMSO text) */
   --primary-dark: {{ site.color_primary_dark|default:"#2A6E1B" }};
   --accent: {{ site.color_accent|default:"#5BB143" }};         /* lighter logo-green */
   --highlight: {{ site.color_highlight|default:"#E87A18" }};      /* wheat orange / tagline */
-  --highlight-soft: #fdecd9;
   --logo-red: #E63946;       /* square accent — red */
   --logo-blue: #1E78D2;      /* square accent — blue */
-  --bg: #FAFAF6;
-  --surface: #FFFFFF;
+
+  /* ---- Surfaces & texte : tokens SÉMANTIQUES. Seules ces valeurs basculent
+          en mode nuit (bloc [data-theme="dark"] plus bas) ; tout le CSS qui
+          consomme ces var() suit automatiquement. ---- */
+  --bg: #FAFAF6;             /* fond de page */
+  --surface: #FFFFFF;        /* carte posée sur le fond */
+  --surface-2: #FFFFFF;      /* tuile posée SUR une carte (float-card, mission tile) */
+  --surface-inset: #FAFAF6;  /* champs de formulaire, créneaux */
+  --nav-bg: rgba(255,255,255,.85);   /* barre de nav au scroll (verre) */
+  --glass: rgba(255,255,255,.92);    /* pastilles en superposition sur image */
   --text: #1A2014;
   --muted: #6B7560;
   --border: #E8EBE2;
   --border-strong: #d6dbcd;
+
+  /* Teintes douces (fonds d'icônes / avatars / puces) */
   --green-soft: #e9f4e2;
+  --highlight-soft: #fdecd9;
+  --tint-green: #dceee2;
+  --tint-blue: #e0ecf7;
+  --tint-red: #fde2e4;
+  --tint-amber: #fdecd9;
+  --tint-amber-ink: #b8540f;
+  --ghost-hover: #d7ebca;
+
+  /* Dégradé du visuel « mission » */
+  --mission-visual-from: #f4f7f1;
+  --mission-visual-to: #e8f3ec;
+
+  /* Gris fonctionnels du calendrier de réservation */
+  --cal-muted: #c5c8c0;
+  --cal-full: #aeb1a8;
+  --cal-full-dot: #d4d7d1;
+  --chip-bg: #f0f0ee;
+  --chip-ink: #9aa0a8;
+
   --shadow-sm: 0 1px 2px rgba(26,32,20,.04), 0 1px 1px rgba(26,32,20,.03);
   --shadow-md: 0 8px 24px -8px rgba(26,32,20,.10), 0 2px 6px rgba(26,32,20,.04);
   --shadow-lg: 0 24px 48px -16px rgba(26,32,20,.18), 0 8px 16px -8px rgba(26,32,20,.08);
@@ -280,6 +323,54 @@
   --shadow-card-hover: 0 2px 4px rgba(26,32,20,.06), 0 16px 32px -12px rgba(26,32,20,.13), 0 32px 52px -24px rgba(26,32,20,.10);
   --radius: 16px;
   --radius-lg: 24px;
+}
+
+/* ============================ MODE NUIT ============================
+   data-theme="dark" est posé sur <html> par le script anti-FOUC du <head>
+   (choix mémorisé, sinon préférence système). On ne redéfinit QUE les valeurs
+   des tokens sémantiques : la marque (primary/accent/highlight) reste la même
+   pour garder l'identité, on ajuste juste sa luminosité perçue via les fonds. */
+:root[data-theme="dark"] {
+  color-scheme: dark;
+  --bg: #0E130E;
+  --surface: #161D16;
+  --surface-2: #1E271E;
+  --surface-inset: #121812;
+  --nav-bg: rgba(16,22,16,.82);
+  --glass: rgba(22,29,22,.9);
+  --text: #EAF0E5;
+  --muted: #99A791;
+  --border: #2A342A;
+  --border-strong: #38443A;
+
+  /* Marque : on éclaircit légèrement pour rester lisible sur fond sombre. */
+  --accent: #6BC451;
+
+  /* Teintes : versions sombres et sourdes des mêmes familles. */
+  --green-soft: #1B2A19;
+  --highlight-soft: #33251A;
+  --tint-green: #1C2A20;
+  --tint-blue: #16283A;
+  --tint-red: #331F22;
+  --tint-amber: #33251A;
+  --tint-amber-ink: #E8A06A;
+  --ghost-hover: #24361F;
+
+  --mission-visual-from: #15201A;
+  --mission-visual-to: #101E17;
+
+  --cal-muted: #465046;
+  --cal-full: #55605A;
+  --cal-full-dot: #333D33;
+  --chip-bg: #222A22;
+  --chip-ink: #7D887A;
+
+  /* Ombres : plus profondes et plus opaques sur fond sombre pour rester visibles. */
+  --shadow-sm: 0 1px 2px rgba(0,0,0,.5);
+  --shadow-md: 0 8px 24px -8px rgba(0,0,0,.6), 0 2px 6px rgba(0,0,0,.4);
+  --shadow-lg: 0 24px 48px -16px rgba(0,0,0,.7), 0 8px 16px -8px rgba(0,0,0,.5);
+  --shadow-card: 0 1px 2px rgba(0,0,0,.5), 0 8px 20px -8px rgba(0,0,0,.6), 0 24px 40px -22px rgba(0,0,0,.55);
+  --shadow-card-hover: 0 2px 4px rgba(0,0,0,.55), 0 18px 34px -12px rgba(0,0,0,.7), 0 36px 56px -26px rgba(0,0,0,.6);
 }
 
 *, *::before, *::after { box-sizing: border-box; }
@@ -388,7 +479,7 @@ a { color: inherit; text-decoration: none; }
   border-bottom: 1px solid transparent;
 }
 .nav.scrolled {
-  background: rgba(255,255,255,.85);
+  background: var(--nav-bg);
   backdrop-filter: blur(16px) saturate(140%);
   -webkit-backdrop-filter: blur(16px) saturate(140%);
   border-bottom-color: var(--border);
@@ -467,6 +558,25 @@ a { color: inherit; text-decoration: none; }
 .hamburger.open .hamburger__lines > span:nth-child(1) { top: 6px; transform: rotate(45deg); }
 .hamburger.open .hamburger__lines > span:nth-child(2) { opacity: 0; }
 .hamburger.open .hamburger__lines > span:nth-child(3) { top: 6px; transform: rotate(-45deg); }
+
+/* Actions de la nav (mode nuit + burger) — toujours visibles, desktop et mobile. */
+.nav__actions { display: flex; align-items: center; gap: 10px; }
+.theme-toggle {
+  width: 44px; height: 44px;
+  display: inline-flex; align-items: center; justify-content: center;
+  border-radius: 12px;
+  background: var(--surface);
+  border: 1px solid var(--border);
+  box-shadow: var(--shadow-sm);
+  color: var(--text);
+  transition: transform .2s ease, background .2s, border-color .2s, color .2s;
+}
+.theme-toggle:hover { transform: scale(1.04); border-color: var(--primary); color: var(--primary); }
+.theme-toggle svg { width: 20px; height: 20px; transition: opacity .2s, transform .3s ease; }
+/* Soleil visible en nuit (pour repasser en clair), lune visible en clair. */
+.theme-toggle__sun { display: none; }
+:root[data-theme="dark"] .theme-toggle__moon { display: none; }
+:root[data-theme="dark"] .theme-toggle__sun { display: block; }
 
 /* Drawer */
 .drawer {
@@ -571,7 +681,7 @@ a { color: inherit; text-decoration: none; }
   background: var(--green-soft);
   color: var(--primary-dark);
 }
-.btn--ghost:hover { background: #d7ebca; }
+.btn--ghost:hover { background: var(--ghost-hover); }
 .btn--small { padding: 10px 18px; font-size: 13.5px; }
 .btn--block { width: 100%; }
 
@@ -726,10 +836,10 @@ a { color: inherit; text-decoration: none; }
   margin-left: -10px;
 }
 .avatar:first-child { margin-left: 0; }
-.avatar--a { background: #fdecd9; color: #b8540f; }
-.avatar--b { background: #dceee2; color: var(--primary); }
-.avatar--c { background: #d3e9da; color: var(--primary-dark); }
-.avatar--d { background: #e0ecf7; color: var(--logo-blue); }
+.avatar--a { background: var(--tint-amber); color: var(--tint-amber-ink); }
+.avatar--b { background: var(--tint-green); color: var(--primary); }
+.avatar--c { background: var(--tint-green); color: var(--primary-dark); }
+.avatar--d { background: var(--tint-blue); color: var(--logo-blue); }
 
 /* Hero visual */
 .hero__visual {
@@ -788,7 +898,7 @@ a { color: inherit; text-decoration: none; }
 
 .float-card {
   position: absolute;
-  background: white;
+  background: var(--surface-2);
   border-radius: 20px;
   padding: 14px 18px;
   box-shadow: var(--shadow-lg);
@@ -957,7 +1067,7 @@ a { color: inherit; text-decoration: none; }
 .mission__visual {
   aspect-ratio: 1/1;
   border-radius: 32px;
-  background: linear-gradient(135deg, #f4f7f1 0%, #e8f3ec 100%);
+  background: linear-gradient(135deg, var(--mission-visual-from) 0%, var(--mission-visual-to) 100%);
   border: none;
   padding: 24px;
   display: grid;
@@ -968,7 +1078,7 @@ a { color: inherit; text-decoration: none; }
 }
 @media (min-width: 600px) { .mission__visual { padding: 32px; gap: 16px; } }
 .mission__tile {
-  background: white;
+  background: var(--surface-2);
   border-radius: 20px;
   padding: 20px;
   display: flex; flex-direction: column; justify-content: space-between;
@@ -1182,7 +1292,7 @@ a { color: inherit; text-decoration: none; }
 }
 .value-card__icon--green { background: var(--green-soft); color: var(--primary); }
 .value-card__icon--amber { background: var(--highlight-soft); color: var(--highlight); }
-.value-card__icon--teal { background: #e0ecf7; color: var(--logo-blue); }
+.value-card__icon--teal { background: var(--tint-blue); color: var(--logo-blue); }
 .value-card__title {
   font-weight: 700;
   font-size: 23px;
@@ -1894,7 +2004,7 @@ a { color: inherit; text-decoration: none; }
 .hero__photo--label {
   position: absolute;
   left: 14px; bottom: 12px;
-  background: rgba(255,255,255,.92);
+  background: var(--glass);
   backdrop-filter: blur(8px);
   color: var(--primary);
   font-size: 10.5px;
@@ -2073,7 +2183,7 @@ a { color: inherit; text-decoration: none; }
 .gphoto__caption {
   position: absolute;
   left: 14px; bottom: 12px;
-  background: rgba(255,255,255,.92);
+  background: var(--glass);
   backdrop-filter: blur(8px);
   color: var(--text);
   font-size: 11px;
@@ -2128,7 +2238,7 @@ a { color: inherit; text-decoration: none; }
   display: inline-flex; align-items: center; justify-content: center;
   transition: background .2s, transform .2s;
 }
-.booking__nav button:hover { background: #d6e7da; transform: scale(1.05); }
+.booking__nav button:hover { background: var(--ghost-hover); transform: scale(1.05); }
 .booking__nav button:disabled { opacity: .35; cursor: not-allowed; transform: none; }
 .booking__nav svg { width: 14px; height: 14px; }
 
@@ -2172,7 +2282,7 @@ a { color: inherit; text-decoration: none; }
   transform: translateY(-1px);
 }
 .cal__day--off { color: transparent; pointer-events: none; }
-.cal__day--past { color: #c5c8c0; pointer-events: none; }
+.cal__day--past { color: var(--cal-muted); pointer-events: none; }
 .cal__day--today { font-weight: 700; }
 .cal__day--today::before {
   content: '';
@@ -2187,8 +2297,8 @@ a { color: inherit; text-decoration: none; }
 }
 .cal__dot--ok { background: var(--accent); }
 .cal__dot--low { background: var(--highlight); }
-.cal__dot--full { background: #d4d7d1; }
-.cal__day--full { color: #aeb1a8; cursor: not-allowed; }
+.cal__dot--full { background: var(--cal-full-dot); }
+.cal__day--full { color: var(--cal-full); cursor: not-allowed; }
 .cal__day--full:hover { background: transparent; transform: none; }
 .cal__day--selected {
   background: var(--primary);
@@ -2277,7 +2387,7 @@ a { color: inherit; text-decoration: none; }
   border-radius: 999px;
 }
 .slot__status--ok { background: var(--green-soft); color: var(--primary); }
-.slot__status--booked { background: #f0f0ee; color: #9aa0a8; }
+.slot__status--booked { background: var(--chip-bg); color: var(--chip-ink); }
 .slot__action { flex-shrink: 0; }
 .slot--booked { opacity: .6; cursor: not-allowed; }
 .slot--booked .slot__action { display: none; }
