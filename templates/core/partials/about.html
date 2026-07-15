@@ -30,7 +30,8 @@
         </ul>
       </div>
       <div class="mission__visual reveal" data-delay="2">
-        <div class="mission__tile">
+        <span class="mission__visual-glow" aria-hidden="true"></span>
+        <div class="mission__tile mission__tile--green">
           <span class="mission__tile-icon" style="background: var(--green-soft); color: var(--primary);">
             <svg viewBox="0 0 24 24" width="20" height="20" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><path d="M12 1v22"></path><path d="M17 5H9.5a3.5 3.5 0 000 7h5a3.5 3.5 0 010 7H6"></path></svg>
           </span>
@@ -39,7 +40,7 @@
             <div class="mission__tile-label">{{ site.stat_savings_label|default:"HTG d'épargne mobilisée" }}</div>
           </div>
         </div>
-        <div class="mission__tile">
+        <div class="mission__tile mission__tile--amber">
           <span class="mission__tile-icon" style="background: var(--highlight-soft); color: var(--highlight);">
             <svg viewBox="0 0 24 24" width="20" height="20" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><path d="M2 12h6l2-6 4 12 2-6h6"></path></svg>
           </span>
@@ -48,7 +49,7 @@
             <div class="mission__tile-label">{{ site.stat_repayment_label|default:"Taux de remboursement" }}</div>
           </div>
         </div>
-        <div class="mission__tile">
+        <div class="mission__tile mission__tile--blue">
           <span class="mission__tile-icon" style="background: var(--tint-blue); color: var(--logo-blue);">
             <svg viewBox="0 0 24 24" width="20" height="20" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="4" width="18" height="16" rx="2"></rect><path d="M3 10h18M8 4v4M16 4v4"></path></svg>
           </span>
@@ -57,7 +58,7 @@
             <div class="mission__tile-label">{{ site.stat_workshops_label|default:"Ateliers tenus en 2025" }}</div>
           </div>
         </div>
-        <div class="mission__tile">
+        <div class="mission__tile mission__tile--red">
           <span class="mission__tile-icon" style="background: var(--tint-red); color: var(--logo-red);">
             <svg viewBox="0 0 24 24" width="20" height="20" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 2l3 7h7l-5.5 4.5L18 21l-6-4-6 4 1.5-7.5L2 9h7z"></path></svg>
           </span>

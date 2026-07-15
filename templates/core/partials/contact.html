@@ -10,7 +10,7 @@
         {% for testimonial in testimonials %}
         <div class="testi__slide">
           <article class="testi__card">
-            <div class="testi__quote-mark">"</div>
+            <svg class="testi__quote-mark" viewBox="0 0 24 24" fill="currentColor" aria-hidden="true"><path d="M9.5 6C6.5 6 4 8.5 4 11.5c0 2.6 1.9 4.5 4.3 4.5 1.4 0 2.4-.9 2.4-2.2 0-1.2-.9-2.1-2.1-2.1-.2 0-.5 0-.6.1.2-1.5 1.6-2.9 3.3-3.2.4-.1.6-.4.6-.8V6.6c0-.4-.3-.7-.7-.6zm9 0C15.5 6 13 8.5 13 11.5c0 2.6 1.9 4.5 4.3 4.5 1.4 0 2.4-.9 2.4-2.2 0-1.2-.9-2.1-2.1-2.1-.2 0-.5 0-.6.1.2-1.5 1.6-2.9 3.3-3.2.4-.1.6-.4.6-.8V6.6c0-.4-.3-.7-.7-.6z"></path></svg>
             <p class="testi__text">{{ testimonial.text }}</p>
             <div class="testi__person">
               <span class="testi__avatar">{{ testimonial.author_initials }}</span>
@@ -24,7 +24,7 @@
         {% empty %}
         <div class="testi__slide">
           <article class="testi__card">
-            <div class="testi__quote-mark">"</div>
+            <svg class="testi__quote-mark" viewBox="0 0 24 24" fill="currentColor" aria-hidden="true"><path d="M9.5 6C6.5 6 4 8.5 4 11.5c0 2.6 1.9 4.5 4.3 4.5 1.4 0 2.4-.9 2.4-2.2 0-1.2-.9-2.1-2.1-2.1-.2 0-.5 0-.6.1.2-1.5 1.6-2.9 3.3-3.2.4-.1.6-.4.6-.8V6.6c0-.4-.3-.7-.7-.6zm9 0C15.5 6 13 8.5 13 11.5c0 2.6 1.9 4.5 4.3 4.5 1.4 0 2.4-.9 2.4-2.2 0-1.2-.9-2.1-2.1-2.1-.2 0-.5 0-.6.1.2-1.5 1.6-2.9 3.3-3.2.4-.1.6-.4.6-.8V6.6c0-.4-.3-.7-.7-.6z"></path></svg>
             <p class="testi__text">Aucun témoignage pour le moment. Soyez le premier à partager votre expérience !</p>
           </article>
         </div>
@@ -47,6 +47,7 @@
 
 <!-- CTA Strip -->
 <div class="cta-strip reveal">
+  <span class="cta-strip__glow" aria-hidden="true"></span>
   <div class="cta-strip__inner">
     <h2>{{ texts.cta_title|default:"Prêt·e à entreprendre avec votre communauté ?" }}</h2>
     <p>{{ texts.cta_paragraph|default:"Rejoignez l'un des cinq GEI actifs et accédez immédiatement à l'épargne collective, aux formations et au mentorat de pair-à-pair." }}</p>
