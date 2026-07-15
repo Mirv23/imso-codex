@@ -327,6 +327,15 @@
   --lift: -4px;      /* cartes en grille */
   --lift-lg: -6px;   /* cartes isolees grand format (temoignages, visuel kit) */
   --shadow-node: 0 6px 16px -6px rgba(60,150,38,.5);
+  /* Direction "Profondeur & aurora" (vague 4) : verre + fond anime. */
+  --glass-panel: rgba(255,255,255,.66);   /* carte translucide posee sur l'aurora */
+  --glass-brd: rgba(255,255,255,.75);
+  --glass-blur: 16px;
+  --aurora-1: var(--accent);
+  --aurora-2: var(--primary);
+  --aurora-3: var(--highlight);
+  --aurora-opacity: .30;   /* discret en clair */
+  --glow-primary: 0 10px 40px -10px color-mix(in srgb, var(--primary) 60%, transparent);
 }
 
 /* ============================ MODE NUIT ============================
@@ -377,19 +386,72 @@
   --shadow-card-hover: 0 2px 4px rgba(0,0,0,.55), 0 18px 34px -12px rgba(0,0,0,.7), 0 36px 56px -26px rgba(0,0,0,.6);
   /* Le halo vert clair du noeud est invisible sur fond sombre : on passe au noir profond. */
   --shadow-node: 0 6px 16px -6px rgba(0,0,0,.6);
+  /* Verre + aurora en mode nuit : l'effet prend toute sa force ici. */
+  --glass-panel: rgba(24,32,24,.5);
+  --glass-brd: rgba(255,255,255,.08);
+  --glass-blur: 18px;
+  --aurora-opacity: .55;   /* bien plus visible sur fond sombre */
+  --glow-primary: 0 10px 44px -8px color-mix(in srgb, var(--accent) 70%, transparent);
 }
 
 *, *::before, *::after { box-sizing: border-box; }
-html { scroll-behavior: smooth; -webkit-text-size-adjust: 100%; }
+/* Couleur de base sur <html> : le <body> est transparent pour laisser voir le
+   calque .aurora (fixe, derriere tout le contenu). */
+html { scroll-behavior: smooth; -webkit-text-size-adjust: 100%; background: var(--bg); }
 body {
   margin: 0;
   font-family: 'Plus Jakarta Sans', system-ui, -apple-system, sans-serif;
   font-weight: 400;
   line-height: 1.7;
   color: var(--text);
-  background: var(--bg);
+  background: transparent;
   -webkit-font-smoothing: antialiased;
   overflow-x: hidden;
+}
+
+/* ===== AURORA : fond anime, derriere tout le contenu ===== */
+.aurora {
+  position: fixed; inset: 0; z-index: -1;
+  overflow: hidden; pointer-events: none;
+}
+.aurora__blob {
+  position: absolute; border-radius: 50%;
+  filter: blur(80px); opacity: var(--aurora-opacity);
+  will-change: transform;
+}
+.aurora__blob--1 {
+  width: 52vw; height: 52vw; min-width: 320px; min-height: 320px;
+  background: var(--aurora-1);
+  top: -14vw; left: -10vw;
+  animation: auroraDrift1 30s ease-in-out infinite;
+}
+.aurora__blob--2 {
+  width: 44vw; height: 44vw; min-width: 300px; min-height: 300px;
+  background: var(--aurora-2);
+  top: 30vh; right: -12vw;
+  animation: auroraDrift2 36s ease-in-out infinite;
+}
+.aurora__blob--3 {
+  width: 38vw; height: 38vw; min-width: 260px; min-height: 260px;
+  background: var(--aurora-3);
+  bottom: -12vw; left: 25vw;
+  opacity: calc(var(--aurora-opacity) * .7);
+  animation: auroraDrift3 24s ease-in-out infinite;
+}
+@keyframes auroraDrift1 {
+  0%,100% { transform: translate(0,0) scale(1); }
+  50% { transform: translate(8vw, 6vh) scale(1.15); }
+}
+@keyframes auroraDrift2 {
+  0%,100% { transform: translate(0,0) scale(1); }
+  50% { transform: translate(-7vw, -5vh) scale(1.1); }
+}
+@keyframes auroraDrift3 {
+  0%,100% { transform: translate(0,0) scale(1); }
+  50% { transform: translate(-6vw, 7vh) scale(1.2); }
+}
+@media (prefers-reduced-motion: reduce) {
+  .aurora__blob { animation: none !important; }
 }
 
 img, svg { display: block; max-width: 100%; }
@@ -1070,7 +1132,7 @@ a { color: inherit; text-decoration: none; }
    degrade doux, et chaque chiffre devient une petite carte avec accent de marque. */
 .stats {
   padding: 56px 0;
-  background: linear-gradient(var(--surface), var(--bg));
+  background: transparent;   /* l'aurora transparait */
 }
 .stats__grid {
   display: grid;
@@ -1640,7 +1702,7 @@ a { color: inherit; text-decoration: none; }
 /* Process — conteneur en --bg pour que les cartes d'etape (--surface) ressortent
    (en clair --surface-2 == --surface : une carte blanche sur blanc disparaitrait). */
 .process {
-  background: var(--bg);
+  background: transparent;
 }
 .process__timeline {
   position: relative;
@@ -1894,7 +1956,7 @@ a { color: inherit; text-decoration: none; }
 }
 
 /* Testimonials */
-.testimonials { background: var(--bg); position: relative; }
+.testimonials { background: transparent; position: relative; }
 .testi__carousel {
   position: relative;
   overflow: hidden;
@@ -2372,7 +2434,7 @@ a { color: inherit; text-decoration: none; }
 }
 
 /* ===== Espace section ===== */
-.espace { background: var(--bg); }
+.espace { background: transparent; }
 .espace__head-row {
   display: grid;
   grid-template-columns: 1fr;
@@ -2821,6 +2883,42 @@ a { color: inherit; text-decoration: none; }
 }
 .modal__success-icon svg { width: 26px; height: 26px; }
 
+/* ============= VERRE (vague 4) : cartes translucides sur l'aurora =============
+   Place en fin de bloc pour primer sur les fonds --surface des cartes. Le flou
+   d'arriere-plan (backdrop-filter) donne l'effet de profondeur ; la lisibilite
+   est preservee par une opacite de panneau suffisante (voir --glass-panel). */
+.stat,
+.value-card,
+.why__item:not(.why__item--featured),
+.mission__tile,
+.step__content,
+.course-card,
+.shop-card,
+.testi__card,
+.espace__capacity,
+.booking,
+.kit__cta {
+  background: var(--glass-panel);
+  -webkit-backdrop-filter: blur(var(--glass-blur)) saturate(140%);
+  backdrop-filter: blur(var(--glass-blur)) saturate(140%);
+  border: 1px solid var(--glass-brd);
+}
+/* Le hover garde l'elevation mais en verre. */
+.stat:hover { background: var(--glass-panel); }
+/* Les stats sont maintenant des cartes de verre bordees : le separateur
+   vertical ferait double emploi. */
+.stat + .stat::before { display: none; }
+/* Boutons principaux : halo lumineux (direction "aurora"). */
+.btn--primary { box-shadow: var(--glow-primary); }
+.btn--primary:hover { box-shadow: var(--glow-primary), 0 14px 30px -10px rgba(0,0,0,.25); }
+/* Repli si backdrop-filter non supporte : on retombe sur des surfaces opaques
+   pour ne jamais sacrifier la lisibilite. */
+@supports not ((backdrop-filter: blur(1px)) or (-webkit-backdrop-filter: blur(1px))) {
+  .stat, .value-card, .why__item:not(.why__item--featured), .mission__tile,
+  .step__content, .course-card, .shop-card, .testi__card, .espace__capacity,
+  .booking, .kit__cta { background: var(--surface); }
+}
+
 </style>
 {% if site %}
 <style>
@@ -2834,3 +2932,8 @@ a { color: inherit; text-decoration: none; }
 {% endif %}
 </head>
 <body>
+<div class="aurora" aria-hidden="true">
+  <span class="aurora__blob aurora__blob--1"></span>
+  <span class="aurora__blob aurora__blob--2"></span>
+  <span class="aurora__blob aurora__blob--3"></span>
+</div>

@@ -189,6 +189,27 @@ const counterIO = new IntersectionObserver((entries) => {
 }, { threshold: 0.4 });
 counters.forEach(c => counterIO.observe(c));
 
+// Parallaxe au scroll — direction "Profondeur & aurora". Performant (rAF, passive),
+// coupee en reduced-motion et sous 700px pour garder la fluidite sur telephone.
+// On ne touche PAS a .hero__visual (qui porte l'animation de reveal) : on deplace
+// l'aurora et les photos du hero, sans conflit de transform.
+(function () {
+  const reduce = window.matchMedia && window.matchMedia('(prefers-reduced-motion: reduce)').matches;
+  if (reduce || window.innerWidth < 700) return;
+  const aurora = document.querySelector('.aurora');
+  const photos = document.querySelector('.hero__photos');
+  let ticking = false;
+  function apply() {
+    const y = window.scrollY || 0;
+    if (aurora) aurora.style.transform = 'translate3d(0,' + (y * 0.05).toFixed(1) + 'px,0)';
+    if (photos && y < 900) photos.style.transform = 'translate3d(0,' + (y * 0.08).toFixed(1) + 'px,0)';
+    ticking = false;
+  }
+  window.addEventListener('scroll', function () {
+    if (!ticking) { ticking = true; requestAnimationFrame(apply); }
+  }, { passive: true });
+})();
+
 // Testimonials carousel (page d'accueil uniquement — garde anti-crash ailleurs)
 if (document.getElementById('testiTrack')) {
 const track = document.getElementById('testiTrack');
