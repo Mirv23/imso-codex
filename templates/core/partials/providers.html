@@ -1,95 +1,49 @@
-{% load static %}<!-- Espace -->
-<section class="section espace" id="espace">
+{% load static %}<!-- Location d'espace + réservation -->
+<section class="section" id="reservation">
   <div class="container">
-    <div class="espace__head-row reveal">
-      <div>
-        <span class="label"><span class="label__bullet"></span>{{ texts.espace_label|default:"Location d'espace" }}</span>
-        <h2 class="section__title" style="margin-bottom:14px;">{{ texts.espace_title|default:"Un espace pensé pour vos événements." }}</h2>
-        <p class="section__intro">
-          {{ texts.espace_intro|default:"IMSO met à disposition une salle modulable au cœur de Port-au-Prince : conférences, séminaires, formations, anniversaires, mariages… Réservez directement en consultant les disponibilités ci-dessous." }}
-        </p>
-        <div class="espace__pills">
-          <span class="espace__pill">{{ texts.espace_pill1|default:"Conférence" }}</span>
-          <span class="espace__pill">{{ texts.espace_pill2|default:"Séminaire" }}</span>
-          <span class="espace__pill">{{ texts.espace_pill3|default:"Formation" }}</span>
-          <span class="espace__pill">{{ texts.espace_pill4|default:"Anniversaire" }}</span>
-          <span class="espace__pill">{{ texts.espace_pill5|default:"Mariage" }}</span>
-          <span class="espace__pill">{{ texts.espace_pill6|default:"Réunion privée" }}</span>
-        </div>
-      </div>
-      <div class="espace__capacity">
-        <div class="espace__capacity-item">
-          <div class="espace__capacity-num">60<small>pers.</small></div>
-          <div class="espace__capacity-label">{{ texts.espace_cap1_label|default:"Sans tables" }}</div>
-          <div class="espace__capacity-sub">{{ texts.espace_cap1_sub|default:"Format conférence, cérémonie, cocktail debout." }}</div>
-        </div>
-        <div class="espace__capacity-item">
-          <div class="espace__capacity-num">40<small>pers.</small></div>
-          <div class="espace__capacity-label">{{ texts.espace_cap2_label|default:"Avec tables" }}</div>
-          <div class="espace__capacity-sub">{{ texts.espace_cap2_sub|default:"Format banquet, atelier, repas assis." }}</div>
-        </div>
-      </div>
+    <div class="section__head">
+      <span class="eyebrow reveal">{{ texts.espace_label|default:"Location d'espace" }}</span>
+      <h2 class="display reveal">Réservez<br>notre <span class="section__title-underline">salle</span></h2>
+      <p class="lead reveal">{{ texts.espace_intro|default:"Une salle modulable au cœur de Port-au-Prince — conférences, séminaires, formations, cérémonies. Choisissez une date disponible, puis un créneau. Confirmation automatique." }}</p>
     </div>
 
-    <div class="espace__gallery reveal">
-      <div class="gphoto img-wrap">
-        <div class="img-fallback">Salle principale</div>
-        {% if images.espace_photo_1 %}<img src="{{ images.espace_photo_1.image.url }}" alt="{{ images.espace_photo_1.alt }}" loading="lazy" onload="this.parentElement.classList.add('img-loaded')">{% else %}<img src="https://images.unsplash.com/photo-1505373877841-8d25f7d46678?w=900&amp;auto=format&amp;q=80" alt="Salle de conférence aménagée" loading="lazy" onload="this.parentElement.classList.add('img-loaded')">{% endif %}
-        <span class="gphoto__caption">Salle principale</span>
-      </div>
-      <div class="gphoto img-wrap">
-        <div class="img-fallback">Conférence</div>
-        {% if images.espace_photo_2 %}<img src="{{ images.espace_photo_2.image.url }}" alt="{{ images.espace_photo_2.alt }}" loading="lazy" onload="this.parentElement.classList.add('img-loaded')">{% else %}<img src="https://images.unsplash.com/photo-1540575467063-178a50c2df87?w=600&amp;auto=format&amp;q=80" alt="Configuration conférence" loading="lazy" onload="this.parentElement.classList.add('img-loaded')">{% endif %}
-        <span class="gphoto__caption">Conférence</span>
-      </div>
-      <div class="gphoto img-wrap">
-        <div class="img-fallback">Banquet</div>
-        {% if images.espace_photo_3 %}<img src="{{ images.espace_photo_3.image.url }}" alt="{{ images.espace_photo_3.alt }}" loading="lazy" onload="this.parentElement.classList.add('img-loaded')">{% else %}<img src="{% static 'website/assets/5adc936b-1c3b-473d-835e-523c57240fa4.jpg' %}" alt="Configuration banquet" loading="lazy" onload="this.parentElement.classList.add('img-loaded')">{% endif %}
-        <span class="gphoto__caption">Banquet</span>
-      </div>
-      <div class="gphoto img-wrap">
-        <div class="img-fallback">Cérémonie</div>
-        {% if images.espace_photo_4 %}<img src="{{ images.espace_photo_4.image.url }}" alt="{{ images.espace_photo_4.alt }}" loading="lazy" onload="this.parentElement.classList.add('img-loaded')">{% else %}<img src="https://images.unsplash.com/photo-1511795409834-ef04bbd61622?w=600&amp;auto=format&amp;q=80" alt="Décoration de cérémonie" loading="lazy" onload="this.parentElement.classList.add('img-loaded')">{% endif %}
-        <span class="gphoto__caption">Cérémonie</span>
-      </div>
+    <div class="gallery reveal">
+      <div class="gtile gtile--big" style="background-image:url('{% if images.espace_photo_1 %}{{ images.espace_photo_1.image.url }}{% else %}{% static 'website/assets/5adc936b-1c3b-473d-835e-523c57240fa4.jpg' %}{% endif %}')"><span class="gtile__cap">{{ texts.espace_cap1|default:"Cérémonie · jusqu'à 60 pers." }}</span></div>
+      <div class="gtile" style="background-image:url('{% if images.espace_photo_2 %}{{ images.espace_photo_2.image.url }}{% else %}{% static 'website/assets/6ec82bf6-262c-4d9d-b797-db1d9faa8fc0.jpg' %}{% endif %}')"><span class="gtile__cap">{{ texts.espace_cap2|default:"Configuration cocktail" }}</span></div>
+      <div class="gtile gtile--cream"><b>60</b><span>Sans tables · conférence, cérémonie<br>40 avec tables · banquet, atelier</span></div>
     </div>
 
+    <!-- Calendrier de réservation (logique JS réelle — IDs conservés) -->
     <div class="booking reveal" id="booking">
       <div class="booking__cal">
         <div class="booking__head">
           <div>
-            <span class="label" style="margin-bottom:8px;"><span class="label__bullet"></span>Calendrier</span>
-            <div class="booking__month" id="calMonth">mai 2026</div>
+            <span class="eyebrow" style="margin-bottom:6px">Calendrier</span>
+            <div class="booking__month" id="calMonth">—</div>
           </div>
           <div class="booking__nav">
-            <button id="calPrev" aria-label="Mois précédent">
-              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round"><path d="M15 18l-6-6 6-6"></path></svg>
-            </button>
-            <button id="calNext" aria-label="Mois suivant">
-              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round"><path d="M9 6l6 6-6 6"></path></svg>
-            </button>
+            <button id="calPrev" aria-label="Mois précédent"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round"><path d="M15 18l-6-6 6-6"></path></svg></button>
+            <button id="calNext" aria-label="Mois suivant"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round"><path d="M9 6l6 6-6 6"></path></svg></button>
           </div>
         </div>
-        <div class="cal__weekdays">
-          <span>Lun</span><span>Mar</span><span>Mer</span><span>Jeu</span><span>Ven</span><span>Sam</span><span>Dim</span>
-        </div>
+        <div class="cal__weekdays"><span>Lun</span><span>Mar</span><span>Mer</span><span>Jeu</span><span>Ven</span><span>Sam</span><span>Dim</span></div>
         <div class="cal__grid" id="calGrid"></div>
         <div class="cal__legend">
-          <span><i style="background:var(--accent)"></i>Disponible</span>
-          <span><i style="background:var(--highlight)"></i>Partiel</span>
-          <span><i style="background:var(--cal-full-dot)"></i>Complet</span>
+          <span><i style="background:var(--green)"></i>Disponible</span>
+          <span><i style="background:var(--gold)"></i>Partiel</span>
+          <span><i style="background:var(--muted-2)"></i>Complet</span>
         </div>
       </div>
       <div class="booking__slots">
         <div class="slots__head">
-          <span class="label" style="margin-bottom:8px;"><span class="label__bullet"></span>Créneaux</span>
+          <span class="eyebrow" style="margin-bottom:6px">Créneaux</span>
           <h3 class="slots__date" id="slotsDate">Sélectionnez une date</h3>
           <p class="slots__sub" id="slotsSub">Cliquez un jour disponible pour voir les plages horaires.</p>
         </div>
         <div class="slots__list" id="slotsList">
           <div class="slots__empty">
             <strong>Aucune date sélectionnée</strong>
-            Choisissez un jour dans le calendrier pour afficher les créneaux disponibles&nbsp;: matinée, après-midi ou soirée.
+            Choisissez un jour dans le calendrier pour afficher les créneaux disponibles : matinée, après-midi ou soirée.
           </div>
         </div>
       </div>

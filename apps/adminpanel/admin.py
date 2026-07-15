@@ -10,8 +10,11 @@ from .models import (
     AdminNotification,
     AuditLog,
     BlogPost,
+    Chapter,
+    ChapterCompletion,
     ContactRequest,
     Course,
+    CourseEnrollment,
     Enrollment,
     GEI,
     Member,
@@ -20,6 +23,7 @@ from .models import (
     Payment,
     PaymentProvider,
     Product,
+    Profile,
     SiteSetting,
     Testimonial,
     VenueBooking,
@@ -135,6 +139,36 @@ class BlogPostAdmin(admin.ModelAdmin):
 class AdminNotificationAdmin(admin.ModelAdmin):
     list_display = ("notification_type", "message", "is_read", "created_at")
     list_filter = ("notification_type", "is_read")
+
+
+@admin.register(Profile)
+class ProfileAdmin(admin.ModelAdmin):
+    list_display = ("user", "role", "is_approved", "kyc_status", "phone")
+    list_filter = ("role", "is_approved", "kyc_status")
+    search_fields = ("user__username", "user__email", "phone")
+    readonly_fields = ("created_at", "updated_at")
+
+
+@admin.register(CourseEnrollment)
+class CourseEnrollmentAdmin(admin.ModelAdmin):
+    list_display = ("student", "course", "status", "created_at")
+    list_filter = ("status",)
+    search_fields = ("student__username", "course__title")
+
+
+@admin.register(Chapter)
+class ChapterAdmin(admin.ModelAdmin):
+    list_display = ("title", "course", "position", "duration_minutes", "video")
+    list_filter = ("course",)
+    search_fields = ("title", "course__title")
+    readonly_fields = ("created_at", "updated_at")
+
+
+@admin.register(ChapterCompletion)
+class ChapterCompletionAdmin(admin.ModelAdmin):
+    list_display = ("student", "chapter", "created_at")
+    search_fields = ("student__username", "chapter__title")
+    readonly_fields = ("created_at",)
 
 
 @admin.register(AuditLog)

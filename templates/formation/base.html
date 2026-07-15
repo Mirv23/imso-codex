@@ -4,67 +4,82 @@
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">
 <title>{% block title %}IMSO Formation{% endblock %}</title>
+<link rel="icon" href="{% static 'website/assets/imso-logo.png' %}">
 <style>
+/* Espace formation — design premium cohérent avec le site public. */
 :root{
-  --primary:{{ site.color_primary|default:"#2D6A4F" }};
-  --primary-d:{{ site.color_primary_dark|default:"#1B4332" }};
-  --accent:{{ site.color_accent|default:"#F4A261" }};
-  --ink:#1a2b23; --muted:#6b7c74; --line:#e6ece8; --bg:#f6f9f7; --card:#fff;
-  --radius:16px; --shadow:0 1px 3px rgba(16,40,28,.06); --shadow-lg:0 18px 40px rgba(16,40,28,.14);
+  --primary:#7CD24A; --primary-d:#8FE25C; --green-ink:#0A1405; --accent:#E3A93C;
+  --ink:#F1F4EA; --muted:#9AAC8C; --line:rgba(155,175,135,.16); --bg:#0A0F09;
+  --card:#161F13; --card-2:#1B2618; --panel:#141C12;
+  --radius:16px; --shadow:0 1px 3px rgba(0,0,0,.4); --shadow-lg:0 20px 44px -12px rgba(0,0,0,.55);
+  --display:'Helvetica Neue',Arial,system-ui,-apple-system,sans-serif;
+  color-scheme:dark;
 }
 *{box-sizing:border-box;margin:0;padding:0}
-body{font-family:'Segoe UI',system-ui,-apple-system,sans-serif;background:var(--bg);color:var(--ink);line-height:1.55;-webkit-font-smoothing:antialiased}
+html{overflow-x:hidden}
+body{font-family:system-ui,-apple-system,'Segoe UI',Roboto,sans-serif;color:var(--ink);line-height:1.55;-webkit-font-smoothing:antialiased;
+  background:radial-gradient(1000px 640px at 50% -10%,rgba(124,210,74,.07),transparent 60%),radial-gradient(900px 700px at 108% 4%,rgba(227,169,60,.08),transparent 55%),var(--bg)}
 a{color:inherit;text-decoration:none}
 img{max-width:100%;display:block}
+:focus-visible{outline:2px solid var(--primary);outline-offset:2px;border-radius:6px}
 .wrap{max-width:1140px;margin:0 auto;padding:0 20px}
-/* Header */
-.fhead{position:sticky;top:0;z-index:50;background:rgba(255,255,255,.92);backdrop-filter:blur(10px);border-bottom:1px solid var(--line)}
-.fhead__in{display:flex;align-items:center;gap:18px;height:66px}
-.fbrand{display:flex;align-items:center;gap:10px;font-weight:800;font-size:17px;letter-spacing:-.02em}
-.fbrand img{height:34px;width:auto;border-radius:7px}
+/* Curseur inverseur */
+.cursorx{position:fixed;left:0;top:0;width:24px;height:24px;border-radius:50%;background:#fff;mix-blend-mode:difference;transform:translate(-50%,-50%);pointer-events:none;z-index:9999;display:none;transition:width .2s,height .2s}
+.cursorx.hot{width:44px;height:44px}
+@media(hover:hover) and (pointer:fine){html.has-cursor,html.has-cursor *{cursor:none}html.has-cursor .cursorx{display:block}}
+/* Header (pilule) */
+.fhead{position:sticky;top:0;z-index:50;padding:14px 0}
+.fhead__in{display:flex;align-items:center;gap:16px;background:color-mix(in srgb,var(--panel) 66%,transparent);border:1px solid var(--line);backdrop-filter:blur(18px) saturate(140%);-webkit-backdrop-filter:blur(18px) saturate(140%);border-radius:999px;padding:9px 12px 9px 16px;box-shadow:0 16px 40px -20px rgba(0,0,0,.5)}
+.fbrand{display:flex;align-items:center;gap:10px;font-weight:800;font-size:16px;letter-spacing:-.02em}
+.fbrand img{height:34px;width:34px;object-fit:contain;background:#fff;border-radius:9px;padding:3px}
 .fbrand span b{color:var(--primary)}
-.fnav{display:none;gap:4px;margin-left:14px}
+.fnav{display:none;gap:4px;margin-left:10px}
 @media(min-width:840px){.fnav{display:flex}}
-.fnav a{padding:8px 13px;border-radius:9px;font-size:14px;font-weight:600;color:var(--muted);transition:.15s}
-.fnav a:hover,.fnav a.active{color:var(--primary);background:var(--bg)}
+.fnav a{padding:8px 13px;border-radius:999px;font-size:14px;font-weight:600;color:var(--muted);transition:.15s}
+.fnav a:hover,.fnav a.active{color:var(--primary);background:color-mix(in srgb,var(--primary) 12%,transparent)}
 .fhead__sp{flex:1}
 .fauth{display:flex;align-items:center;gap:9px}
-.btn{display:inline-flex;align-items:center;gap:7px;padding:9px 16px;border-radius:10px;font-size:14px;font-weight:700;cursor:pointer;border:1px solid transparent;transition:.16s;white-space:nowrap}
+.btn{display:inline-flex;align-items:center;gap:7px;padding:10px 17px;border-radius:999px;font-size:14px;font-weight:700;cursor:pointer;border:1px solid transparent;transition:.16s;white-space:nowrap}
 .btn svg{width:16px;height:16px}
-.btn--p{background:var(--primary);color:#fff}
-.btn--p:hover{background:var(--primary-d)}
+.btn--p{background:var(--primary);color:var(--green-ink)}
+.btn--p:hover{background:var(--primary-d);transform:translateY(-1px)}
 .btn--o{background:transparent;border-color:var(--line);color:var(--ink)}
 .btn--o:hover{border-color:var(--primary);color:var(--primary)}
-.btn--sm{padding:7px 12px;font-size:13px}
-.btn--lg{padding:13px 22px;font-size:15px}
+.btn--sm{padding:8px 13px;font-size:13px}
+.btn--lg{padding:14px 24px;font-size:15px}
 .fuser{display:flex;align-items:center;gap:9px}
-.favatar{width:36px;height:36px;border-radius:11px;background:var(--primary);color:#fff;display:grid;place-items:center;font-weight:800;font-size:14px}
+.favatar{width:36px;height:36px;border-radius:50%;background:var(--primary);color:var(--green-ink);display:grid;place-items:center;font-weight:800;font-size:14px}
 /* Messages */
 .fmsg{margin:16px auto 0;max-width:1140px;padding:0 20px}
-.fmsg__i{padding:12px 16px;border-radius:11px;font-size:14px;font-weight:600;margin-bottom:8px;border:1px solid}
-.fmsg__i.success{background:#e9f7ef;color:#1a7a44;border-color:#bfe6cf}
-.fmsg__i.info{background:#e8f1fb;color:#1c5a9e;border-color:#c5ddf5}
-.fmsg__i.error,.fmsg__i.warning{background:#fdecec;color:#b4322c;border-color:#f4c9c7}
+.fmsg__i{padding:12px 16px;border-radius:12px;font-size:14px;font-weight:600;margin-bottom:8px;border:1px solid}
+.fmsg__i.success{background:color-mix(in srgb,var(--primary) 14%,transparent);color:var(--primary);border-color:color-mix(in srgb,var(--primary) 30%,transparent)}
+.fmsg__i.info{background:color-mix(in srgb,#3B8FE0 14%,transparent);color:#7db8ef;border-color:rgba(59,143,224,.3)}
+.fmsg__i.error,.fmsg__i.warning{background:rgba(226,73,90,.14);color:#f0929c;border-color:rgba(226,73,90,.3)}
 /* Footer */
-.ffoot{margin-top:60px;border-top:1px solid var(--line);background:#fff}
+.ffoot{margin-top:60px;border-top:1px solid var(--line)}
 .ffoot__in{display:flex;flex-wrap:wrap;gap:14px;align-items:center;justify-content:space-between;padding:22px 0;color:var(--muted);font-size:13.5px}
 .ffoot a:hover{color:var(--primary)}
-/* Generic */
+/* Générique */
 .tag{display:inline-block;padding:3px 10px;border-radius:999px;font-size:11.5px;font-weight:700}
-.tag--green{background:#e9f7ef;color:#1a7a44}
-.tag--amber{background:#fef3e2;color:#b26a15}
-.tag--gray{background:#eef2f0;color:#6b7c74}
+.tag--green{background:color-mix(in srgb,var(--primary) 16%,transparent);color:var(--primary)}
+.tag--amber{background:color-mix(in srgb,var(--accent) 18%,transparent);color:var(--accent)}
+.tag--gray{background:color-mix(in srgb,var(--muted) 16%,transparent);color:var(--muted)}
 .section-pad{padding:34px 0 20px}
-.h1{font-size:30px;font-weight:800;letter-spacing:-.03em;line-height:1.15}
+.h1{font-family:var(--display);font-size:clamp(30px,5vw,44px);font-weight:900;text-transform:uppercase;letter-spacing:-.03em;line-height:1.05}
 .lead{color:var(--muted);font-size:15.5px;margin-top:8px}
 .card{background:var(--card);border:1px solid var(--line);border-radius:var(--radius);box-shadow:var(--shadow)}
 .empty{text-align:center;padding:56px 20px;color:var(--muted)}
 .empty svg{width:46px;height:46px;opacity:.4;margin-bottom:12px}
 .empty h3{color:var(--ink);font-size:17px;margin-bottom:6px}
+input,select,textarea{font:inherit;font-size:14px;padding:11px 13px;border:1px solid var(--line);border-radius:12px;outline:none;background:var(--panel);color:var(--ink);width:100%;transition:border-color .15s}
+input:focus,select:focus,textarea:focus{border-color:var(--primary)}
+textarea{resize:vertical;min-height:80px}
+label{font-size:12px;font-weight:700;color:var(--muted);text-transform:uppercase;letter-spacing:.04em}
 </style>
 {% block head %}{% endblock %}
 </head>
 <body>
+<div class="cursorx" aria-hidden="true"></div>
 <header class="fhead">
   <div class="wrap fhead__in">
     <a class="fbrand" href="/formation/">
@@ -105,5 +120,14 @@ img{max-width:100%;display:block}
     <div><a href="{% url 'core:home' %}">Site principal</a> · <a href="/formation/">Catalogue</a></div>
   </div>
 </footer>
+<script>
+(function(){
+  if(matchMedia('(hover:hover) and (pointer:fine)').matches && !matchMedia('(prefers-reduced-motion: reduce)').matches){
+    document.documentElement.classList.add('has-cursor');
+    var cx=document.querySelector('.cursorx');
+    addEventListener('pointermove',function(e){cx.style.left=e.clientX+'px';cx.style.top=e.clientY+'px';cx.classList.toggle('hot',!!e.target.closest('a,button,input,select,textarea,.card'));},{passive:true});
+  }
+})();
+</script>
 </body>
 </html>

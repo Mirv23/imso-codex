@@ -1,132 +1,58 @@
-<!-- Mission -->
+{% load static %}<!-- Mission -->
 <section class="section" id="mission">
-  <div class="container">
-    <div class="mission__grid">
-      <div class="reveal">
-        <span class="label"><span class="label__bullet"></span>{{ texts.mission_label|default:"Notre mission" }}</span>
-        <h2 class="section__title">
-          {% if site.about_title %}{{ site.about_title }}{% else %}Bâtir une <span class="section__title-underline">économie solidaire</span> portée par les communautés.{% endif %}
-        </h2>
-        <p class="section__intro">
-          {% if site.about_text %}{{ site.about_text }}{% else %}Une mutuelle haïtienne où l'épargne de chacun devient l'opportunité de tous.{% endif %}
-        </p>
-        <ul class="mission__list">
-          <li>
-            <span class="check">{% if texts.mission_icon_1 %}<span class="check__emoji">{{ texts.mission_icon_1 }}</span>{% else %}<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3" stroke-linecap="round" stroke-linejoin="round"><polyline points="20 6 9 17 4 12"></polyline></svg>{% endif %}</span>
-            <span>{{ texts.val_mission_1|default:"Épargne collective, investie près de chez vous." }}</span>
-          </li>
-          <li>
-            <span class="check">{% if texts.mission_icon_2 %}<span class="check__emoji">{{ texts.mission_icon_2 }}</span>{% else %}<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3" stroke-linecap="round" stroke-linejoin="round"><polyline points="20 6 9 17 4 12"></polyline></svg>{% endif %}</span>
-            <span>{{ texts.val_mission_2|default:"Formation à la gestion pour chaque membre." }}</span>
-          </li>
-          <li>
-            <span class="check">{% if texts.mission_icon_3 %}<span class="check__emoji">{{ texts.mission_icon_3 }}</span>{% else %}<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3" stroke-linecap="round" stroke-linejoin="round"><polyline points="20 6 9 17 4 12"></polyline></svg>{% endif %}</span>
-            <span>{{ texts.val_mission_3|default:"Microcrédit équitable, sans garantie abusive." }}</span>
-          </li>
-          <li>
-            <span class="check">{% if texts.mission_icon_4 %}<span class="check__emoji">{{ texts.mission_icon_4 }}</span>{% else %}<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3" stroke-linecap="round" stroke-linejoin="round"><polyline points="20 6 9 17 4 12"></polyline></svg>{% endif %}</span>
-            <span>{{ texts.val_mission_4|default:"Gouvernance transparente, décidée ensemble." }}</span>
-          </li>
-        </ul>
+  <div class="container split">
+    <div>
+      <div class="section__head split__head reveal">
+        <span class="eyebrow">{{ texts.mission_label|default:"Notre mission" }}</span>
+        <h2 class="display">{% if site.about_title %}{{ site.about_title|safe }}{% else %}L'avenir de<br>l'épargne <span class="section__title-underline">solidaire</span>{% endif %}</h2>
       </div>
-      <div class="mission__visual reveal" data-delay="2">
-        <span class="mission__visual-glow" aria-hidden="true"></span>
-        <div class="mission__tile mission__tile--green">
-          <span class="mission__tile-icon" style="background: var(--green-soft); color: var(--primary);">
-            <svg viewBox="0 0 24 24" width="20" height="20" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><path d="M12 1v22"></path><path d="M17 5H9.5a3.5 3.5 0 000 7h5a3.5 3.5 0 010 7H6"></path></svg>
-          </span>
-          <div>
-            <div class="mission__tile-num">{{ site.stat_savings|default:"3.2M" }}</div>
-            <div class="mission__tile-label">{{ site.stat_savings_label|default:"HTG d'épargne mobilisée" }}</div>
-          </div>
-        </div>
-        <div class="mission__tile mission__tile--amber">
-          <span class="mission__tile-icon" style="background: var(--highlight-soft); color: var(--highlight);">
-            <svg viewBox="0 0 24 24" width="20" height="20" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><path d="M2 12h6l2-6 4 12 2-6h6"></path></svg>
-          </span>
-          <div>
-            <div class="mission__tile-num">{{ site.stat_repayment|default:"96%" }}</div>
-            <div class="mission__tile-label">{{ site.stat_repayment_label|default:"Taux de remboursement" }}</div>
-          </div>
-        </div>
-        <div class="mission__tile mission__tile--blue">
-          <span class="mission__tile-icon" style="background: var(--tint-blue); color: var(--logo-blue);">
-            <svg viewBox="0 0 24 24" width="20" height="20" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="4" width="18" height="16" rx="2"></rect><path d="M3 10h18M8 4v4M16 4v4"></path></svg>
-          </span>
-          <div>
-            <div class="mission__tile-num">{{ site.stat_workshops|default:"52" }}</div>
-            <div class="mission__tile-label">{{ site.stat_workshops_label|default:"Ateliers tenus en 2025" }}</div>
-          </div>
-        </div>
-        <div class="mission__tile mission__tile--red">
-          <span class="mission__tile-icon" style="background: var(--tint-red); color: var(--logo-red);">
-            <svg viewBox="0 0 24 24" width="20" height="20" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 2l3 7h7l-5.5 4.5L18 21l-6-4-6 4 1.5-7.5L2 9h7z"></path></svg>
-          </span>
-          <div>
-            <div class="mission__tile-num">{{ site.stat_women|default:"61%" }}</div>
-            <div class="mission__tile-label">{{ site.stat_women_label|default:"Membres femmes" }}</div>
-          </div>
-        </div>
-      </div>
+      <p class="lead reveal">{% if site.about_text %}{{ site.about_text }}{% else %}Plus qu'une mutuelle : une économie de l'entraide où l'épargne de chacun devient l'opportunité de tous, bâtie par et pour les communautés haïtiennes.{% endif %}</p>
+      <ul class="mlist reveal">
+        <li><span class="ck"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3" stroke-linecap="round"><path d="M20 6 9 17l-5-5"></path></svg></span>{{ texts.val_mission_1|default:"Épargne collective, investie près de chez vous" }}</li>
+        <li><span class="ck"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3" stroke-linecap="round"><path d="M20 6 9 17l-5-5"></path></svg></span>{{ texts.val_mission_2|default:"Formation à la gestion pour chaque membre" }}</li>
+        <li><span class="ck"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3" stroke-linecap="round"><path d="M20 6 9 17l-5-5"></path></svg></span>{{ texts.val_mission_3|default:"Microcrédit équitable, sans garantie abusive" }}</li>
+        <li><span class="ck"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3" stroke-linecap="round"><path d="M20 6 9 17l-5-5"></path></svg></span>{{ texts.val_mission_4|default:"Gouvernance transparente, décidée ensemble" }}</li>
+      </ul>
+    </div>
+    <div class="collage reveal">
+      <div class="collage__main" style="background-image:url('{% if images.hero_photo_1 %}{{ images.hero_photo_1.image.url }}{% else %}{% static 'website/assets/5adc936b-1c3b-473d-835e-523c57240fa4.jpg' %}{% endif %}')"></div>
+      <div class="collage__sub" style="background-image:url('{% if images.hero_photo_2 %}{{ images.hero_photo_2.image.url }}{% else %}{% static 'website/assets/6ec82bf6-262c-4d9d-b797-db1d9faa8fc0.jpg' %}{% endif %}')"></div>
+      <div class="collage__card"><b>{{ site.stat_savings|default:"3.2M" }}</b><span>{{ site.stat_savings_label|default:"HTG d'épargne mobilisée" }}</span></div>
     </div>
   </div>
 </section>
 
-<!-- Valeurs -->
+<!-- Pourquoi nous rejoindre (bento) -->
 <section class="section section--tight" id="valeurs">
   <div class="container">
-    <div class="section__head reveal">
-      <span class="label"><span class="label__bullet"></span>{{ texts.val_label|default:"Nos valeurs" }}</span>
-      <h2 class="section__title">{{ texts.val_title|default:"Trois principes qui guident chaque décision." }}</h2>
+    <div class="section__head">
+      <span class="eyebrow reveal">{{ texts.why_label|default:"Pourquoi nous rejoindre" }}</span>
+      <h2 class="display reveal">Un écosystème<br>d'<span class="section__title-underline">opportunités</span></h2>
     </div>
-    <div class="values__wrap{% if core_values|length > 3 %} values__wrap--carousel{% endif %}">
-      <div class="values__grid">
-        {% for v in core_values %}
-        <article class="value-card reveal" data-delay="{{ forloop.counter }}">
-          <span class="value-card__num">{{ forloop.counter|stringformat:"02d" }}</span>
-          <span class="value-card__icon value-card__icon--{% cycle 'green' 'amber' 'teal' %}">
-            {% if v.icon %}<span style="font-size:24px;line-height:1">{{ v.icon }}</span>{% else %}<svg viewBox="0 0 24 24" width="26" height="26" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 21s-7-4.5-9.5-9A5 5 0 0112 7a5 5 0 019.5 5C19 16.5 12 21 12 21z"></path></svg>{% endif %}
-          </span>
-          <h3 class="value-card__title">{{ v.title }}</h3>
-          <p class="value-card__text">{{ v.text }}</p>
-        </article>
-        {% empty %}
-        <article class="value-card reveal" data-delay="1">
-          <span class="value-card__num">01</span>
-          <span class="value-card__icon value-card__icon--green">
-            <svg viewBox="0 0 24 24" width="26" height="26" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 21s-7-4.5-9.5-9A5 5 0 0112 7a5 5 0 019.5 5C19 16.5 12 21 12 21z"></path></svg>
-          </span>
-          <h3 class="value-card__title">Solidarité</h3>
-          <p class="value-card__text">Le risque se partage, l'opportunité aussi.</p>
-        </article>
-        <article class="value-card reveal" data-delay="2">
-          <span class="value-card__num">02</span>
-          <span class="value-card__icon value-card__icon--amber">
-            <svg viewBox="0 0 24 24" width="26" height="26" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="8" r="4"></circle><path d="M4 21c0-4.4 3.6-8 8-8s8 3.6 8 8"></path></svg>
-          </span>
-          <h3 class="value-card__title">Respect humain</h3>
-          <p class="value-card__text">La personne avant le dossier. Toujours.</p>
-        </article>
-        <article class="value-card reveal" data-delay="3">
-          <span class="value-card__num">03</span>
-          <span class="value-card__icon value-card__icon--teal">
-            <svg viewBox="0 0 24 24" width="26" height="26" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 22V12"></path><path d="M5 12a7 7 0 0114 0"></path><path d="M9 8c0-3 1.5-6 3-6s3 3 3 6"></path></svg>
-          </span>
-          <h3 class="value-card__title">Croissance collective</h3>
-          <p class="value-card__text">Apprendre, entreprendre, transmettre.</p>
-        </article>
-        {% endfor %}
-      </div>
+    <div class="bento">
+      <article class="bcard bcard--tall bcard--photo reveal" style="background-image:url('{% if images.why_featured %}{{ images.why_featured.image.url }}{% else %}{% static 'website/assets/c43d2991-a4a1-4a5c-9629-ef652c61d8e2.jpg' %}{% endif %}')">
+        <div class="bcard__body"><h3 class="bcard__title">{{ texts.why_card1_title|default:"Un réseau d'entraide actif" }}</h3><p class="bcard__text">{{ texts.why_card1_short|default:"Des centaines d'entrepreneurs partagent conseils, ressources et opportunités. Vous n'êtes jamais seul·e." }}</p></div>
+      </article>
+      <article class="bcard bcard--hl reveal">
+        <span class="bcard__icon"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><path d="M12 2l9 4.5v6c0 5-4 9.5-9 11-5-1.5-9-6-9-11v-6L12 2z"></path><path d="M9 12l2 2 4-4"></path></svg></span>
+        <h3 class="bcard__title">{{ texts.why_card2_title|default:"Microcrédit responsable" }}</h3>
+        <p class="bcard__text">{{ texts.why_card2_text|default:"Des prêts garantis par la confiance collective, à taux justes, remboursables selon vos cycles." }}</p>
+      </article>
+      <article class="bcard reveal">
+        <span class="bcard__icon bcard__icon--gold"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><path d="M2 3h6a4 4 0 014 4v14a3 3 0 00-3-3H2zM22 3h-6a4 4 0 00-4 4v14a3 3 0 013-3h7z"></path></svg></span>
+        <h3 class="bcard__title">{{ texts.why_card3_title|default:"Formations certifiantes" }}</h3>
+        <p class="bcard__text">{{ texts.why_card3_text|default:"Gestion, comptabilité, marketing local — animées par des praticiens haïtiens chaque trimestre." }}</p>
+      </article>
+      <article class="bcard reveal">
+        <span class="bcard__icon bcard__icon--blue"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><path d="M12 1v22M17 5H9.5a3.5 3.5 0 000 7h5a3.5 3.5 0 010 7H6"></path></svg></span>
+        <h3 class="bcard__title">{{ texts.why_card4_title|default:"Épargne flexible" }}</h3>
+        <p class="bcard__text">{{ texts.why_card4_text|default:"Cotisations modulables, registre partagé en temps réel, retraits encadrés par les statuts." }}</p>
+      </article>
+      <article class="bcard bcard--wide reveal">
+        <span class="bcard__icon bcard__icon--red"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><path d="M21 15a4 4 0 01-4 4H7l-4 4V7a4 4 0 014-4h10a4 4 0 014 4z"></path></svg></span>
+        <h3 class="bcard__title">{{ texts.why_card5_title|default:"Mentorat de pair-à-pair" }}</h3>
+        <p class="bcard__text">{{ texts.why_card5_text|default:"Chaque nouveau membre est jumelé à un·e mentor·e expérimenté·e du GEI pendant ses six premiers mois." }}</p>
+      </article>
     </div>
-    {% if core_values|length > 3 %}
-    <div class="values__nav reveal" data-delay="1">
-      <button class="values__arrow" id="valPrev" aria-label="Valeurs précédentes" type="button">
-        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round"><path d="M15 18l-6-6 6-6"></path></svg>
-      </button>
-      <button class="values__arrow" id="valNext" aria-label="Valeurs suivantes" type="button">
-        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round"><path d="M9 6l6 6-6 6"></path></svg>
-      </button>
-    </div>
-    {% endif %}
   </div>
 </section>
