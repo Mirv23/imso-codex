@@ -88,6 +88,29 @@ window.addEventListener('load', () => {
   setTimeout(() => document.getElementById('loader')?.classList.add('hidden'), 500);
 });
 
+// Mode nuit — le theme initial est deja pose par le script du <head>. Ici on gere
+// le clic (bascule + memorisation) et le suivi de la preference systeme tant que
+// l'utilisateur n'a pas fait de choix explicite.
+(function () {
+  const root = document.documentElement;
+  const toggle = document.getElementById('themeToggle');
+  function apply(theme, persist) {
+    root.setAttribute('data-theme', theme);
+    if (toggle) toggle.setAttribute('aria-label',
+      theme === 'dark' ? 'Passer en mode clair' : 'Passer en mode sombre');
+    if (persist) { try { localStorage.setItem('imso-theme', theme); } catch (e) {} }
+  }
+  apply(root.getAttribute('data-theme') || 'light', false);
+  if (toggle) toggle.addEventListener('click', () => {
+    apply(root.getAttribute('data-theme') === 'dark' ? 'light' : 'dark', true);
+  });
+  const mq = window.matchMedia && window.matchMedia('(prefers-color-scheme: dark)');
+  if (mq) mq.addEventListener('change', (e) => {
+    let stored = null; try { stored = localStorage.getItem('imso-theme'); } catch (err) {}
+    if (stored !== 'dark' && stored !== 'light') apply(e.matches ? 'dark' : 'light', false);
+  });
+})();
+
 // Nav scrolled state
 const nav = document.getElementById('nav');
 const onScroll = () => {
