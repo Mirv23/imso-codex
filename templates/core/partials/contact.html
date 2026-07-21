@@ -1,46 +1,63 @@
-{% load static %}<!-- Témoignages (01/xx) — masquable via Paramètres → Affichage -->
-{% if site.show_testimonials %}<section class="section" id="temoignages">
+{% load static %}<!-- Témoignages (masquable via Paramètres → Affichage) -->
+{% if site.show_testimonials %}<section class="section testimonials" id="temoignages">
   <div class="container">
-    <div class="testi">
-      <div>
-        <span class="eyebrow reveal">{{ texts.cta_testimonials_label|default:"Témoignages" }}</span>
-        <div class="testi__count reveal"><b id="tCur">01</b>/<span id="tTot">00</span></div>
-        <div class="testi__hint reveal">← Faites glisser →</div>
-      </div>
-      <div class="testi__panel reveal" id="tPanel">
-        <p class="testi__text" id="tText">—</p>
-        <div class="testi__who"><span class="testi__av" id="tAv">·</span><div><div class="testi__name" id="tName">—</div><div class="testi__loc" id="tLoc">—</div></div></div>
-        <div class="testi__nav">
-          <button class="testi__btn" id="tPrev" aria-label="Précédent"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round"><path d="M15 18l-6-6 6-6"></path></svg></button>
-          <button class="testi__btn" id="tNext" aria-label="Suivant"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round"><path d="M9 6l6 6-6 6"></path></svg></button>
+    <div class="section__head reveal">
+      <span class="label"><span class="label__bullet"></span>{{ texts.cta_testimonials_label|default:"Témoignages" }}</span>
+      <h2 class="section__title">{{ texts.cta_testimonials_title|default:"Les voix de nos membres." }}</h2>
+    </div>
+    <div class="testi__carousel reveal" data-delay="1">
+      <div class="testi__track" id="testiTrack">
+        {% for testimonial in testimonials %}
+        <div class="testi__slide">
+          <article class="testi__card">
+            <div class="testi__quote-mark">"</div>
+            <p class="testi__text">{{ testimonial.text }}</p>
+            <div class="testi__person">
+              <span class="testi__avatar">{{ testimonial.author_initials }}</span>
+              <div>
+                <div class="testi__name">{{ testimonial.author_name }}</div>
+                <div class="testi__loc">{{ testimonial.location }}</div>
+              </div>
+            </div>
+          </article>
         </div>
+        {% empty %}
+        <div class="testi__slide">
+          <article class="testi__card">
+            <div class="testi__quote-mark">"</div>
+            <p class="testi__text">Aucun témoignage pour le moment. Soyez le premier à partager votre expérience !</p>
+          </article>
+        </div>
+        {% endfor %}
       </div>
     </div>
-    <!-- Source de données (lue par le JS pour alimenter le carrousel) -->
-    <div id="testiSource" hidden>
-      {% for t in testimonials %}<article data-name="{{ t.author_name }}" data-loc="{{ t.location }}" data-av="{{ t.author_initials }}">{{ t.text }}</article>{% endfor %}
+    <div class="testi__nav reveal">
+      <div class="testi__dots" id="testiDots"></div>
+      <div class="testi__arrows">
+        <button class="testi__arrow" id="testiPrev" aria-label="Précédent">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round"><path d="M15 18l-6-6 6-6"></path></svg>
+        </button>
+        <button class="testi__arrow" id="testiNext" aria-label="Suivant">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round"><path d="M9 6l6 6-6 6"></path></svg>
+        </button>
+      </div>
     </div>
   </div>
 </section>{% endif %}
 
-<!-- CTA -->
-<section class="section section--tight">
-  <div class="container">
-    <div class="cta-strip reveal">
-      <span class="cta-strip__glow" aria-hidden="true"></span>
-      <div class="cta-strip__inner">
-        <h2>{{ texts.cta_title|default:"Prêt·e à entreprendre avec votre communauté ?" }}</h2>
-        <p>{{ texts.cta_paragraph|default:"Rejoignez l'un des GEI actifs et accédez immédiatement à l'épargne collective, aux formations et au mentorat de pair-à-pair." }}</p>
-        <div class="hero__ctas">
-          <a href="#reservation" class="btn btn--primary" data-mag>{{ texts.cta_btn_join|default:"Démarrer mon adhésion" }} <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round"><path d="M5 12h14M13 5l7 7-7 7"></path></svg></a>
-          <a href="#contact" class="btn btn--ghost" data-mag>{{ texts.cta_btn_contact|default:"Nous contacter" }}</a>
-        </div>
-      </div>
+<!-- CTA Strip -->
+<div class="cta-strip reveal">
+  <div class="cta-strip__inner">
+    <h2>{{ texts.cta_title|default:"Prêt·e à entreprendre avec votre communauté ?" }}</h2>
+    <p>{{ texts.cta_paragraph|default:"Rejoignez l'un des cinq GEI actifs et accédez immédiatement à l'épargne collective, aux formations et au mentorat de pair-à-pair." }}</p>
+    <div class="hero__ctas" style="justify-content:center;">
+      <a href="#rejoindre" class="btn btn--primary">{{ texts.cta_btn_join|default:"Démarrer mon adhésion" }}</a>
+      <a href="#contact" class="btn btn--outline-amber">{{ texts.cta_btn_contact|default:"Nous contacter" }}</a>
     </div>
   </div>
-</section>
+</div>
 
-<!-- Modal de réservation (logique JS réelle — IDs conservés) -->
+<!-- Booking modal -->
 <div class="modal-scrim" id="bookingModal" aria-hidden="true">
   <div class="modal" role="dialog" aria-modal="true" aria-labelledby="modalTitle">
     <div class="modal__head">
@@ -52,19 +69,43 @@
     <p class="modal__sub" id="modalSub">{{ texts.cta_modal_sub|default:"Complétez vos informations et nous confirmons sous 24h." }}</p>
     <form class="modal__form" id="modalForm" novalidate="">
       {% csrf_token %}
-      <div class="field"><label for="fName">Nom complet</label><input id="fName" name="full_name" type="text" required="" placeholder="Marie-Claire Pierre"></div>
-      <div class="field"><label for="fPhone">Téléphone</label><input id="fPhone" name="phone" type="tel" required="" placeholder="+509 38 22 18 04"></div>
-      <div class="field"><label for="fEmail">Email (optionnel)</label><input id="fEmail" name="email" type="email" placeholder="exemple@email.com"></div>
-      <div class="field"><label for="fType">Type d'événement</label>
-        <select id="fType" name="event_type"><option>Conférence</option><option>Séminaire</option><option>Formation</option><option>Anniversaire</option><option>Mariage</option><option>Réunion privée</option><option>Autre</option></select>
+      <div class="field">
+        <label for="fName">Nom complet</label>
+        <input id="fName" name="full_name" type="text" required="" placeholder="Marie-Claire Pierre">
       </div>
-      <div class="field"><label for="fSetup">Configuration</label>
-        <select id="fSetup" name="setup"><option>Sans tables — jusqu'à 60 personnes</option><option>Avec tables — jusqu'à 40 personnes</option></select>
+      <div class="field">
+        <label for="fPhone">Téléphone</label>
+        <input id="fPhone" name="phone" type="tel" required="" placeholder="+509 38 22 18 04">
       </div>
-      <button type="submit" class="btn btn--primary btn--block" style="margin-top:4px">{{ texts.cta_modal_submit|default:"Envoyer la demande" }}</button>
+      <div class="field">
+        <label for="fEmail">Email (optionnel)</label>
+        <input id="fEmail" name="email" type="email" placeholder="exemple@email.com">
+      </div>
+      <div class="field">
+        <label for="fType">Type d'événement</label>
+        <select id="fType" name="event_type">
+          <option>Conférence</option>
+          <option>Séminaire</option>
+          <option>Formation</option>
+          <option>Anniversaire</option>
+          <option>Mariage</option>
+          <option>Réunion privée</option>
+          <option>Autre</option>
+        </select>
+      </div>
+      <div class="field">
+        <label for="fSetup">Configuration</label>
+        <select id="fSetup" name="setup">
+          <option>Sans tables — jusqu'à 60 personnes</option>
+          <option>Avec tables — jusqu'à 40 personnes</option>
+        </select>
+      </div>
+      <button type="submit" class="btn btn--primary btn--block" style="margin-top:8px;">{{ texts.cta_modal_submit|default:"Envoyer la demande" }}</button>
     </form>
     <div class="modal__success" id="modalSuccess" style="display:none;">
-      <div class="modal__success-icon"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.6" stroke-linecap="round" stroke-linejoin="round"><polyline points="20 6 9 17 4 12"></polyline></svg></div>
+      <div class="modal__success-icon">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.6" stroke-linecap="round" stroke-linejoin="round"><polyline points="20 6 9 17 4 12"></polyline></svg>
+      </div>
       <h3 class="modal__title" style="margin-bottom:6px;">{{ texts.cta_modal_success_title|default:"Demande envoyée !" }}</h3>
       <p class="modal__sub" id="modalSuccessSub" style="margin-bottom:0;">{{ texts.cta_modal_success_sub|default:"Nous vous contactons sous 24h pour confirmer votre réservation." }}</p>
     </div>

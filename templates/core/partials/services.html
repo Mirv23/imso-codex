@@ -1,52 +1,114 @@
-{% load static %}<!-- Services (accordéon) -->
-<section class="section" id="services">
+<!-- Pourquoi nous rejoindre -->
+<section class="section" id="rejoindre">
   <div class="container">
-    <div class="section__head">
-      <span class="eyebrow reveal">{{ texts.services_label|default:"Nos services" }}</span>
-      <h2 class="display reveal">De l'épargne à<br>la <span class="section__title-underline">croissance</span></h2>
+    <div class="section__head reveal">
+      <span class="label"><span class="label__bullet"></span>{{ texts.why_label|default:"Pourquoi nous rejoindre" }}</span>
+      <h2 class="section__title">{{ texts.why_title|default:"Plus qu'une mutuelle, un véritable écosystème d'opportunités." }}</h2>
     </div>
-    <div class="acc reveal">
-      <div class="acc__item" aria-expanded="true">
-        <button class="acc__head" type="button"><span class="acc__idx">01</span> Épargne &amp; cotisations <span class="acc__plus"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round"><path d="M12 5v14M5 12h14"></path></svg></span></button>
-        <div class="acc__body"><div class="acc__inner"><p class="acc__text">Un fonds commun alimenté par des cotisations mensuelles souples. Le registre est partagé et consultable en temps réel : chaque membre voit où va son épargne et comment elle travaille pour le collectif.</p><div class="acc__stat"><b>{{ site.stat_savings|default:"3.2M" }}</b><span>HTG d'épargne mobilisée</span></div></div></div>
+    <div class="why__grid">
+      <div class="why__item why__item--featured reveal" data-delay="1">
+        <span class="why__icon">
+          <svg viewBox="0 0 24 24" width="22" height="22" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M3 21v-2a4 4 0 014-4h4a4 4 0 014 4v2"></path><circle cx="9" cy="8" r="4"></circle><path d="M22 21v-2a4 4 0 00-3-3.87"></path><path d="M16 4.13a4 4 0 010 7.75"></path></svg>
+        </span>
+        <h3 class="why__title">{{ texts.why_card1_title|default:"Un réseau d'entraide actif" }}</h3>
+        <div class="why__featured-img img-wrap">
+          <div class="img-fallback">Réseau IMSO</div>
+          {% if images.why_featured %}<img src="{{ images.why_featured.image.url }}" alt="{{ images.why_featured.alt }}" loading="lazy" onload="this.parentElement.classList.add('img-loaded')">{% else %}<img src="https://images.unsplash.com/photo-1582213782179-e0d53f98f2ca?w=900&amp;auto=format&amp;q=80" alt="Mains jointes en signe d'entraide — réseau IMSO" loading="lazy" onload="this.parentElement.classList.add('img-loaded')">{% endif %}
+          <span class="why__featured-img-caption">Membres · 5 GEI actifs</span>
+        </div>
+        <p class="why__text">{{ texts.why_card1_text|default:"Des centaines d'entrepreneurs, formateurs et épargnants partagent quotidiennement conseils, ressources et opportunités. Vous n'êtes jamais seul·e dans votre projet." }}</p>
+        <div class="why__featured-stat">
+          <strong>4.8 / 5</strong>
+          Note de satisfaction des membres actifs
+        </div>
       </div>
-      <div class="acc__item" aria-expanded="false">
-        <button class="acc__head" type="button"><span class="acc__idx">02</span> Microcrédit équitable <span class="acc__plus"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round"><path d="M12 5v14M5 12h14"></path></svg></span></button>
-        <div class="acc__body"><div class="acc__inner"><p class="acc__text">Des prêts sans garantie abusive, adossés à la confiance du groupe. Les échéances suivent vos cycles d'activité, pas un calendrier rigide.</p><div class="acc__stat"><b>{{ site.stat_repayment|default:"96%" }}</b><span>Taux de remboursement</span></div></div></div>
+      <div class="why__item reveal" data-delay="2">
+        <span class="why__icon">
+          <svg viewBox="0 0 24 24" width="22" height="22" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 2l9 4.5v6c0 5-4 9.5-9 11-5-1.5-9-6-9-11v-6L12 2z"></path><path d="M9 12l2 2 4-4"></path></svg>
+        </span>
+        <h3 class="why__title">{{ texts.why_card2_title|default:"Microcrédit responsable" }}</h3>
+        <p class="why__text">{{ texts.why_card2_text|default:"Des prêts garantis par la confiance collective, à taux justes et remboursables selon vos cycles d'activité." }}</p>
       </div>
-      <div class="acc__item" aria-expanded="false">
-        <button class="acc__head" type="button"><span class="acc__idx">03</span> Formations certifiantes <span class="acc__plus"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round"><path d="M12 5v14M5 12h14"></path></svg></span></button>
-        <div class="acc__body"><div class="acc__inner"><p class="acc__text">Des cours en gestion, comptabilité et marketing local, animés par des praticiens haïtiens. Chaque membre monte en compétence à son rythme, sur notre <a href="/formation/" style="color:var(--green);font-weight:600">espace de formation</a>.</p><div class="acc__stat"><b>{{ site.stat_workshops|default:"52" }}</b><span>Ateliers tenus en 2025</span></div></div></div>
+      <div class="why__item reveal" data-delay="3">
+        <span class="why__icon">
+          <svg viewBox="0 0 24 24" width="22" height="22" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M2 3h6a4 4 0 014 4v14a3 3 0 00-3-3H2zM22 3h-6a4 4 0 00-4 4v14a3 3 0 013-3h7z"></path></svg>
+        </span>
+        <h3 class="why__title">{{ texts.why_card3_title|default:"Formations certifiantes" }}</h3>
+        <p class="why__text">{{ texts.why_card3_text|default:"Gestion, comptabilité, marketing local : 14 cours animés par des praticiens haïtiens chaque trimestre." }}</p>
       </div>
-      <div class="acc__item" aria-expanded="false">
-        <button class="acc__head" type="button"><span class="acc__idx">04</span> Location de salle <span class="acc__plus"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round"><path d="M12 5v14M5 12h14"></path></svg></span></button>
-        <div class="acc__body"><div class="acc__inner"><p class="acc__text">Une salle modulable au cœur de Port-au-Prince — conférences, séminaires, formations, cérémonies. <a href="#reservation" style="color:var(--green);font-weight:600">Réservation en ligne</a> avec confirmation automatique et disponibilités en temps réel.</p><div class="acc__stat"><b>60</b><span>Personnes en configuration</span></div></div></div>
+      <div class="why__item reveal" data-delay="4">
+        <span class="why__icon">
+          <svg viewBox="0 0 24 24" width="22" height="22" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="10"></circle><path d="M12 6v6l4 2"></path></svg>
+        </span>
+        <h3 class="why__title">{{ texts.why_card4_title|default:"Épargne flexible et sécurisée" }}</h3>
+        <p class="why__text">{{ texts.why_card4_text|default:"Cotisations mensuelles modulables, registre partagé en temps réel, retraits encadrés par les statuts du GEI." }}</p>
+      </div>
+      <div class="why__item reveal" data-delay="5">
+        <span class="why__icon">
+          <svg viewBox="0 0 24 24" width="22" height="22" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M21 15a4 4 0 01-4 4H7l-4 4V7a4 4 0 014-4h10a4 4 0 014 4z"></path></svg>
+        </span>
+        <h3 class="why__title">{{ texts.why_card5_title|default:"Mentorat de pair-à-pair" }}</h3>
+        <p class="why__text">{{ texts.why_card5_text|default:"Chaque nouveau membre est jumelé à un·e mentor·e expérimenté·e du GEI pendant ses six premiers mois." }}</p>
       </div>
     </div>
   </div>
 </section>
 
-<!-- Processus (cartes en éventail) -->
-<section class="section" id="processus">
+<!-- Processus -->
+<section class="section process" id="processus">
   <div class="container">
-    <div class="section__head">
-      <span class="eyebrow reveal">{{ texts.process_label|default:"Notre processus" }}</span>
-      <h2 class="display reveal">{% if site.process_title %}{{ site.process_title|safe }}{% else %}Comment<br>ça <span class="section__title-underline">marche</span>{% endif %}</h2>
-      <p class="lead reveal">{{ texts.process_intro|default:"Un parcours pensé pour vous accueillir progressivement, le temps de comprendre les règles communes et de bâtir des liens avec votre groupe." }}</p>
+    <div class="section__head reveal">
+      <span class="label"><span class="label__bullet"></span>{{ texts.process_label|default:"Notre processus" }}</span>
+      <h2 class="section__title">{{ texts.process_title|default:"Trois étapes simples pour rejoindre un GEI." }}</h2>
+      <p class="section__intro">
+        {{ texts.process_intro|default:"Un parcours pensé pour vous accueillir progressivement, le temps de comprendre les règles communes et de bâtir des liens avec votre groupe." }}
+      </p>
     </div>
-    <div class="steps reveal">
+    <div class="process__timeline">
       {% for s in process_steps %}
-      <article class="step">
-        <svg class="step__deco" viewBox="0 0 24 24" fill="currentColor"><path d="M12 0l3 9 9 3-9 3-3 9-3-9-9-3 9-3z"></path></svg>
-        <div class="step__n">Étape {{ forloop.counter|stringformat:"02d" }}</div>
-        <h3 class="step__title">{{ s.title }}</h3>
-        <p class="step__text">{{ s.text }}</p>
-        {% if s.meta %}<div class="step__meta">{{ s.meta }}</div>{% endif %}
-      </article>
+      <div class="step reveal" data-delay="{{ forloop.counter }}">
+        <div class="step__num">{% if s.icon %}<span class="step__emoji">{{ s.icon }}</span>{% else %}{{ forloop.counter }}{% endif %}</div>
+        <div class="step__content">
+          <h3 class="step__title">{{ s.title }}</h3>
+          <p class="step__text">{{ s.text }}</p>
+          {% if s.image %}<div class="step__media"><img src="{{ s.image.url }}" alt="{{ s.title }}" loading="lazy"></div>{% endif %}
+          {% if s.meta %}<span class="step__meta">{{ s.meta }}</span>{% endif %}
+        </div>
+      </div>
       {% empty %}
-      <article class="step"><svg class="step__deco" viewBox="0 0 24 24" fill="currentColor"><path d="M12 0l3 9 9 3-9 3-3 9-3-9-9-3 9-3z"></path></svg><div class="step__n">Étape 01</div><h3 class="step__title">Candidature &amp; entretien</h3><p class="step__text">Remplissez le formulaire d'adhésion et rencontrez les responsables d'un GEI proche de chez vous pour présenter votre projet.</p><div class="step__meta">⏱ 1 semaine</div></article>
-      <article class="step"><svg class="step__deco" viewBox="0 0 24 24" fill="currentColor"><path d="M12 0l3 9 9 3-9 3-3 9-3-9-9-3 9-3z"></path></svg><div class="step__n">Étape 02</div><h3 class="step__title">Formation d'intégration</h3><p class="step__text">Trois ateliers fondamentaux : gouvernance mutualiste, gestion d'épargne et obligations des membres.</p><div class="step__meta">⏱ 3 semaines</div></article>
-      <article class="step"><svg class="step__deco" viewBox="0 0 24 24" fill="currentColor"><path d="M12 0l3 9 9 3-9 3-3 9-3-9-9-3 9-3z"></path></svg><div class="step__n">Étape 03</div><h3 class="step__title">Activation de l'adhésion</h3><p class="step__text">Première cotisation, signature des statuts du GEI et accès complet aux cours, au microcrédit et aux ressources communes.</p><div class="step__meta">⏱ Le jour même</div></article>
+      <div class="step reveal" data-delay="1">
+        <div class="step__num">1</div>
+        <div class="step__content">
+          <h3 class="step__title">Candidature et entretien</h3>
+          <p class="step__text">
+            Remplissez le formulaire d'adhésion et rencontrez les responsables
+            d'un GEI proche de chez vous pour présenter votre projet.
+          </p>
+          <span class="step__meta">⏱ 1 semaine</span>
+        </div>
+      </div>
+      <div class="step reveal" data-delay="2">
+        <div class="step__num">2</div>
+        <div class="step__content">
+          <h3 class="step__title">Formation d'intégration</h3>
+          <p class="step__text">
+            Trois ateliers fondamentaux : gouvernance mutualiste, gestion
+            d'épargne et obligations des membres.
+          </p>
+          <span class="step__meta">⏱ 3 semaines</span>
+        </div>
+      </div>
+      <div class="step reveal" data-delay="3">
+        <div class="step__num">3</div>
+        <div class="step__content">
+          <h3 class="step__title">Activation de l'adhésion</h3>
+          <p class="step__text">
+            Première cotisation, signature des statuts du GEI et accès complet
+            aux cours, au microcrédit et aux ressources communes.
+          </p>
+          <span class="step__meta">⏱ Le jour même</span>
+        </div>
+      </div>
       {% endfor %}
     </div>
   </div>

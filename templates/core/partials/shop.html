@@ -34,10 +34,7 @@
 
         {% if kit %}
         <div class="kit__cta">
-          <div class="kit__price-wrap">
-            <span class="kit__price-label">{{ texts.kit_price_label|default:"Prix du kit" }}</span>
-            <div class="kit__price">{{ kit.price_htg }} <small>HTG</small></div>
-          </div>
+          <div class="kit__price">{{ kit.price_htg }} <small>HTG</small></div>
           {% if not kit.track_stock or kit.stock > 0 %}
           <button class="btn btn--primary js-order"
                   data-id="{{ kit.id }}"
@@ -59,7 +56,6 @@
     {% if products|length > 1 %}
     <!-- Autres produits de la boutique (grille) -->
     <div class="shop-more reveal" data-delay="1">
-      <span class="label"><span class="label__bullet"></span>{{ texts.shop_more_label|default:"La boutique" }}</span>
       <h3 class="shop-more__title">{{ texts.shop_more_title|default:"Autres produits" }}</h3>
       <div class="shop-grid">
         {% for p in products %}{% if not forloop.first %}

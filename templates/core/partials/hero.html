@@ -1,34 +1,30 @@
 {% load static %}<!-- Loader -->
 <div class="loader" id="loader">
-  <img src="{% static 'website/assets/imso-logo.png' %}" alt="IMSO">
+  <div class="brand-logo" aria-label="IMSO">
+    <img src="{% static 'website/assets/imso-logo.png' %}" alt="IMSO">
+  </div>
 </div>
 
-<!-- Navbar (pilule flottante) -->
+<!-- Navbar -->
 <nav class="nav" id="nav">
   <div class="container nav__inner">
     <a href="#top" class="brand-logo" aria-label="IMSO accueil">
       <img src="{% static 'website/assets/imso-logo.png' %}" alt="IMSO — Impact Mutuelle de Solidarité">
-      <span>IMSO</span>
     </a>
     <ul class="nav__links" role="list">
       <li><a class="nav__link" href="#mission">Mission</a></li>
-      <li><a class="nav__link" href="#services">Services</a></li>
+      <li><a class="nav__link" href="#valeurs">Valeurs</a></li>
       <li><a class="nav__link" href="#processus">Processus</a></li>
-      <li><a class="nav__link" href="#reservation">Réserver</a></li>
+      <li><a class="nav__link" href="#cours">Cours</a></li>
       <li><a class="nav__link" href="/formation/">Formation</a></li>
+      <li><a class="nav__link" href="#boutique">Kit financier</a></li>
       {% if site.show_blog %}<li><a class="nav__link" href="/blog/">Blog</a></li>{% endif %}
-      <li><a class="nav__link" href="#faq">FAQ</a></li>
+      <li><a class="nav__link" href="#contact">Contact</a></li>
+      <li><a class="btn btn--primary btn--small" href="#rejoindre">Adhérer</a></li>
     </ul>
-    <div class="nav__actions">
-      <button class="theme-toggle" id="themeToggle" type="button" aria-label="Basculer le thème" title="Thème clair / sombre">
-        <svg class="theme-toggle__sun" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><circle cx="12" cy="12" r="4"></circle><path d="M12 2v2M12 20v2M4.9 4.9l1.4 1.4M17.7 17.7l1.4 1.4M2 12h2M20 12h2M4.9 19.1l1.4-1.4M17.7 6.3l1.4-1.4"></path></svg>
-        <svg class="theme-toggle__moon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M21 12.8A9 9 0 1 1 11.2 3a7 7 0 0 0 9.8 9.8z"></path></svg>
-      </button>
-      <a class="btn btn--primary btn--small" href="#reservation" data-mag>Adhérer</a>
-      <button class="hamburger" id="hamburger" aria-label="Ouvrir le menu" aria-controls="drawer" aria-expanded="false">
-        <span class="hamburger__lines"><span></span><span></span><span></span></span>
-      </button>
-    </div>
+    <button class="hamburger" id="hamburger" aria-label="Ouvrir le menu" aria-controls="drawer" aria-expanded="false">
+      <span class="hamburger__lines"><span></span><span></span><span></span></span>
+    </button>
   </div>
 </nav>
 
@@ -36,55 +32,124 @@
 <div class="scrim" id="scrim"></div>
 <aside class="drawer" id="drawer" aria-hidden="true">
   <div class="drawer__head">
-    <span class="brand-logo"><img src="{% static 'website/assets/imso-logo.png' %}" alt="IMSO"><span>IMSO</span></span>
+    <span class="brand-logo"><img src="{% static 'website/assets/imso-logo.png' %}" alt="IMSO"></span>
     <button class="drawer__close" id="drawerClose" aria-label="Fermer le menu">
       <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><path d="M18 6 6 18M6 6l12 12"></path></svg>
     </button>
   </div>
   <ul class="drawer__links" role="list">
     <li><a href="#mission"><span>Mission</span><span>01</span></a></li>
-    <li><a href="#services"><span>Services</span><span>02</span></a></li>
+    <li><a href="#valeurs"><span>Valeurs</span><span>02</span></a></li>
     <li><a href="#processus"><span>Processus</span><span>03</span></a></li>
-    <li><a href="#reservation"><span>Réserver la salle</span><span>04</span></a></li>
+    <li><a href="#cours"><span>Cours</span><span>04</span></a></li>
     <li><a href="/formation/"><span>Formation</span><span>05</span></a></li>
-    <li><a href="#temoignages"><span>Témoignages</span><span>06</span></a></li>
+    <li><a href="#boutique"><span>Kit financier</span><span>06</span></a></li>
     {% if site.show_blog %}<li><a href="/blog/"><span>Blog</span><span>07</span></a></li>{% endif %}
-    <li><a href="#faq"><span>FAQ</span><span>08</span></a></li>
+    <li><a href="#contact"><span>Contact</span><span>08</span></a></li>
   </ul>
   <div class="drawer__cta">
-    <a href="#reservation" class="btn btn--primary btn--block">Adhérer à IMSO</a>
+    <a href="#rejoindre" class="btn btn--primary btn--block">Adhérer à IMSO</a>
   </div>
 </aside>
 
 <a id="top"></a>
 
 <!-- Hero -->
-<header class="hero" id="hero">
-  <svg class="spark spark--1" viewBox="0 0 24 24" fill="currentColor" aria-hidden="true"><path d="M12 0l3 9 9 3-9 3-3 9-3-9-9-3 9-3z"></path></svg>
-  <svg class="spark spark--2" viewBox="0 0 24 24" fill="currentColor" aria-hidden="true"><path d="M12 0l3 9 9 3-9 3-3 9-3-9-9-3 9-3z"></path></svg>
-  <svg class="spark spark--3" viewBox="0 0 24 24" fill="currentColor" aria-hidden="true"><path d="M12 0l3 9 9 3-9 3-3 9-3-9-9-3 9-3z"></path></svg>
-  <svg class="spark spark--4" viewBox="0 0 24 24" fill="currentColor" aria-hidden="true"><path d="M12 0l3 9 9 3-9 3-3 9-3-9-9-3 9-3z"></path></svg>
-  <div class="container hero__inner">
-    <span class="pill-live reveal"><i></i> {{ texts.hero_label|default:"5 GEI ouverts aux nouvelles adhésions" }}</span>
-    <h1 class="hero__title">{% if site.hero_title %}<span class="ln"><span>{{ site.hero_title|safe }}</span></span>{% else %}<span class="ln"><span>Ensemble,</span></span><span class="ln"><span>nous créons</span></span><span class="ln"><span>la <em>richesse</em></span></span>{% endif %}</h1>
-    <p class="hero__sub reveal">{% if site.hero_subtitle %}{{ site.hero_subtitle }}{% else %}IMSO réunit entrepreneurs, épargnants et formateurs au sein de Groupes d'Entraide Intégrée — épargne collective, microcrédit responsable et formation continue, bâtis par et pour les communautés haïtiennes.{% endif %}</p>
-    <div class="hero__ctas reveal">
-      <a href="#reservation" class="btn btn--primary" data-mag>{{ site.hero_cta_text|default:"Rejoindre un GEI" }} <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round"><path d="M5 12h14M13 5l7 7-7 7"></path></svg></a>
-      <a href="#services" class="btn btn--ghost" data-mag>{{ texts.hero_cta2|default:"Découvrir nos services" }}</a>
-    </div>
-    <div class="hero__stats reveal">
-      <div class="hstat"><div class="hstat__num"><span class="counter" data-target="{{ total_geis|default:5 }}">0</span><sup>+</sup></div><div class="hstat__label">GEI actifs</div></div>
-      <div class="badge" aria-hidden="true">
-        <svg class="badge__ring" viewBox="0 0 120 120"><defs><path id="heroBadgeCircle" d="M60,60 m-46,0 a46,46 0 1,1 92,0 a46,46 0 1,1 -92,0"></path></defs><text><textPath href="#heroBadgeCircle" startOffset="0">· ÉPARGNE · SOLIDARITÉ · CROISSANCE · IMSO HAÏTI </textPath></text></svg>
-        <span class="badge__core"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round"><path d="M5 12h14M13 5l7 7-7 7"></path></svg></span>
+<header class="hero">
+  <div class="hero__shapes" aria-hidden="true">
+    <div class="shape shape--1"></div>
+    <div class="shape shape--2"></div>
+    <div class="shape shape--3"></div>
+  </div>
+  <div class="container hero__grid">
+    <div class="hero__text">
+      <span class="label hero__label reveal">
+        <span class="label__bullet"></span>
+        {{ texts.hero_label|default:"Mutuelle de solidarité · Haïti" }}
+      </span>
+      <h1 class="hero__title reveal" data-delay="1">
+        {% if site.hero_title %}{{ site.hero_title }}{% else %}Ensemble, nous créons de la <em>richesse</em>{% endif %}
+      </h1>
+      <p class="hero__sub reveal" data-delay="2">
+        {% if site.hero_subtitle %}{{ site.hero_subtitle }}{% else %}IMSO réunit entrepreneurs, épargnants et formateurs au sein de Groupes
+        d'Entraide Intégrée. Épargne collective, microcrédit responsable et
+        formation continue — un modèle bâti par et pour les communautés haïtiennes.{% endif %}
+      </p>
+      <div class="hero__ctas reveal" data-delay="3">
+        <a href="#rejoindre" class="btn btn--primary">
+          {{ site.hero_cta_text|default:"Rejoindre un GEI" }}
+          <svg viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round"><path d="M5 12h14M13 5l7 7-7 7"></path></svg>
+        </a>
+        <a href="#cours" class="btn btn--outline-amber">{{ texts.hero_cta2|default:"Découvrir les cours" }}</a>
       </div>
-      <div class="hstat"><div class="hstat__num"><span class="counter" data-target="{{ total_members|default:248 }}">0</span><sup>+</sup></div><div class="hstat__label">Membres actifs</div></div>
+      <div class="hero__trust reveal" data-delay="4">
+        <div class="avatars" aria-hidden="true">
+          <span class="avatar avatar--a">RJ</span>
+          <span class="avatar avatar--b">MD</span>
+          <span class="avatar avatar--c">FP</span>
+          <span class="avatar avatar--d">+</span>
+        </div>
+        <span>{{ texts.hero_trust|default:"De nouveaux membres rejoignent IMSO chaque mois à travers nos 5 GEI" }}</span>
+      </div>
+    </div>
+    <div class="hero__visual reveal" data-delay="2">
+      <div class="hero__visual-bg" aria-hidden="true"></div>
+      <div class="hero__photos">
+        <div class="hero__photo img-wrap">
+          <div class="img-fallback">Solidarité</div>
+          {% if images.hero_photo_1 %}<img src="{{ images.hero_photo_1.image.url }}" alt="{{ images.hero_photo_1.alt }}" loading="lazy" onload="this.parentElement.classList.add('img-loaded')">{% else %}<img src="https://images.unsplash.com/photo-1573497019940-1c28c88b4f3e?w=600&amp;auto=format&amp;q=80" alt="Entrepreneure haïtienne souriante" loading="lazy" onload="this.parentElement.classList.add('img-loaded')">{% endif %}
+          <span class="hero__photo--label">Solidarité</span>
+        </div>
+        <div class="hero__photo img-wrap">
+          <div class="img-fallback">Épargne</div>
+          {% if images.hero_photo_2 %}<img src="{{ images.hero_photo_2.image.url }}" alt="{{ images.hero_photo_2.alt }}" loading="lazy" onload="this.parentElement.classList.add('img-loaded')">{% else %}<img src="{% static 'website/assets/6ec82bf6-262c-4d9d-b797-db1d9faa8fc0.jpg' %}" alt="Membre comptant son épargne" loading="lazy" onload="this.parentElement.classList.add('img-loaded')">{% endif %}
+          <span class="hero__photo--label">Épargne</span>
+        </div>
+        <div class="hero__photo img-wrap">
+          <div class="img-fallback">Croissance</div>
+          {% if images.hero_photo_3 %}<img src="{{ images.hero_photo_3.image.url }}" alt="{{ images.hero_photo_3.alt }}" loading="lazy" onload="this.parentElement.classList.add('img-loaded')">{% else %}<img src="https://images.unsplash.com/photo-1531123897727-8f129e1688ce?w=500&amp;auto=format&amp;q=80" alt="Entrepreneur fier devant son commerce" loading="lazy" onload="this.parentElement.classList.add('img-loaded')">{% endif %}
+          <span class="hero__photo--label">Croissance</span>
+        </div>
+      </div>
+      <div class="hero__visual-overlay">{{ texts.hero_visual_overlay|default:"Solidarité · Épargne · Croissance" }}</div>
+      <div class="float-card float-card--members">
+        <div class="float-card__icon">
+          <svg viewBox="0 0 24 24" width="22" height="22" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="9" cy="8" r="3.5"></circle><circle cx="17" cy="10" r="2.5"></circle><path d="M3 19c0-2.8 2.7-5 6-5s6 2.2 6 5"></path><path d="M15 19c0-2 1.5-4 4-4s4 1.6 4 4"></path></svg>
+        </div>
+        <div>
+          <div class="float-card__num">{{ site.stat_members|default:"248 membres" }}</div>
+          <div class="float-card__label">{{ site.stat_members_label|default:"Actifs en avril 2026" }}</div>
+        </div>
+      </div>
+      <div class="float-card float-card--growth">
+        <div class="float-card__icon">
+          <svg viewBox="0 0 24 24" width="22" height="22" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><path d="M3 17l6-6 4 4 8-8"></path><path d="M14 7h7v7"></path></svg>
+        </div>
+        <div>
+          <div class="float-card__num">{{ site.stat_growth|default:"+38%" }}</div>
+          <div class="float-card__label">{{ site.stat_growth_label|default:"Épargne collective" }}</div>
+        </div>
+      </div>
     </div>
   </div>
 </header>
 
-<!-- Marquee -->
-<div class="marquee" aria-hidden="true"><div class="marquee__track">
-  <span>Épargne collective</span><span>Microcrédit responsable</span><span>Formation continue</span><span>Location de salle</span><span>Mentorat</span>
-  <span>Épargne collective</span><span>Microcrédit responsable</span><span>Formation continue</span><span>Location de salle</span><span>Mentorat</span>
-</div></div>
+<!-- Stats -->
+<section class="stats" id="stats" aria-label="Chiffres clés">
+  <div class="container">
+    <div class="stats__grid">
+      <div class="stat">
+        <div class="stat__num"><span class="counter" data-target="{{ total_members }}">0</span><sup>+</sup></div>
+        <div class="stat__label">Membres actifs</div>
+      </div>
+      <div class="stat">
+        <div class="stat__num"><span class="counter" data-target="{{ total_courses }}">0</span></div>
+        <div class="stat__label">Cours dispensés</div>
+      </div>
+      <div class="stat">
+        <div class="stat__num"><span class="counter" data-target="{{ total_geis }}">0</span></div>
+        <div class="stat__label">GEI actifs</div>
+      </div>
+    </div>
+  </div>
+</section>
