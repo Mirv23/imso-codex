@@ -45,38 +45,50 @@
       </div>
       <div class="footer__col">
         <h4>{{ texts.foot_resources_title|default:"Ressources" }}</h4>
+        {# Chaque lien n'apparait que si son URL est renseignee en admin : sinon les
+           liens pointaient tous sur #contact (l'ancre du footer lui-meme), un clic
+           sans effet. Une colonne « Statuts / Rapport annuel » qui ne s'ouvre pas
+           est un dommage de credibilite pour une mutuelle. #}
         <ul role="list">
-          <li><a href="{{ site.url_statuts|default:"#contact" }}">{{ texts.foot_res_statuts|default:"Statuts du GEI" }}</a></li>
-          <li><a href="{{ site.url_calendrier|default:"#contact" }}">{{ texts.foot_res_calendrier|default:"Calendrier 2026" }}</a></li>
-          <li><a href="{{ site.url_rapport|default:"#contact" }}">{{ texts.foot_res_rapport|default:"Rapport annuel" }}</a></li>
-          <li><a href="{{ site.url_mentor|default:"#contact" }}">{{ texts.foot_res_mentor|default:"Devenir mentor" }}</a></li>
-          <li><a href="{{ site.url_presse|default:"#contact" }}">{{ texts.foot_res_presse|default:"Presse" }}</a></li>
+          {% if site.url_statuts %}<li><a href="{{ site.url_statuts }}">{{ texts.foot_res_statuts|default:"Statuts du GEI" }}</a></li>{% endif %}
+          {% if site.url_calendrier %}<li><a href="{{ site.url_calendrier }}">{{ texts.foot_res_calendrier|default:"Calendrier 2026" }}</a></li>{% endif %}
+          {% if site.url_rapport %}<li><a href="{{ site.url_rapport }}">{{ texts.foot_res_rapport|default:"Rapport annuel" }}</a></li>{% endif %}
+          {% if site.url_mentor %}<li><a href="{{ site.url_mentor }}">{{ texts.foot_res_mentor|default:"Devenir mentor" }}</a></li>{% endif %}
+          {% if site.url_presse %}<li><a href="{{ site.url_presse }}">{{ texts.foot_res_presse|default:"Presse" }}</a></li>{% endif %}
+          {% if not site.url_statuts and not site.url_calendrier and not site.url_rapport and not site.url_mentor and not site.url_presse %}
+          <li class="footer__soon">{{ texts.foot_res_empty|default:"Documents bientôt disponibles" }}</li>
+          {% endif %}
         </ul>
       </div>
       <div class="footer__col">
         <h4>{{ texts.foot_contact_title|default:"Contact" }}</h4>
+        {# Coordonnees actionnables : sur mobile, un numero cliquable lance l'appel
+           et un email ouvre le client mail — au lieu d'un texte a recopier. #}
+        {% with c_phone=site.contact_phone|default:"+509 38 22 18 04" c_email=site.contact_email|default:"bonjour@imso.ht" c_addr=site.contact_address|default:"32, Rue Capois, Port-au-Prince, Haïti" %}
         <ul role="list" class="footer__contact">
           <li>
             <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M21 10c0 7-9 13-9 13S3 17 3 10a9 9 0 0118 0z"></path><circle cx="12" cy="10" r="3"></circle></svg>
-            <span>{{ site.contact_address|default:"32, Rue Capois, Port-au-Prince, Haïti" }}</span>
+            <a href="https://maps.google.com/?q={{ c_addr|urlencode }}" target="_blank" rel="noopener">{{ c_addr }}</a>
           </li>
           <li>
             <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M22 16.9V20a2 2 0 01-2.2 2A20 20 0 012 4.2 2 2 0 014 2h3.1a2 2 0 012 1.7l.7 3.6a2 2 0 01-.6 2L8 10.5a16 16 0 005.6 5.6l1.2-1.3a2 2 0 012-.6l3.6.8a2 2 0 011.6 2z"></path></svg>
-            <span>{{ site.contact_phone|default:"+509 38 22 18 04" }}</span>
+            <a href="tel:{{ c_phone|cut:" " }}">{{ c_phone }}</a>
           </li>
           <li>
             <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="5" width="18" height="14" rx="2"></rect><path d="M3 7l9 6 9-6"></path></svg>
-            <span>{{ site.contact_email|default:"bonjour@imso.ht" }}</span>
+            <a href="mailto:{{ c_email }}">{{ c_email }}</a>
           </li>
         </ul>
+        {% endwith %}
       </div>
     </div>
     <div class="footer__bottom">
       <span>© {% now "Y" %} IMSO — Impact Mutuelle de Solidarité. Tous droits réservés.</span>
       <div class="footer__bottom-links">
-        <a href="{{ site.url_mentions|default:"#contact" }}">Mentions légales</a>
-        <a href="{{ site.url_confidentialite|default:"#contact" }}">Confidentialité</a>
-        <a href="{{ site.url_statuts|default:"#contact" }}">Statuts</a>
+        {# Idem : on n'affiche que ce qui mene reellement quelque part. #}
+        {% if site.url_mentions %}<a href="{{ site.url_mentions }}">Mentions légales</a>{% endif %}
+        {% if site.url_confidentialite %}<a href="{{ site.url_confidentialite }}">Confidentialité</a>{% endif %}
+        {% if site.url_statuts %}<a href="{{ site.url_statuts }}">Statuts</a>{% endif %}
       </div>
     </div>
   </div>
@@ -253,7 +265,7 @@ function buildDots() {
     const b = document.createElement('button');
     b.className = 'dot' + (i === 0 ? ' active' : '');
     b.setAttribute('aria-label', `Aller au témoignage ${i + 1}`);
-    b.addEventListener('click', () => goTo(i));
+    b.addEventListener('click', () => { goTo(i); stopAuto(); });
     dotsWrap.appendChild(b);
   }
 }
@@ -276,16 +288,36 @@ function step(dir) {
   update();
 }
 
-prev.addEventListener('click', () => { step(-1); resetAuto(); });
-next.addEventListener('click', () => { step(1); resetAuto(); });
+// La premiere interaction explicite ARRETE definitivement le defilement auto :
+// l'utilisateur qui prend la main ne doit pas se faire deplacer 5,5s plus tard.
+prev.addEventListener('click', () => { step(-1); stopAuto(); });
+next.addEventListener('click', () => { step(1); stopAuto(); });
 
-let autoTimer;
+const carousel = document.querySelector('.testi__carousel');
+const nav = document.querySelector('.testi__nav');
+const reduceMotion = window.matchMedia && window.matchMedia('(prefers-reduced-motion: reduce)').matches;
+let autoTimer = null;
+let autoStopped = reduceMotion;   // en reduced-motion on ne demarre jamais
 function startAuto() {
+  if (autoStopped || autoTimer) return;
   autoTimer = setInterval(() => step(1), 5500);
 }
-function resetAuto() {
-  clearInterval(autoTimer);
-  startAuto();
+function pauseAuto() { clearInterval(autoTimer); autoTimer = null; }
+function stopAuto() { autoStopped = true; pauseAuto(); }
+
+// Pause au survol et au focus clavier (on lit une citation), reprise a la sortie.
+if (!reduceMotion) {
+  [carousel, nav].forEach((el) => {
+    if (!el) return;
+    el.addEventListener('mouseenter', pauseAuto);
+    el.addEventListener('mouseleave', startAuto);
+    el.addEventListener('focusin', pauseAuto);
+    el.addEventListener('focusout', startAuto);
+  });
+  // Suspend quand l'onglet passe en arriere-plan.
+  document.addEventListener('visibilitychange', () => {
+    if (document.hidden) pauseAuto(); else startAuto();
+  });
 }
 
 computePerView();
