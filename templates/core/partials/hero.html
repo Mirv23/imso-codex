@@ -103,18 +103,15 @@
       <div class="hero__photos">
         <div class="hero__photo img-wrap">
           <div class="img-fallback">Solidarité</div>
-          {% if images.hero_photo_1 %}<img src="{{ images.hero_photo_1.image.url }}" alt="{{ images.hero_photo_1.alt }}" loading="lazy" onload="this.parentElement.classList.add('img-loaded')">{% else %}<img src="https://images.unsplash.com/photo-1573497019940-1c28c88b4f3e?w=600&amp;auto=format&amp;q=80" alt="Entrepreneure haïtienne souriante" loading="lazy" onload="this.parentElement.classList.add('img-loaded')">{% endif %}
-          <span class="hero__photo--label">Solidarité</span>
+          {% if images.hero_photo_1 %}<img src="{{ images.hero_photo_1.image.url }}" alt="{{ images.hero_photo_1.alt }}" loading="eager" fetchpriority="high" decoding="async" onload="this.parentElement.classList.add('img-loaded')" onerror="this.remove()">{% else %}<img src="https://images.unsplash.com/photo-1573497019940-1c28c88b4f3e?w=600&amp;auto=format&amp;q=80" alt="Entrepreneure haïtienne souriante" loading="eager" fetchpriority="high" decoding="async" onload="this.parentElement.classList.add('img-loaded')" onerror="this.remove()">{% endif %}
         </div>
         <div class="hero__photo img-wrap">
           <div class="img-fallback">Épargne</div>
-          {% if images.hero_photo_2 %}<img src="{{ images.hero_photo_2.image.url }}" alt="{{ images.hero_photo_2.alt }}" loading="lazy" onload="this.parentElement.classList.add('img-loaded')">{% else %}<img src="{% static 'website/assets/6ec82bf6-262c-4d9d-b797-db1d9faa8fc0.jpg' %}" alt="Membre comptant son épargne" loading="lazy" onload="this.parentElement.classList.add('img-loaded')">{% endif %}
-          <span class="hero__photo--label">Épargne</span>
+          {% if images.hero_photo_2 %}<img src="{{ images.hero_photo_2.image.url }}" alt="{{ images.hero_photo_2.alt }}" loading="eager" fetchpriority="high" decoding="async" onload="this.parentElement.classList.add('img-loaded')" onerror="this.remove()">{% else %}<img src="{% static 'website/assets/6ec82bf6-262c-4d9d-b797-db1d9faa8fc0.jpg' %}" alt="Membre comptant son épargne" loading="eager" fetchpriority="high" decoding="async" onload="this.parentElement.classList.add('img-loaded')" onerror="this.remove()">{% endif %}
         </div>
         <div class="hero__photo img-wrap">
           <div class="img-fallback">Croissance</div>
-          {% if images.hero_photo_3 %}<img src="{{ images.hero_photo_3.image.url }}" alt="{{ images.hero_photo_3.alt }}" loading="lazy" onload="this.parentElement.classList.add('img-loaded')">{% else %}<img src="https://images.unsplash.com/photo-1531123897727-8f129e1688ce?w=500&amp;auto=format&amp;q=80" alt="Entrepreneur fier devant son commerce" loading="lazy" onload="this.parentElement.classList.add('img-loaded')">{% endif %}
-          <span class="hero__photo--label">Croissance</span>
+          {% if images.hero_photo_3 %}<img src="{{ images.hero_photo_3.image.url }}" alt="{{ images.hero_photo_3.alt }}" loading="eager" fetchpriority="high" decoding="async" onload="this.parentElement.classList.add('img-loaded')" onerror="this.remove()">{% else %}<img src="https://images.unsplash.com/photo-1531123897727-8f129e1688ce?w=500&amp;auto=format&amp;q=80" alt="Entrepreneur fier devant son commerce" loading="eager" fetchpriority="high" decoding="async" onload="this.parentElement.classList.add('img-loaded')" onerror="this.remove()">{% endif %}
         </div>
       </div>
       <div class="hero__visual-overlay">{{ texts.hero_visual_overlay|default:"Solidarité · Épargne · Croissance" }}</div>
@@ -123,8 +120,12 @@
           <svg viewBox="0 0 24 24" width="22" height="22" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="9" cy="8" r="3.5"></circle><circle cx="17" cy="10" r="2.5"></circle><path d="M3 19c0-2.8 2.7-5 6-5s6 2.2 6 5"></path><path d="M15 19c0-2 1.5-4 4-4s4 1.6 4 4"></path></svg>
         </div>
         <div>
-          <div class="float-card__num">{{ site.stat_members|default:"248 membres" }}</div>
-          <div class="float-card__label">{{ site.stat_members_label|default:"Actifs en avril 2026" }}</div>
+          {# Le defaut retombe sur le compteur REEL : le champ admin reste prioritaire,
+             mais s'il n'est pas renseigne la page ne se contredit plus (la section
+             Stats juste en dessous affiche total_members). Libelle intemporel :
+             « Actifs en avril 2026 » etait une date figee qui vieillit toute seule. #}
+          <div class="float-card__num">{{ site.stat_members|default:total_members }}</div>
+          <div class="float-card__label">{{ site.stat_members_label|default:"Membres actifs" }}</div>
         </div>
       </div>
       <div class="float-card float-card--growth">

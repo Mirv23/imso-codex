@@ -742,23 +742,27 @@ a { color: inherit; text-decoration: none; }
 .btn:disabled:hover,
 .btn[disabled]:hover { transform: none; box-shadow: none; }
 .btn--primary {
-  background: var(--primary);
+  /* Blanc sur --primary = 3,76:1, sous le seuil AA pour du texte 15px/600.
+     --primary-dark donne 6,28:1 et n'introduit AUCUNE couleur nouvelle : c'etait
+     deja la couleur de survol. Le survol est desormais porte par l'ombre et
+     l'echelle (un vert plus clair au survol ferait retomber le blanc sous AA). */
+  background: var(--primary-dark);
   color: white;
   /* --primary est editable depuis l'admin : l'ombre doit en deriver, pas etre figee. */
   box-shadow: var(--shadow-cta);
 }
-.btn--primary:hover {
-  background: var(--primary-dark);
-  box-shadow: var(--shadow-cta-hover);
-}
+.btn--primary:hover { box-shadow: var(--shadow-cta-hover); }
 .btn--outline-amber {
   background: transparent;
-  color: var(--highlight);
-  box-shadow: inset 0 0 0 2px var(--highlight);
+  /* --highlight sur le fond de page = 2,78:1, et son contour echouait aussi au
+     3:1 exige pour un composant. --tint-amber-ink donne 4,65:1 en clair et
+     8,65:1 en nuit (le token bascule). */
+  color: var(--tint-amber-ink);
+  box-shadow: inset 0 0 0 2px var(--tint-amber-ink);
 }
 .btn--outline-amber:hover {
-  background: var(--highlight);
-  color: white;
+  background: var(--tint-amber-ink);
+  color: var(--bg);   /* `white` en dur cassait en mode nuit */
 }
 .btn--ghost {
   background: var(--green-soft);
@@ -863,13 +867,19 @@ a { color: inherit; text-decoration: none; }
 }
 @media (min-width: 900px) {
   .hero__grid { grid-template-columns: 1.1fr .9fr; align-items: center; gap: 64px; }
+  /* 9vw est calcule sur le VIEWPORT, mais des 900px la colonne de texte ne fait
+     plus que ~425px : le titre restait a 76px, soit ~11 caracteres par ligne et
+     un H1 casse sur 4 lignes. Ici : ~18 car./ligne a 900px, ~20 a 1200px. */
+  .hero__title { font-size: clamp(44px, 5.2vw, 68px); line-height: 1.06; }
 }
 
 .hero__label { margin-bottom: 20px; }
 .hero__title {
   font-weight: 800;
   font-size: clamp(40px, 9vw, 76px);
-  line-height: 1.02;
+  /* 1.02 faisait taper les capitales accentuees (E, A) sur la ligne du dessus
+     des que le titre est saisi en francais depuis l'admin. */
+  line-height: 1.08;
   letter-spacing: -0.035em;
   margin: 0 0 24px;
   text-wrap: balance;
@@ -993,7 +1003,10 @@ a { color: inherit; text-decoration: none; }
   z-index: 2;
 }
 .float-card--members {
-  bottom: -10px; left: -16px;
+  /* Remontee : a bottom:-10px elle recouvrait integralement la pastille de la
+     photo 1 et se faisait couper en deux par l'overlay centre (qui culmine a
+     60px du bas). 76px laisse 16px de respiration. */
+  bottom: 76px; left: -20px;
 }
 .float-card--growth {
   top: 24px; right: -20px;
@@ -1074,9 +1087,11 @@ a { color: inherit; text-decoration: none; }
 
 /* Stats */
 .stats {
-  padding: 40px 0;
-  border-top: 1px solid var(--border);
-  border-bottom: 1px solid var(--border);
+  padding: 48px 0;
+  /* Filet structurant : --border etait trop faible pour porter le cadre de la
+     bande (une seule grammaire de filet pour tout le site). */
+  border-top: 1px solid var(--border-strong);
+  border-bottom: 1px solid var(--border-strong);
   background: var(--surface);
 }
 .stats__grid {
@@ -1087,6 +1102,16 @@ a { color: inherit; text-decoration: none; }
 .stat {
   text-align: center;
   padding: 12px 8px;
+  position: relative;
+}
+/* Subdivisions : les 3 chiffres flottaient sans aucune structure. Meme motif que
+   .espace__capacity, en --border (le cadre reste le niveau au-dessus). */
+.stat + .stat::before {
+  content: '';
+  position: absolute;
+  left: -8px; top: 12%; bottom: 12%;
+  width: 1px;
+  background: var(--border);
 }
 .stat__num {
   font-weight: 800;
@@ -1098,7 +1123,9 @@ a { color: inherit; text-decoration: none; }
 }
 .stat__num sup {
   font-size: 0.5em;
-  color: var(--highlight);
+  /* Le « + » est un modificateur du chiffre, pas un accent autonome : il suit la
+     couleur du chiffre. L'orange reste reserve aux accents non textuels. */
+  color: var(--primary);
   margin-left: 2px;
   vertical-align: super;
 }
@@ -1112,7 +1139,13 @@ a { color: inherit; text-decoration: none; }
   margin-top: 10px;
 }
 @media (max-width: 600px) {
+  /* La grille reste a 3 colonnes sur mobile : a 7vw le chiffre debordait de sa
+     cellule (~100px de large a 320px d'ecran). On borne la taille et on resserre. */
+  .stat__num { font-size: clamp(26px, 8.5vw, 38px); }
   .stat__label { font-size: 10px; letter-spacing: 0.08em; }
+  .stat { padding: 10px 4px; }
+  .stats__grid { gap: 8px; }
+  .stat + .stat::before { left: -4px; }
 }
 
 /* Mission */
@@ -1158,27 +1191,46 @@ a { color: inherit; text-decoration: none; }
   position: relative;
 }
 @media (min-width: 600px) { .mission__visual { padding: 32px; gap: 16px; } }
+/* aspect-ratio:1/1 + rows 1fr imposait une hauteur que le contenu minimal des
+   tuiles depasse sous ~460px : la 2e rangee sortait du bloc arrondi. On ne
+   contraint le carre que la ou il tient. Desktop inchange. */
+@media (max-width: 899px) {
+  .mission__visual {
+    aspect-ratio: auto;
+    grid-template-rows: auto auto;
+    padding: 18px; gap: 12px;
+  }
+  .mission__tile { padding: 14px; gap: 10px; }
+  .mission__tile-icon { width: 34px; height: 34px; border-radius: 10px; }
+}
 .mission__tile {
   background: var(--surface-2);
-  border-radius: 18px;
+  border-radius: var(--radius);
   padding: 18px;
-  display: flex; flex-direction: column; justify-content: space-between;
-  gap: 14px;
+  /* space-between ecartait icone et chiffre de ~88px (47% de la hauteur utile) :
+     deux masses sans relation. center les soude en un bloc, le vide se repartit. */
+  display: flex; flex-direction: column; justify-content: center;
+  gap: 16px;
+  /* En nuit la tuile (#1E271E) sur le panneau (#15201A) = 1,09:1 et l'ombre noire
+     est invisible : la structure 2x2 s'evaporait. Le filet la redessine (--border
+     est PLUS clair que la tuile en nuit, et discret en clair). */
+  border: 1px solid var(--border);
   box-shadow: var(--shadow-sm);
-  transition: transform .4s ease;
 }
-.mission__tile:hover { transform: translateY(-4px); }
 .mission__tile-icon {
   width: 40px; height: 40px;
-  border-radius: 12px;
+  border-radius: var(--radius-sm);
   display: inline-flex; align-items: center; justify-content: center;
 }
 .mission__tile-num {
   font-weight: 800;
-  font-size: 26px;
+  /* 26px dans une tuile de 224px : les 4 chiffres se lisaient moins fort que le
+     texte a cote, alors que le panneau occupe la moitie de la section. */
+  font-size: clamp(28px, 2.8vw, 38px);
+  font-variant-numeric: tabular-nums;
   letter-spacing: -0.025em;
   color: var(--text);
-  line-height: 1;
+  line-height: 1.05;
 }
 .mission__tile-label {
   font-size: 12px;
@@ -1347,18 +1399,22 @@ a { color: inherit; text-decoration: none; }
 .value-card {
   background: var(--surface);
   border: 1px solid var(--border);
-  border-radius: 24px;
+  border-radius: var(--radius-lg);
   padding: 32px 28px;
-  width: 280px;
+  /* 280px - 56px de padding = 224px utiles, soit ~30 caracteres par ligne sur
+     mobile. On elargit la carte a la largeur d'ecran disponible (elle reste un
+     element de carrousel, borne a 320px) et on resserre le padding. */
+  width: min(320px, 82vw);
   flex-shrink: 0;
   scroll-snap-align: start;
-  transition: transform .35s ease, border-color .3s, box-shadow .3s;
+  transition: transform .25s ease, border-color .25s, box-shadow .25s;
   position: relative;
   overflow: hidden;
 }
+@media (max-width: 480px) { .value-card { padding: 26px 22px; } }
 @media (min-width: 900px) { .value-card { width: auto; } }
 .value-card:hover {
-  transform: translateY(-6px);
+  transform: translateY(-4px);
   border-color: var(--primary);
   box-shadow: var(--shadow-md);
 }
@@ -2092,20 +2148,10 @@ a { color: inherit; text-decoration: none; }
 }
 .hero__photo:hover img { transform: scale(1.04); }
 .hero__photo:nth-child(1) { grid-row: span 2; }
-.hero__photo--label {
-  position: absolute;
-  left: 14px; bottom: 12px;
-  background: var(--glass);
-  backdrop-filter: blur(8px);
-  color: var(--primary);
-  font-size: 10.5px;
-  font-weight: 600;
-  letter-spacing: 0.16em;
-  text-transform: uppercase;
-  padding: 6px 12px;
-  border-radius: 999px;
-  z-index: 2;
-}
+/* .hero__photo--label supprime : les 3 pastilles doublonnaient mot pour mot
+   l'overlay central (lui, pilote par texts.hero_visual_overlay), l'une d'elles
+   etait integralement recouverte par la carte flottante, et leur contraste
+   (--primary sur verre blanc a 10,5px) echouait. */
 .hero__visual-overlay {
   position: absolute;
   left: 50%; bottom: 28px;
