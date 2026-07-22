@@ -1413,7 +1413,9 @@ a { color: inherit; text-decoration: none; }
 }
 @media (max-width: 480px) { .value-card { padding: 26px 22px; } }
 @media (min-width: 900px) { .value-card { width: auto; } }
-.value-card:hover {
+/* Meme correction de specificite que .why__item : sinon `.reveal.in` annulait le
+   mouvement de survol. */
+.values__grid .value-card:hover {
   transform: translateY(-4px);
   border-color: var(--primary);
   box-shadow: var(--shadow-md);
@@ -1474,15 +1476,19 @@ a { color: inherit; text-decoration: none; }
 .why__item {
   background: var(--surface);
   border: 1px solid var(--border);
-  border-radius: 22px;
+  border-radius: var(--radius-lg);
   padding: 28px;
   display: flex; flex-direction: column;
   gap: 14px;
-  transition: transform .3s ease, border-color .3s, box-shadow .3s;
+  transition: transform .25s ease, border-color .25s, box-shadow .25s;
   position: relative;
   overflow: hidden;
 }
-.why__item:hover {
+/* Selecteur renforce : `.reveal.in { transform: translateY(0) }` a la MEME
+   specificite que `.why__item:hover` et est declare plus loin, donc il gagnait —
+   le mouvement de survol n'avait jamais lieu une fois la carte revelee (chaque
+   carte porte les deux classes). Meme bug corrige plus bas sur .value-card. */
+.why__grid .why__item:hover {
   transform: translateY(-4px);
   border-color: var(--primary);
   box-shadow: var(--shadow-md);
@@ -1493,8 +1499,16 @@ a { color: inherit; text-decoration: none; }
   border-color: var(--primary);
 }
 .why__item--featured:hover { border-color: var(--accent); }
-.why__item--featured .why__title { color: white; }
-.why__item--featured .why__text { color: rgba(255,255,255,.78); }
+/* La carte vedette fait ~455px contre ~325px pour les satellites, mais son titre
+   avait exactement la meme taille : seul le fond vert la distinguait. */
+.why__item--featured .why__title {
+  color: white;
+  font-size: clamp(22px, 1.8vw, 26px);
+  line-height: 1.18;
+  letter-spacing: -0.02em;
+}
+/* .78 sur le degrade vert = ~3,9:1, sous le seuil AA a 15px. */
+.why__item--featured .why__text { color: rgba(255,255,255,.92); }
 .why__item--featured .why__icon {
   background: rgba(255,255,255,.18);
   color: white;
@@ -1530,14 +1544,19 @@ a { color: inherit; text-decoration: none; }
 }
 .why__featured-img-caption {
   position: absolute;
-  left: 18px; bottom: 14px;
+  /* 18px alors que la colonne de texte de la carte commence a 28px (son padding) :
+     decalage optique de 10px sur un bord partage. */
+  left: 28px; bottom: 16px;
   font-size: 10.5px;
   font-weight: 600;
-  letter-spacing: 0.18em;
+  letter-spacing: 0.16em;
+  line-height: 1;
   text-transform: uppercase;
   color: white;
-  background: rgba(255,255,255,.16);
-  backdrop-filter: blur(8px);
+  /* Blanc a 16% : la lisibilite dependait entierement de la photo derriere.
+     --overlay-ink est le token dedie a l'encre posee sur une PHOTO (il ne bascule
+     donc pas en mode nuit, contrairement aux fonds de page). */
+  background: var(--overlay-ink);
   border: 1px solid rgba(255,255,255,.2);
   padding: 6px 12px;
   border-radius: 999px;
@@ -1567,16 +1586,24 @@ a { color: inherit; text-decoration: none; }
   margin-top: auto;
   font-family: 'JetBrains Mono', monospace;
   font-size: 12.5px;
-  color: rgba(255,255,255,.6);
-  border-top: 1px solid rgba(255,255,255,.15);
+  /* .6 = ~3,0:1 : c'etait la LEGENDE qui porte le sens du chiffre, et c'etait
+     l'element le moins lisible de la carte. */
+  color: rgba(255,255,255,.85);
+  /* L'orange devient l'accent NON textuel (il echouait a 2,2:1 en texte). */
+  border-top: 3px solid var(--highlight);
   padding-top: 16px;
   line-height: 1.4;
 }
 .why__featured-stat strong {
   display: block;
   font-family: 'Plus Jakarta Sans', sans-serif;
-  color: var(--highlight);
-  font-size: 36px;
+  /* Blanc : --highlight sur le bas du degrade vert = ~2,2:1, sous le seuil meme
+     pour du grand texte. Precedent deja etabli par .why__item--featured .why__title. */
+  color: white;
+  /* 36px faisait de « 4.8 / 5 » le heros de la carte, avant le message : la
+     hierarchie interne etait inversee. */
+  font-size: 30px;
+  line-height: 1.1;
   letter-spacing: -0.025em;
   margin-bottom: 4px;
   font-weight: 800;
@@ -1594,23 +1621,16 @@ a { color: inherit; text-decoration: none; }
   gap: 32px;
   margin-top: 48px;
 }
-.process__timeline::before {
-  content: '';
-  position: absolute;
-  left: 27px;
-  top: 30px; bottom: 30px;
-  width: 2px;
-  background: linear-gradient(180deg, var(--primary) 0%, var(--accent) 50%, var(--highlight) 100%);
-  opacity: .35;
-}
+/* Un SEGMENT par etape plutot qu'un trait unique sur le conteneur : le trait
+   global s'arretait a `right:28px`, soit ~307px APRES le dernier noeud (dont le
+   centre est au debut de sa colonne), et traversait toute la 3e colonne pour finir
+   dans le vide — l'oeil lisait « il manque une 4e etape ». En mobile il descendait
+   de meme le long du dernier paragraphe. Ici le dernier .step n'a pas de segment :
+   la ligne s'arrete pile au dernier noeud, quel que soit le nombre d'etapes. */
 @media (min-width: 900px) {
   .process__timeline {
     flex-direction: row;
     gap: 24px;
-  }
-  .process__timeline::before {
-    left: 28px; right: 28px; top: 27px; bottom: auto;
-    width: auto; height: 2px;
   }
 }
 .step {
@@ -1618,8 +1638,20 @@ a { color: inherit; text-decoration: none; }
   position: relative;
   z-index: 1;
 }
+.step:not(:last-child)::after {
+  content: '';
+  position: absolute;
+  left: 27px; top: 62px; bottom: -32px;   /* -32px = le gap : le segment rejoint le noeud suivant */
+  width: 2px;
+  background: var(--border-strong);
+}
 @media (min-width: 900px) {
   .step { flex: 1; flex-direction: column; }
+  .step:not(:last-child)::after {
+    left: 62px; right: -24px;             /* -24px = le gap desktop */
+    top: 27px; bottom: auto;
+    width: auto; height: 2px;
+  }
 }
 .step__num {
   flex-shrink: 0;
@@ -1627,17 +1659,27 @@ a { color: inherit; text-decoration: none; }
   border-radius: 50%;
   background: var(--surface);
   border: 2px solid var(--primary);
-  color: var(--primary);
+  color: var(--ink-on-tint);
   font-weight: 800;
   font-size: 22px;
+  line-height: 1;
   letter-spacing: -0.02em;
   display: inline-flex; align-items: center; justify-content: center;
   box-shadow: 0 0 0 6px var(--surface);
+  /* Passe AU-DESSUS du segment de ligne, qui sinon le traverserait. */
+  position: relative;
+  z-index: 1;
 }
 .step__emoji { font-size: 26px; line-height: 1; }
 .step__content {
   flex: 1;
   padding-top: 4px;
+  /* En desktop les 3 etapes ont deja la meme hauteur (flex stretch), mais le
+     contenu etait un bloc : la pastille de duree restait collee sous son
+     paragraphe, donc les 3 pastilles flottaient a 3 altitudes differentes. En
+     colonne flex, margin-top:auto sur .step__meta les ancre sur une meme ligne. */
+  display: flex;
+  flex-direction: column;
 }
 .step__media {
   margin: 12px 0 4px;
@@ -1664,17 +1706,24 @@ a { color: inherit; text-decoration: none; }
   margin: 0;
 }
 .step__meta {
-  margin-top: 14px;
+  /* auto : ancre la pastille EN BAS de l'etape, donc les 3 s'alignent sur une
+     meme ligne de fuite quelle que soit la longueur des textes. */
+  margin-top: auto;
+  padding-top: 0;
   font-family: 'JetBrains Mono', monospace;
   font-size: 12.5px;
   letter-spacing: 0.08em;
   line-height: 1;
   color: var(--ink-on-tint);
   display: inline-flex; align-items: center; gap: 6px;
-  padding: 4px 10px;
+  align-self: flex-start;   /* la pilule garde sa largeur de contenu en flex column */
+  padding: 6px 12px;
   border-radius: 999px;
   background: var(--green-soft);
 }
+/* Ecart minimal garanti : margin-top:auto vaut 0 quand le contenu remplit la
+   hauteur, donc la respiration est portee par l'element precedent. */
+.step__text { margin-bottom: 14px; }
 
 /* Courses */
 .courses__head-row {
