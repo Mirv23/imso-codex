@@ -71,15 +71,15 @@
       {% csrf_token %}
       <div class="field">
         <label for="fName">Nom complet</label>
-        <input id="fName" name="full_name" type="text" required="" placeholder="Marie-Claire Pierre">
+        <input id="fName" name="full_name" type="text" required="" autocomplete="name" placeholder="Marie-Claire Pierre">
       </div>
       <div class="field">
         <label for="fPhone">Téléphone</label>
-        <input id="fPhone" name="phone" type="tel" required="" placeholder="+509 38 22 18 04">
+        <input id="fPhone" name="phone" type="tel" required="" autocomplete="tel" placeholder="+509 38 22 18 04">
       </div>
       <div class="field">
         <label for="fEmail">Email (optionnel)</label>
-        <input id="fEmail" name="email" type="email" placeholder="exemple@email.com">
+        <input id="fEmail" name="email" type="email" autocomplete="email" placeholder="exemple@email.com">
       </div>
       <div class="field">
         <label for="fType">Type d'événement</label>

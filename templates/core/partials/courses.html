@@ -66,18 +66,18 @@
       <input type="hidden" name="course_id" id="eCourseId">
       <div class="field">
         <label for="eName">{{ texts.cours_field_name|default:"Nom complet" }}</label>
-        <input id="eName" name="full_name" type="text" required="" placeholder="Marie-Claire Pierre">
+        <input id="eName" name="full_name" type="text" required="" autocomplete="name" placeholder="Marie-Claire Pierre">
       </div>
       <div class="field">
         <label for="ePhone">{{ texts.cours_field_phone|default:"Téléphone" }}</label>
-        <input id="ePhone" name="phone" type="tel" required="" placeholder="+509 38 22 18 04">
+        <input id="ePhone" name="phone" type="tel" required="" autocomplete="tel" placeholder="+509 38 22 18 04">
       </div>
       <div class="field">
         <label for="eEmail">{{ texts.cours_field_email|default:"Email (optionnel)" }}</label>
-        <input id="eEmail" name="email" type="email" placeholder="exemple@email.com">
+        <input id="eEmail" name="email" type="email" autocomplete="email" placeholder="exemple@email.com">
       </div>
       <p class="modal__sub" id="enrollTotal" style="font-weight:600;color:var(--text);"></p>
-      <p class="modal__error" id="enrollError" style="display:none;color:var(--danger,#EF4444);font-size:13px;"></p>
+      <p class="modal__error" id="enrollError" role="alert" style="display:none;color:var(--danger,#EF4444);font-size:13px;"></p>
       <button type="submit" class="btn btn--primary btn--block" id="enrollSubmit" style="margin-top:8px;">{{ texts.cours_submit|default:"Continuer vers le paiement" }}</button>
     </form>
   </div>
@@ -106,11 +106,13 @@
     submitBtn.disabled = false;
     modal.setAttribute('aria-hidden', 'false');
     modal.classList.add('open');
+    document.body.style.overflow = 'hidden';   /* bloque le defilement de fond */
     setTimeout(function () { document.getElementById('eName').focus(); }, 60);
   }
   function closeModal() {
     modal.setAttribute('aria-hidden', 'true');
     modal.classList.remove('open');
+    document.body.style.overflow = '';
   }
 
   document.querySelectorAll('.js-enroll').forEach(function (btn) {

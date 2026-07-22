@@ -83,9 +83,12 @@
 </footer>
 
 <script>
-// Loader
-window.addEventListener('load', () => {
-  setTimeout(() => document.getElementById('loader')?.classList.add('hidden'), 500);
+// Loader — on masque des que le DOM est pret (le contenu est deja peint) plutot
+// qu'a window.load + 500ms, qui faisait fixer un ecran uni pendant plusieurs
+// secondes en connexion lente. Un filet CSS (header.html) le retire de toute facon
+// au bout de 2,5s si le JS ne repond pas : plus d'ecran mort possible.
+document.addEventListener('DOMContentLoaded', () => {
+  document.getElementById('loader')?.classList.add('hidden');
 });
 
 // Mode nuit — le theme initial est deja pose par le script du <head>. Ici on gere
@@ -111,30 +114,27 @@ window.addEventListener('load', () => {
   });
 })();
 
-// Nav scrolled state
+// Nav scrolled state — garde : la nav n'existe que sur la page d'accueil. Sans
+// cette garde, l'exception stoppait TOUT le script sur /blog/, donc les elements
+// .reveal (opacity:0) n'etaient jamais reveles et la page paraissait vide.
 const nav = document.getElementById('nav');
-const onScroll = () => {
-  if (window.scrollY > 24) nav.classList.add('scrolled');
-  else nav.classList.remove('scrolled');
-};
-window.addEventListener('scroll', onScroll, { passive: true });
-onScroll();
+if (nav) {
+  const onScroll = () => {
+    if (window.scrollY > 24) nav.classList.add('scrolled');
+    else nav.classList.remove('scrolled');
+  };
+  window.addEventListener('scroll', onScroll, { passive: true });
+  onScroll();
+}
 
-// Drawer
+// Drawer (meme garde : absent hors page d'accueil)
 const drawer = document.getElementById('drawer');
 const scrim = document.getElementById('scrim');
 const hamburger = document.getElementById('hamburger');
 const drawerClose = document.getElementById('drawerClose');
 
-function openDrawer() {
-  drawer.classList.add('open');
-  scrim.classList.add('show');
-  hamburger.classList.add('open');
-  hamburger.setAttribute('aria-expanded', 'true');
-  drawer.setAttribute('aria-hidden', 'false');
-  document.body.style.overflow = 'hidden';
-}
 function closeDrawer() {
+  if (!drawer) return;
   drawer.classList.remove('open');
   scrim.classList.remove('show');
   hamburger.classList.remove('open');
@@ -142,16 +142,26 @@ function closeDrawer() {
   drawer.setAttribute('aria-hidden', 'true');
   document.body.style.overflow = '';
 }
-hamburger.addEventListener('click', () => {
-  if (drawer.classList.contains('open')) closeDrawer();
-  else openDrawer();
-});
-scrim.addEventListener('click', closeDrawer);
-drawerClose.addEventListener('click', closeDrawer);
-drawer.querySelectorAll('a').forEach(a => a.addEventListener('click', closeDrawer));
-document.addEventListener('keydown', (e) => {
-  if (e.key === 'Escape') closeDrawer();
-});
+if (drawer && scrim && hamburger && drawerClose) {
+  const openDrawer = () => {
+    drawer.classList.add('open');
+    scrim.classList.add('show');
+    hamburger.classList.add('open');
+    hamburger.setAttribute('aria-expanded', 'true');
+    drawer.setAttribute('aria-hidden', 'false');
+    document.body.style.overflow = 'hidden';
+  };
+  hamburger.addEventListener('click', () => {
+    if (drawer.classList.contains('open')) closeDrawer();
+    else openDrawer();
+  });
+  scrim.addEventListener('click', closeDrawer);
+  drawerClose.addEventListener('click', closeDrawer);
+  drawer.querySelectorAll('a').forEach(a => a.addEventListener('click', closeDrawer));
+  document.addEventListener('keydown', (e) => {
+    if (e.key === 'Escape') closeDrawer();
+  });
+}
 
 // Reveal on scroll
 const io = new IntersectionObserver((entries) => {
@@ -339,10 +349,18 @@ async function fetchAvailability() {
 function slotStatusFor(dateStr, slotId) {
   return OCCUPIED.has(dateStr + '|' + slotId) ? 'booked' : 'available';
 }
+// Date -> "AAAA-MM-JJ" en heure LOCALE. toISOString() convertit en UTC : pour un
+// visiteur a l'est de UTC (France, Belgique, Afrique), minuit local du 15 devient
+// le 14 en UTC — la reservation partait alors sur le mauvais jour.
+function ymdLocal(d) {
+  return d.getFullYear() + '-' +
+         String(d.getMonth() + 1).padStart(2, '0') + '-' +
+         String(d.getDate()).padStart(2, '0');
+}
 function dayAvailability(dateObj) {
   const today = new Date(); today.setHours(0,0,0,0);
   if (dateObj < today) return 'past';
-  const ds = dateObj.toISOString().slice(0,10);
+  const ds = ymdLocal(dateObj);
   const booked = SLOT_DEFS.filter(s => slotStatusFor(ds, s.id) === 'booked').length;
   if (booked === SLOT_DEFS.length) return 'full';
   if (booked >= 2) return 'low';
@@ -383,7 +401,7 @@ function renderCalendar() {
     const avail = dayAvailability(dateObj);
     const cell = document.createElement('button');
     cell.className = 'cal__day';
-    cell.dataset.date = dateObj.toISOString().slice(0,10);
+    cell.dataset.date = ymdLocal(dateObj);
     const isToday = dateObj.getTime() === todayDate.getTime();
     if (isToday) cell.classList.add('cal__day--today');
 
@@ -514,7 +532,13 @@ modalForm.addEventListener('submit', async (e) => {
   const email = document.getElementById('fEmail').value.trim();
   const eventType = document.getElementById('fType').value;
   const setup = document.getElementById('fSetup').value;
-  if (!name || !phone) return;
+  // Avant : `return` nu -> le bouton ne faisait RIEN, sans aucun message.
+  // reportValidity() affiche la bulle native meme si le <form> est en novalidate.
+  if (!name || !phone) {
+    modalForm.reportValidity();
+    document.getElementById(!name ? 'fName' : 'fPhone').focus();
+    return;
+  }
 
   const submitBtn = modalForm.querySelector('button[type="submit"]');
   submitBtn.disabled = true;

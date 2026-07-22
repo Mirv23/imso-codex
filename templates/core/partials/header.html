@@ -299,10 +299,17 @@
   --tint-green: #dceee2;
   --tint-green-2: #d3e9da;
   --tint-blue: #e0ecf7;
+  --tint-red: #fde2e4;
   --tint-amber: #fdecd9;
   --tint-amber-ink: #b8540f;
   --ghost-hover: #d7ebca;
   --nav-btn-hover: #d6e7da;
+  /* Encre posee SUR une teinte douce (bouton ghost, avatar). En clair c'est le
+     vert fonce ; en nuit il faut un vert CLAIR, sinon vert-fonce-sur-vert-fonce. */
+  --ink-on-tint: var(--primary-dark);
+  --danger: #C62828;
+  --footer-from: #1F4D14;
+  --footer-to: #133209;
   --mission-visual-from: #f4f7f1;
   --mission-visual-to: #e8f3ec;
   --cal-muted: #c5c8c0;
@@ -334,10 +341,16 @@
   --tint-green: #1C2A20;
   --tint-green-2: #1C2A20;
   --tint-blue: #16283A;
+  --tint-red: #331F22;
   --tint-amber: #33251A;
   --tint-amber-ink: #E8A06A;
   --ghost-hover: #24361F;
   --nav-btn-hover: #24361F;
+  --ink-on-tint: #8FD97A;   /* vert clair : lisible sur les teintes sombres */
+  --danger: #FF8A80;
+  /* Sinon le footer restait PLUS CLAIR que la page en mode nuit. */
+  --footer-from: #0F2610;
+  --footer-to: #081A08;
   --mission-visual-from: #15201A;
   --mission-visual-to: #101E17;
   --cal-muted: #465046;
@@ -416,8 +429,12 @@ a { color: inherit; text-decoration: none; }
   display: flex; align-items: center; justify-content: center;
   z-index: 9999;
   transition: opacity .6s ease, visibility .6s;
+  /* Filet de securite : si le JS echoue ou est bloque, le loader s'efface quand
+     meme au bout de 2,5s. Sans cela, un ecran uni rendait le site inutilisable. */
+  animation: loader-failsafe .4s ease 2.5s forwards;
 }
-.loader.hidden { opacity: 0; visibility: hidden; }
+@keyframes loader-failsafe { to { opacity: 0; visibility: hidden; } }
+.loader.hidden { opacity: 0; visibility: hidden; animation: none; }
 .loader__logo {
   font-weight: 800;
   font-size: 32px;
@@ -487,8 +504,14 @@ a { color: inherit; text-decoration: none; }
   margin: 0; padding: 0;
 }
 @media (min-width: 900px) {
-  .nav__links { display: flex; }
+  /* Gouttiere resserree dans la bande etroite : avec l'ajout du bouton mode nuit
+     (44px + gouttiere), les 9 liens debordaient entre 900 et ~945px et le bouton
+     se retrouvait coupe par le bord de l'ecran. */
+  .nav__links { display: flex; gap: 18px; }
   .hamburger { display: none !important; }
+}
+@media (min-width: 1060px) {
+  .nav__links { gap: 28px; }   /* espacement d'origine des qu'il y a la place */
 }
 .nav__link {
   font-size: 14.5px;
@@ -565,12 +588,16 @@ a { color: inherit; text-decoration: none; }
   background: var(--surface);
   z-index: 200;
   transform: translateX(100%);
-  transition: transform .45s cubic-bezier(.7,.1,.2,1);
+  /* visibility:hidden sort les liens du tiroir de l'ordre de tabulation quand il
+     est ferme (sinon ~10 arrets de tabulation invisibles) sans changer l'animation. */
+  visibility: hidden;
+  transition: transform .45s cubic-bezier(.7,.1,.2,1), visibility .45s;
   box-shadow: var(--shadow-lg);
+  border-left: 1px solid var(--border);
   padding: 24px;
   display: flex; flex-direction: column;
 }
-.drawer.open { transform: translateX(0); }
+.drawer.open { transform: translateX(0); visibility: visible; }
 .drawer__head {
   display: flex; align-items: center; justify-content: space-between;
   padding-bottom: 24px;
@@ -657,7 +684,7 @@ a { color: inherit; text-decoration: none; }
 }
 .btn--ghost {
   background: var(--green-soft);
-  color: var(--primary-dark);
+  color: var(--ink-on-tint);
 }
 .btn--ghost:hover { background: var(--ghost-hover); }
 .btn--small { padding: 10px 18px; font-size: 13.5px; }
@@ -816,7 +843,7 @@ a { color: inherit; text-decoration: none; }
 .avatar:first-child { margin-left: 0; }
 .avatar--a { background: var(--tint-amber); color: var(--tint-amber-ink); }
 .avatar--b { background: var(--tint-green); color: var(--primary); }
-.avatar--c { background: var(--tint-green-2); color: var(--primary-dark); }
+.avatar--c { background: var(--tint-green-2); color: var(--ink-on-tint); }
 .avatar--d { background: var(--tint-blue); color: var(--logo-blue); }
 
 /* Hero visual */
@@ -1477,7 +1504,10 @@ a { color: inherit; text-decoration: none; }
   max-width: 320px;
   border: 1px solid var(--border);
 }
-.step__media img { width: 100%; height: auto; display: block; }
+/* aspect-ratio : reserve la place AVANT le chargement de l'image, sinon
+   l'apparition poussait le texte vers le bas (saut de mise en page). */
+.step__media { aspect-ratio: 16 / 9; }
+.step__media img { width: 100%; height: 100%; object-fit: cover; display: block; }
 .step__title {
   font-weight: 700;
   font-size: 20px;
@@ -1713,7 +1743,21 @@ a { color: inherit; text-decoration: none; }
   transition: background .25s, width .35s ease;
   cursor: pointer;
   border: none; padding: 0;
+  position: relative;
 }
+/* Cible tactile : la pastille visible fait 8px, bien trop petit pour un doigt.
+   On elargit la zone cliquable (invisible, en absolu donc sans impact sur la mise
+   en page) : pleine hauteur de doigt en vertical, jusqu'a la pastille voisine en
+   horizontal pour ne pas creer de zone morte ni de chevauchement excessif. */
+.dot::before {
+  content: '';
+  position: absolute;
+  top: 50%; left: 50%;
+  transform: translate(-50%, -50%);
+  width: calc(100% + 8px);
+  height: 44px;
+}
+.dot:focus-visible { outline: 2px solid var(--primary); outline-offset: 4px; }
 .dot.active {
   background: var(--primary);
   width: 28px;
@@ -1796,6 +1840,12 @@ a { color: inherit; text-decoration: none; }
   background: white; color: var(--primary);
   box-shadow: inset 0 0 0 2px white;
 }
+/* L'anneau de focus global est vert : sur le bandeau CTA vert il etait invisible
+   (contraste 1:1). On le passe en blanc uniquement dans ce contexte. */
+.cta-strip a:focus-visible, .cta-strip button:focus-visible {
+  outline: 2px solid white;
+  outline-offset: 3px;
+}
 
 /* Footer */
 .footer {
@@ -1803,7 +1853,7 @@ a { color: inherit; text-decoration: none; }
   background:
     radial-gradient(circle at 12% 0%, rgba(232,122,24,.18), transparent 45%),
     radial-gradient(circle at 88% 100%, rgba(30,120,210,.14), transparent 50%),
-    linear-gradient(180deg, #1F4D14 0%, #133209 100%);
+    linear-gradient(180deg, var(--footer-from) 0%, var(--footer-to) 100%);
   color: rgba(255,255,255,.75);
   padding: 80px 0 32px;
   overflow: hidden;
@@ -1901,7 +1951,9 @@ a { color: inherit; text-decoration: none; }
   .footer__bottom { flex-direction: row; justify-content: space-between; align-items: center; }
 }
 .footer__bottom-links {
-  display: flex; gap: 24px;
+  /* flex-wrap : sous ~340px les 3 liens legaux ne tenaient pas sur une ligne et
+     le dernier se faisait couper par overflow-x:hidden. */
+  display: flex; gap: 24px; flex-wrap: wrap;
 }
 .footer__bottom a:hover { color: white; }
 
@@ -1982,6 +2034,17 @@ a { color: inherit; text-decoration: none; }
   z-index: 3;
   white-space: nowrap;
   border: 1px solid rgba(255,255,255,.18);
+}
+/* Le texte est editable depuis l'admin : en nowrap, une valeur un peu longue
+   debordait du visuel et se faisait rogner. On autorise le retour a la ligne
+   quand la place manque, sans rien changer au rendu desktop habituel. */
+@media (max-width: 560px) {
+  .hero__visual-overlay {
+    white-space: normal;
+    max-width: calc(100% - 24px);
+    text-align: center;
+    line-height: 1.35;
+  }
 }
 
 /* ===== Photo placeholders (img fallback) ===== */
@@ -2112,7 +2175,11 @@ a { color: inherit; text-decoration: none; }
     grid-template-rows: 240px 140px 140px;
     gap: 8px;
   }
-  .espace__gallery .gphoto:nth-child(1) { grid-column: span 2; }
+  /* grid-row:auto est indispensable : la regle de base .gphoto:nth-child(1)
+     impose `grid-row: span 2`. Sans la neutraliser, la 1re photo occupait 2
+     colonnes ET 2 lignes en mobile, et la 4e photo tombait dans une ligne
+     IMPLICITE a hauteur auto -> galerie visiblement bancale. */
+  .espace__gallery .gphoto:nth-child(1) { grid-column: span 2; grid-row: auto; }
 }
 .gphoto {
   position: relative;
@@ -2180,7 +2247,8 @@ a { color: inherit; text-decoration: none; }
 }
 .booking__nav { display: flex; gap: 6px; }
 .booking__nav button {
-  width: 36px; height: 36px;
+  /* 44px : changer de mois au doigt ratait la cible a 36px. */
+  width: 44px; height: 44px;
   border-radius: 10px;
   background: var(--green-soft);
   color: var(--primary);
@@ -2375,9 +2443,12 @@ a { color: inherit; text-decoration: none; }
   display: flex; align-items: center; justify-content: center;
   padding: 20px;
   opacity: 0; pointer-events: none;
-  transition: opacity .3s;
+  /* Sans visibility, les ~20 champs des 3 modales FERMEES restaient tabulables
+     et Chrome signalait une erreur ARIA (focus retenu sous aria-hidden). */
+  visibility: hidden;
+  transition: opacity .3s, visibility .3s;
 }
-.modal-scrim.open { opacity: 1; pointer-events: auto; }
+.modal-scrim.open { opacity: 1; pointer-events: auto; visibility: visible; }
 .modal {
   background: var(--surface);
   border-radius: 24px;
@@ -2399,13 +2470,25 @@ a { color: inherit; text-decoration: none; }
 }
 .modal__title { font-weight: 700; font-size: 20px; letter-spacing: -0.02em; margin: 0; line-height: 1.2; }
 .modal__close {
+  /* La pastille visible reste a 32px (identite inchangee) mais la zone cliquable
+     passe a 44px via un ::before invisible : fermer une modale au doigt ratait
+     souvent la cible, en plein tunnel de commande/reservation. */
   width: 32px; height: 32px;
   border-radius: 10px;
   background: var(--bg);
   display: inline-flex; align-items: center; justify-content: center;
   flex-shrink: 0;
+  position: relative;
+}
+.modal__close::before {
+  content: '';
+  position: absolute;
+  top: 50%; left: 50%;
+  transform: translate(-50%, -50%);
+  width: 44px; height: 44px;
 }
 .modal__close svg { width: 14px; height: 14px; }
+.modal__close:focus-visible { outline: 2px solid var(--primary); outline-offset: 2px; }
 .modal__sub {
   font-size: 13.5px;
   color: var(--muted);
@@ -2445,6 +2528,12 @@ a { color: inherit; text-decoration: none; }
   outline: none;
   border-color: var(--primary);
   background: var(--surface);
+}
+/* Au clavier, la seule bordure verte etait trop discrete (et quasi invisible en
+   mode nuit) : on retablit un anneau net, sans changer le focus a la souris. */
+.field input:focus-visible, .field select:focus-visible, .field textarea:focus-visible {
+  outline: 2px solid var(--primary);
+  outline-offset: 2px;
 }
 .modal__success {
   text-align: center;
