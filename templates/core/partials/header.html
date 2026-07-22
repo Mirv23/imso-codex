@@ -321,9 +321,12 @@
   --shadow-cta-hover: 0 12px 26px -8px color-mix(in srgb, var(--primary) 65%, transparent);
   --mission-visual-from: #f4f7f1;
   --mission-visual-to: #e8f3ec;
-  --cal-muted: #c5c8c0;
-  --cal-full: #aeb1a8;
-  --cal-full-dot: #d4d7d1;
+  /* Remontes : a #c5c8c0 / #d4d7d1 la pastille « complet » tombait a 1,45:1 et un
+     jour passe se confondait avec un jour hors mois. La legende annoncait 3 etats,
+     un seul etait reellement perceptible. */
+  --cal-muted: #A8ADA4;
+  --cal-full: #8D938A;
+  --cal-full-dot: #8D938A;
   --chip-bg: #f0f0ee;
   --chip-ink: #9aa0a8;
 }
@@ -366,9 +369,9 @@
   --footer-to: #081A08;
   --mission-visual-from: #15201A;
   --mission-visual-to: #101E17;
-  --cal-muted: #465046;
-  --cal-full: #55605A;
-  --cal-full-dot: #333D33;
+  --cal-muted: #5A655A;
+  --cal-full: #6E7A6E;
+  --cal-full-dot: #6E7A6E;
   --chip-bg: #222A22;
   --chip-ink: #7D887A;
   /* Ombres plus profondes pour rester visibles sur fond sombre. */
@@ -769,6 +772,10 @@ a { color: inherit; text-decoration: none; }
   color: var(--ink-on-tint);
 }
 .btn--ghost:hover { background: var(--ghost-hover); }
+/* Indisponible : gris, jamais le vert de marque. .btn--ghost est aussi le style du
+   CTA ACTIF des cartes cours — un etat indisponible et une action disponible ne
+   doivent pas se rendre a l'identique. */
+.btn--muted { background: var(--chip-bg); color: var(--chip-ink); }
 .btn--small { padding: 10px 18px; font-size: 13.5px; }
 .btn--block { width: 100%; }
 
@@ -1326,7 +1333,13 @@ a { color: inherit; text-decoration: none; }
 /* Boutique — grille des autres produits */
 .shop-more { margin-top: 56px; padding-top: 40px; border-top: 1px solid var(--border); }
 .shop-more__title { font-weight: 700; font-size: 22px; letter-spacing: -0.02em; margin: 0 0 24px; }
-.shop-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(240px, 1fr)); gap: 20px; }
+/* auto-fill + 1fr etirait toujours les cartes pour remplir la ligne : avec 1 seul
+   « autre produit », la carte occupait 1160px et son image 4/3 montait a ~870px de
+   haut. Meme decoupe que .courses__grid : les 2 grilles de la page partagent enfin
+   le meme rythme. */
+.shop-grid { display: grid; grid-template-columns: 1fr; gap: 20px; }
+@media (min-width: 640px) { .shop-grid { grid-template-columns: repeat(2, 1fr); } }
+@media (min-width: 900px) { .shop-grid { grid-template-columns: repeat(3, 1fr); } }
 .shop-card {
   background: var(--surface); border: 1px solid var(--border); border-radius: 20px;
   overflow: hidden; display: flex; flex-direction: column;
@@ -2374,6 +2387,10 @@ a { color: inherit; text-decoration: none; }
 }
 .gphoto:hover { transform: scale(1.01); }
 .gphoto:nth-child(1) { grid-row: span 2; }
+/* La grille offre 6 cellules et la photo 1 en occupe 2 : avec 4 photos il restait
+   une cellule VIDE (~278x200px de fond de page) au coin bas droit en desktop, et
+   une demi-rangee vide en mobile. La 4e photo occupe les 2 cellules restantes. */
+.gphoto:nth-child(4) { grid-column: span 2; }
 .gphoto img {
   width: 100%; height: 100%;
   object-fit: cover;
@@ -2488,8 +2505,10 @@ a { color: inherit; text-decoration: none; }
   content: '';
   position: absolute;
   inset: 0;
-  border-radius: 12px;
-  border: 1px dashed var(--border-strong);
+  border-radius: var(--radius-sm);
+  /* Le pointille en --border-strong donnait 1,41:1 : le repere d'ancrage principal
+     du calendrier etait son element le plus faible. */
+  border: 1px solid var(--primary);
 }
 .cal__dot {
   width: 5px; height: 5px;
@@ -2498,8 +2517,15 @@ a { color: inherit; text-decoration: none; }
 .cal__dot--ok { background: var(--accent); }
 .cal__dot--low { background: var(--highlight); }
 .cal__dot--full { background: var(--cal-full-dot); }
-.cal__day--full { color: var(--cal-full); cursor: not-allowed; }
-.cal__day--full:hover { background: transparent; transform: none; }
+/* « Complet » ne repose plus sur un seul point de 6px : la cellule entiere lit
+   « bloque ». */
+.cal__day--full {
+  color: var(--cal-full);
+  background: var(--chip-bg);
+  text-decoration: line-through;
+  cursor: not-allowed;
+}
+.cal__day--full:hover { background: var(--chip-bg); transform: none; }
 .cal__day--selected {
   background: var(--primary);
   color: white;
@@ -2522,6 +2548,12 @@ a { color: inherit; text-decoration: none; }
   border-radius: 50%;
   display: inline-block;
 }
+/* Le repere « aujourd'hui » est un anneau dans la grille : la legende le montre
+   sous la meme forme, et non comme un point plein. */
+.cal__legend-today {
+  background: transparent;
+  box-shadow: inset 0 0 0 2px var(--primary);
+}
 
 /* Slot panel */
 .slots__head {
@@ -2538,6 +2570,14 @@ a { color: inherit; text-decoration: none; }
   font-size: 13px;
   color: var(--muted);
   margin: 4px 0 0;
+}
+/* La colonne droite n'avait aucune regle : son contenu restait colle en haut et il
+   restait 290 a 360px de blanc au bas de la carte, qui paraissait systematiquement
+   desequilibree (lourde a gauche, inachevee a droite). */
+@media (min-width: 900px) {
+  .booking__slots { display: flex; flex-direction: column; }
+  .slots__list { flex: 1; }
+  .slots__empty { height: 100%; display: flex; flex-direction: column; justify-content: center; }
 }
 .slots__list {
   display: flex; flex-direction: column;
@@ -2587,9 +2627,18 @@ a { color: inherit; text-decoration: none; }
   border-radius: 999px;
 }
 .slot__status--ok { background: var(--green-soft); color: var(--primary); }
-.slot__status--booked { background: var(--chip-bg); color: var(--chip-ink); }
+.slot__status--booked { background: var(--chip-bg); color: var(--muted); }
 .slot__action { flex-shrink: 0; }
-.slot--booked { opacity: .6; cursor: not-allowed; }
+/* opacity:.6 s'appliquait a TOUTE la ligne : compose sur la carte blanche, la
+   pastille « Reserve » tombait a 1,59:1 — un creneau pris se lisait comme un
+   creneau « en cours de chargement ». On exprime l'indisponibilite par des
+   couleurs explicites, a pleine opacite. */
+.slot--booked {
+  background: var(--chip-bg);
+  border-color: var(--border);
+  cursor: not-allowed;
+}
+.slot--booked .slot__time, .slot--booked .slot__period { color: var(--muted); }
 .slot--booked .slot__action { display: none; }
 /* Mobile : le créneau s'empile (heure/période en haut, statut + bouton en bas)
    au lieu de se comprimer sur une seule ligne trop étroite. */
