@@ -80,10 +80,10 @@
       <span class="label"><span class="label__bullet"></span>{{ texts.val_label|default:"Nos valeurs" }}</span>
       <h2 class="section__title">{{ texts.val_title|default:"Trois principes qui guident chaque décision." }}</h2>
     </div>
-    {# reveal sur le CONTENEUR, pas sur chaque carte : une carte de carrousel qui
+    {% comment %} reveal sur le CONTENEUR, pas sur chaque carte : une carte de carrousel qui
        deborde a droite n'intersecte jamais le viewport, restait donc a opacity:0 —
        c'est ce qui donnait aux sections a slides l'air « plates » (une carte seule
-       dans du vide). Meme traitement que le carrousel temoignages. #}
+       dans du vide). Meme traitement que le carrousel temoignages. {% endcomment %}
     <div class="values__wrap reveal{% if core_values|length > 3 %} values__wrap--carousel{% endif %}">
       <div class="values__grid">
         {% for v in core_values %}

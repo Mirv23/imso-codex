@@ -70,8 +70,8 @@
             <div class="shop-card__foot">
               <span class="shop-card__price">{{ p.price_htg }} <small>HTG</small></span>
               {% if not p.track_stock or p.stock > 0 %}
-              {# --ghost et non --primary : le vert plein reste reserve au CTA
-                 principal de la section (le kit). Meme regle que les cartes cours. #}
+              {% comment %} --ghost et non --primary : le vert plein reste reserve au CTA
+                 principal de la section (le kit). Meme regle que les cartes cours. {% endcomment %}
               <button class="btn btn--ghost btn--small js-order" data-id="{{ p.id }}" data-name="{{ p.name }}" data-price="{{ p.price_htg }}">Commander</button>
               {% else %}<button class="btn btn--muted btn--small" disabled>Rupture</button>{% endif %}
             </div>

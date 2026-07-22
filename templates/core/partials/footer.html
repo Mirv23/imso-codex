@@ -45,10 +45,10 @@
       </div>
       <div class="footer__col">
         <h4>{{ texts.foot_resources_title|default:"Ressources" }}</h4>
-        {# Chaque lien n'apparait que si son URL est renseignee en admin : sinon les
+        {% comment %} Chaque lien n'apparait que si son URL est renseignee en admin : sinon les
            liens pointaient tous sur #contact (l'ancre du footer lui-meme), un clic
            sans effet. Une colonne « Statuts / Rapport annuel » qui ne s'ouvre pas
-           est un dommage de credibilite pour une mutuelle. #}
+           est un dommage de credibilite pour une mutuelle. {% endcomment %}
         <ul role="list">
           {% if site.url_statuts %}<li><a href="{{ site.url_statuts }}">{{ texts.foot_res_statuts|default:"Statuts du GEI" }}</a></li>{% endif %}
           {% if site.url_calendrier %}<li><a href="{{ site.url_calendrier }}">{{ texts.foot_res_calendrier|default:"Calendrier 2026" }}</a></li>{% endif %}
@@ -62,8 +62,8 @@
       </div>
       <div class="footer__col">
         <h4>{{ texts.foot_contact_title|default:"Contact" }}</h4>
-        {# Coordonnees actionnables : sur mobile, un numero cliquable lance l'appel
-           et un email ouvre le client mail — au lieu d'un texte a recopier. #}
+        {% comment %} Coordonnees actionnables : sur mobile, un numero cliquable lance l'appel
+           et un email ouvre le client mail — au lieu d'un texte a recopier. {% endcomment %}
         {% with c_phone=site.contact_phone|default:"+509 38 22 18 04" c_email=site.contact_email|default:"bonjour@imso.ht" c_addr=site.contact_address|default:"32, Rue Capois, Port-au-Prince, Haïti" %}
         <ul role="list" class="footer__contact">
           <li>

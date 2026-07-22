@@ -14,9 +14,9 @@
         <div class="why__featured-img img-wrap">
           <div class="img-fallback">Réseau IMSO</div>
           {% if images.why_featured %}<img src="{{ images.why_featured.image.url }}" alt="{{ images.why_featured.alt }}" loading="lazy" onload="this.parentElement.classList.add('img-loaded')">{% else %}<img src="https://images.unsplash.com/photo-1582213782179-e0d53f98f2ca?w=900&amp;auto=format&amp;q=80" alt="Mains jointes en signe d'entraide — réseau IMSO" loading="lazy" onload="this.parentElement.classList.add('img-loaded')">{% endif %}
-          {# « 5 GEI » etait en dur alors que total_geis est calcule et deja affiche
+          {% comment %} « 5 GEI » etait en dur alors que total_geis est calcule et deja affiche
              dans la bande Stats de la meme page : les deux pouvaient se contredire.
-             La pastille disparait plutot que d'afficher « 0 GEI actifs ». #}
+             La pastille disparait plutot que d'afficher « 0 GEI actifs ». {% endcomment %}
           {% if texts.why_featured_caption %}
           <span class="why__featured-img-caption">{{ texts.why_featured_caption }}</span>
           {% elif total_geis %}
@@ -24,10 +24,10 @@
           {% endif %}
         </div>
         <p class="why__text">{{ texts.why_card1_text|default:"Des centaines d'entrepreneurs, formateurs et épargnants partagent quotidiennement conseils, ressources et opportunités. Vous n'êtes jamais seul·e dans votre projet." }}</p>
-        {# Le chiffre est desormais pilote depuis l'admin ET effacable : le context
+        {% comment %} Le chiffre est desormais pilote depuis l'admin ET effacable : le context
            processor exclut les valeurs vides, donc vider la cle fait disparaitre
            proprement tout le bloc. Par defaut on affiche une donnee VERIFIABLE
-           (le nombre reel de membres actifs) plutot qu'une note non sourcable. #}
+           (le nombre reel de membres actifs) plutot qu'une note non sourcable. {% endcomment %}
         {% if texts.why_stat_value or total_members %}
         <div class="why__featured-stat">
           <strong>{{ texts.why_stat_value|default:total_members }}</strong>
