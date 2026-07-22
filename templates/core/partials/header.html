@@ -310,6 +310,15 @@
   --danger: #C62828;
   --footer-from: #1F4D14;
   --footer-to: #133209;
+  /* --- Systeme commun : primitives manquantes (valeurs deja ecrites en dur
+         ailleurs dans le fichier, on les centralise). --- */
+  --radius-sm: 12px;                  /* controles et elements de liste */
+  --scrim: rgba(26,32,20,.45);        /* voile derriere le tiroir mobile */
+  --nav-link-hover: var(--primary-dark);  /* --primary seul = 3,59:1 au survol */
+  --focus-ring: var(--primary-dark);  /* l'anneau --primary etait invisible sur .btn--primary */
+  --overlay-ink: rgba(26,32,20,.62);  /* pose sur une PHOTO : ne bascule PAS en nuit */
+  --shadow-cta: 0 8px 20px -8px color-mix(in srgb, var(--primary) 55%, transparent);
+  --shadow-cta-hover: 0 12px 26px -8px color-mix(in srgb, var(--primary) 65%, transparent);
   --mission-visual-from: #f4f7f1;
   --mission-visual-to: #e8f3ec;
   --cal-muted: #c5c8c0;
@@ -348,6 +357,10 @@
   --nav-btn-hover: #24361F;
   --ink-on-tint: #8FD97A;   /* vert clair : lisible sur les teintes sombres */
   --danger: #FF8A80;
+  --scrim: rgba(0,0,0,.66);            /* le voile clair etait invisible en nuit */
+  --nav-link-hover: var(--accent);
+  --focus-ring: var(--accent);
+  /* --overlay-ink n'est PAS redefini : il se pose sur une photo, pas sur le fond. */
   /* Sinon le footer restait PLUS CLAIR que la page en mode nuit. */
   --footer-from: #0F2610;
   --footer-to: #081A08;
@@ -384,9 +397,20 @@ a { color: inherit; text-decoration: none; }
 ::selection { background: var(--accent); color: white; }
 
 :focus-visible {
-  outline: 2px solid var(--primary);
+  /* --primary etait invisible sur les surfaces vertes (bouton principal, bande CTA)
+     et tombait a ~2,6:1 dans le footer. --focus-ring est plus fonce en clair et
+     plus clair en nuit : il ressort dans les deux themes. */
+  outline: 2px solid var(--focus-ring);
   outline-offset: 3px;
   border-radius: 6px;
+}
+/* Sur les surfaces de marque (fond vert plein), l'anneau passe en blanc. */
+.btn--primary:focus-visible,
+.cta-strip a:focus-visible,
+.cta-strip button:focus-visible,
+.footer a:focus-visible,
+.social:focus-visible {
+  outline-color: white;
 }
 
 /* Brand image logos */
@@ -525,12 +549,22 @@ a { color: inherit; text-decoration: none; }
   content: '';
   position: absolute;
   left: 0; bottom: -2px;
-  width: 0; height: 2px;
+  /* On anime transform (composable) et non width (declenche une mise en page). */
+  width: 100%; height: 2px;
   background: var(--primary);
-  transition: width .35s cubic-bezier(.6,.2,.2,1);
+  transform: scaleX(0);
+  transform-origin: left;
+  transition: transform .35s cubic-bezier(.6,.2,.2,1);
 }
-.nav__link:hover { color: var(--primary); }
-.nav__link:hover::after { width: 100%; }
+/* --primary sur le fond de page tombait a 3,59:1 : le survol RENDAIT le lien moins
+   lisible qu'au repos. --nav-link-hover est plus fonce en clair, plus clair en nuit. */
+.nav__link:hover, .nav__link:focus-visible { color: var(--nav-link-hover); }
+.nav__link:hover::after, .nav__link:focus-visible::after { transform: scaleX(1); }
+/* Etat COURANT : sur une page mono-section a 6 ancres, l'utilisateur n'avait aucun
+   repere. Le trait existant est simplement fige. Pas de changement de graisse :
+   passer de 500 a 600 modifierait la largeur du texte et ferait tressauter la barre. */
+.nav__link[aria-current] { color: var(--nav-link-hover); }
+.nav__link[aria-current]::after { transform: scaleX(1); }
 
 .hamburger {
   width: 44px; height: 44px;
@@ -596,6 +630,12 @@ a { color: inherit; text-decoration: none; }
   border-left: 1px solid var(--border);
   padding: 24px;
   display: flex; flex-direction: column;
+  /* Le contenu du tiroir fait ~731px de haut. Sans defilement, sous ~732px de
+     hauteur utile (iPhone SE 667px, Android d'entree de gamme, TOUT telephone en
+     paysage) le bouton « Adherer » sortait de l'ecran sans moyen de l'atteindre. */
+  overflow-y: auto;
+  overscroll-behavior: contain;
+  padding-bottom: max(24px, env(safe-area-inset-bottom));
 }
 .drawer.open { transform: translateX(0); visibility: visible; }
 .drawer__head {
@@ -618,29 +658,52 @@ a { color: inherit; text-decoration: none; }
   padding: 0;
   display: flex; flex-direction: column;
   gap: 0;
+  /* Numerotation generee en CSS : elle reste juste quel que soit l'etat de la BDD.
+     Avant, les numeros etaient ecrits en dur dans le balisage alors que l'entree
+     Blog est conditionnelle -> desactiver le blog affichait 01..06 puis 08. */
+  counter-reset: dl;
 }
 .drawer__links a {
   display: flex; align-items: center; justify-content: space-between;
-  padding: 16px 4px;
+  padding: 15px 4px;
   font-size: 18px;
   font-weight: 600;
+  line-height: 1.3;
   border-bottom: 1px solid var(--border);
-  transition: color .2s, padding-left .25s;
+  counter-increment: dl;
+  /* On anime transform, pas padding-left (qui declenche une mise en page). */
+  transition: color .2s, transform .25s ease;
 }
-.drawer__links a:hover { color: var(--primary); padding-left: 12px; }
-.drawer__links a > span:last-child {
+@media (hover: hover) {
+  .drawer__links a:hover { color: var(--nav-link-hover); transform: translateX(6px); }
+}
+.drawer__links a:active { transform: translateX(6px); }
+.drawer__links a[aria-current] {
+  color: var(--nav-link-hover);
+  box-shadow: inset 2px 0 0 var(--primary);
+}
+.drawer__links a::after {
+  content: counter(dl, decimal-leading-zero);
   color: var(--muted);
   font-weight: 500;
-  font-size: 12px;
+  font-size: 12.5px;
+  letter-spacing: .08em;
   font-family: 'JetBrains Mono', monospace;
 }
+.drawer__links a[aria-current]::after { color: var(--primary); }
 .drawer__cta {
   margin-top: auto;
-  padding-top: 24px;
+  /* Colle en bas : le CTA reste visible quelle que soit la hauteur d'ecran,
+     au lieu d'etre pousse hors du champ par la liste de liens. */
+  position: sticky;
+  bottom: 0;
+  background: var(--surface);
+  padding: 20px 0 4px;
+  border-top: 1px solid var(--border);
 }
 .scrim {
   position: fixed; inset: 0;
-  background: rgba(26,32,20,.4);
+  background: var(--scrim);   /* seule couleur en dur du bloc nav : invisible en nuit */
   backdrop-filter: blur(4px);
   z-index: 150;
   opacity: 0; pointer-events: none;
@@ -662,16 +725,31 @@ a { color: inherit; text-decoration: none; }
   transition: transform .2s ease, background .25s, color .25s, border-color .25s, box-shadow .25s;
   white-space: nowrap;
 }
-.btn:hover { transform: scale(1.03); }
+/* Le survol ne s'applique que la ou il existe vraiment (pas sur tactile). */
+@media (hover: hover) {
+  .btn:hover { transform: scale(1.03); }
+}
 .btn:active { transform: scale(0.98); }
+/* Etat DESACTIVE : il n'existait aucune regle, donc « Rupture de stock » et
+   « Bientot disponible » se comportaient visuellement comme des boutons actifs. */
+.btn:disabled,
+.btn[disabled] {
+  opacity: .5;
+  cursor: not-allowed;
+  box-shadow: none;
+  transform: none;
+}
+.btn:disabled:hover,
+.btn[disabled]:hover { transform: none; box-shadow: none; }
 .btn--primary {
   background: var(--primary);
   color: white;
-  box-shadow: 0 8px 20px -8px rgba(60,150,38,.55);
+  /* --primary est editable depuis l'admin : l'ombre doit en deriver, pas etre figee. */
+  box-shadow: var(--shadow-cta);
 }
 .btn--primary:hover {
   background: var(--primary-dark);
-  box-shadow: 0 12px 26px -8px rgba(60,150,38,.65);
+  box-shadow: var(--shadow-cta-hover);
 }
 .btn--outline-amber {
   background: transparent;
@@ -708,10 +786,13 @@ a { color: inherit; text-decoration: none; }
 .label {
   display: inline-flex; align-items: center; gap: 8px;
   font-size: 12px;
-  font-weight: 500;
+  font-weight: 600;
   letter-spacing: 0.12em;
+  line-height: 1;
   text-transform: uppercase;
-  color: var(--primary);
+  /* --primary sur --green-soft echouait au contraste : --ink-on-tint est le token
+     cree pour l'encre posee sur une teinte douce (et il bascule en mode nuit). */
+  color: var(--ink-on-tint);
   padding: 6px 14px;
   background: var(--green-soft);
   border-radius: 999px;
@@ -1022,9 +1103,10 @@ a { color: inherit; text-decoration: none; }
   vertical-align: super;
 }
 .stat__label {
-  font-size: 11.5px;
-  font-weight: 500;
-  letter-spacing: 0.14em;
+  font-size: 12px;
+  font-weight: 600;      /* le libelle decrochait du chiffre : il redevient lisible */
+  letter-spacing: 0.10em;
+  line-height: 1.35;
   text-transform: uppercase;
   color: var(--muted);
   margin-top: 10px;
@@ -1056,7 +1138,7 @@ a { color: inherit; text-decoration: none; }
   width: 28px; height: 28px;
   border-radius: 50%;
   background: var(--green-soft);
-  color: var(--primary);
+  color: var(--ink-on-tint);
   display: inline-flex; align-items: center; justify-content: center;
   margin-top: 2px;
 }
@@ -1286,14 +1368,15 @@ a { color: inherit; text-decoration: none; }
   display: inline-flex; align-items: center; justify-content: center;
   margin-bottom: 24px;
 }
-.value-card__icon--green { background: var(--green-soft); color: var(--primary); }
+.value-card__icon--green { background: var(--green-soft); color: var(--ink-on-tint); }
 .value-card__icon--amber { background: var(--highlight-soft); color: var(--highlight); }
 .value-card__icon--teal { background: var(--tint-blue); color: var(--logo-blue); }
 .value-card__title {
   font-weight: 700;
   font-size: 22px;
   letter-spacing: -0.02em;
-  margin: 0 0 10px;
+  line-height: 1.25;   /* sinon herite du 1.7 du body : titre sur 2 lignes trop aere */
+  margin: 0 0 12px;
 }
 .value-card__text {
   color: var(--muted);
@@ -1305,9 +1388,12 @@ a { color: inherit; text-decoration: none; }
   position: absolute;
   top: 24px; right: 28px;
   font-family: 'JetBrains Mono', monospace;
-  font-size: 12px;
+  font-size: 12.5px;
+  letter-spacing: .08em;
+  line-height: 1;
+  /* Avant : --muted (deja attenue) + opacity:.5 => ~2:1, illisible. On differencie
+     par la FORME (chasse mono, taille, tracking), jamais par une 2e couche d'opacite. */
   color: var(--muted);
-  opacity: .5;
 }
 
 /* Pourquoi */
@@ -1403,9 +1489,9 @@ a { color: inherit; text-decoration: none; }
 }
 .why__icon {
   width: 48px; height: 48px;
-  border-radius: 14px;
+  border-radius: var(--radius);
   background: var(--green-soft);
-  color: var(--primary);
+  color: var(--ink-on-tint);
   display: inline-flex; align-items: center; justify-content: center;
 }
 .why__title {
@@ -1512,6 +1598,7 @@ a { color: inherit; text-decoration: none; }
   font-weight: 700;
   font-size: 20px;
   letter-spacing: -0.015em;
+  line-height: 1.25;   /* idem : evite le titre d'etape trop espace sur 2 lignes */
   margin: 0 0 8px;
 }
 .step__text {
@@ -1523,9 +1610,10 @@ a { color: inherit; text-decoration: none; }
 .step__meta {
   margin-top: 14px;
   font-family: 'JetBrains Mono', monospace;
-  font-size: 11.5px;
-  letter-spacing: 0.05em;
-  color: var(--primary);
+  font-size: 12.5px;
+  letter-spacing: 0.08em;
+  line-height: 1;
+  color: var(--ink-on-tint);
   display: inline-flex; align-items: center; gap: 6px;
   padding: 4px 10px;
   border-radius: 999px;

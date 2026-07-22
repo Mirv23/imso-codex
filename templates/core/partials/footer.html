@@ -163,6 +163,36 @@ if (drawer && scrim && hamburger && drawerClose) {
   });
 }
 
+// Section courante (scroll-spy) — sur une page mono-section a 6 ancres, rien
+// n'indiquait ou l'on se trouve. On pose aria-current sur le lien visible ; le CSS
+// se contente de figer le trait qui existe deja au survol.
+(function () {
+  const links = Array.from(document.querySelectorAll('.nav__link[href^="#"], .drawer__links a[href^="#"]'));
+  if (!links.length) return;
+  const byId = new Map();
+  links.forEach((a) => {
+    const id = a.getAttribute('href').slice(1);
+    if (!id) return;
+    if (!byId.has(id)) byId.set(id, []);
+    byId.get(id).push(a);
+  });
+  const sections = Array.from(byId.keys())
+    .map((id) => document.getElementById(id))
+    .filter(Boolean);
+  if (!sections.length) return;
+  let current = null;
+  const spy = new IntersectionObserver((entries) => {
+    entries.forEach((e) => {
+      if (!e.isIntersecting) return;
+      if (current === e.target.id) return;
+      current = e.target.id;
+      links.forEach((a) => a.removeAttribute('aria-current'));
+      (byId.get(current) || []).forEach((a) => a.setAttribute('aria-current', 'true'));
+    });
+  }, { rootMargin: '-45% 0px -50% 0px', threshold: 0 });
+  sections.forEach((s) => spy.observe(s));
+})();
+
 // Reveal on scroll
 const io = new IntersectionObserver((entries) => {
   entries.forEach(entry => {
