@@ -1,9 +1,254 @@
 <!-- Footer -->
-{% load static %}<footer class="footer" id="contact">
+{% load static %}{% comment %}
+Surcharges design (scopees) : bande CTA + footer. Le CSS global vit dans
+header.html (intouchable depuis ce fichier) ; ce bloc ne surcharge QUE
+.cta-strip et .footer. Toutes les couleurs passent par les tokens existants
+(--primary-dark, --footer-from/--footer-to, --highlight, --logo-blue), definis
+pour les deux themes dans header.html, plus des blancs translucides lisibles
+sur les deux degrades sombres (le footer est fonce meme en mode clair).
+{% endcomment %}
+<style>
+/* ================= Bande CTA ================= */
+.cta-strip {
+  /* Trame de points en CSS pur par-dessus un degrade qui relie --primary-dark
+     au haut du footer (--footer-from) : la bande fait la transition de valeur
+     vers le footer dans les deux themes. */
+  background:
+    radial-gradient(rgba(255,255,255,.055) 1.2px, transparent 1.8px),
+    linear-gradient(140deg, var(--primary-dark) 0%, var(--footer-from) 115%);
+  background-size: 26px 26px, auto;
+  box-shadow: var(--shadow-lg);
+}
+/* Anneaux decoratifs excentres (purement ornementaux, sous le texte) */
+.cta-strip__inner::before,
+.cta-strip__inner::after {
+  content: '';
+  position: absolute;
+  border-radius: 50%;
+  border: 1.5px solid rgba(255,255,255,.13);
+  pointer-events: none;
+}
+.cta-strip__inner::before { width: 200px; height: 200px; top: -130px; left: -150px; }
+.cta-strip__inner::after { width: 150px; height: 150px; bottom: -110px; right: -110px; border-color: rgba(255,255,255,.09); }
+/* Lift au survol des boutons de la bande (les couleurs AA de header.html restent) */
+.cta-strip .hero__ctas .btn {
+  transition: transform .28s cubic-bezier(.34,1.56,.64,1), box-shadow .28s ease,
+              background .25s ease, color .25s ease;
+}
+.cta-strip .hero__ctas .btn:hover { transform: translateY(-3px); }
+.cta-strip .hero__ctas .btn:active { transform: translateY(-1px); }
+.cta-strip .btn--primary:hover { box-shadow: 0 16px 30px -12px rgba(0,0,0,.5); }
+
+/* ================= Footer ================= */
+.footer {
+  /* Memes halos que l'existant mais derives des tokens (editables en admin),
+     + fine trame de points qui donne de la matiere au degrade. */
+  background:
+    radial-gradient(circle at 12% 0%, color-mix(in srgb, var(--highlight) 17%, transparent), transparent 45%),
+    radial-gradient(circle at 88% 100%, color-mix(in srgb, var(--logo-blue) 13%, transparent), transparent 50%),
+    radial-gradient(rgba(255,255,255,.035) 1px, transparent 1.5px),
+    linear-gradient(180deg, var(--footer-from) 0%, var(--footer-to) 100%);
+  background-size: auto, auto, 30px 30px, auto;
+  padding: 84px 0 28px;
+}
+/* L'anneau de focus global (vert) est invisible sur le fond vert fonce. */
+.footer :is(a, button):focus-visible { outline: 2px solid #fff; outline-offset: 3px; border-radius: 6px; }
+
+/* Bloc marque */
+.footer__badge { margin-bottom: 18px; }
+.footer__badge img { transition: transform .35s ease, box-shadow .35s ease; }
+.footer__brand:hover .footer__badge img {
+  transform: translateY(-3px) rotate(-1.5deg);
+  box-shadow: 0 14px 30px -10px rgba(0,0,0,.55);
+}
+
+/* Titres de colonnes : petit trait accent degrade */
+.footer__col h4 { position: relative; padding-bottom: 10px; margin-bottom: 14px; }
+.footer__col h4::after {
+  content: '';
+  position: absolute; left: 0; bottom: 0;
+  width: 30px; height: 2px; border-radius: 2px;
+  background: linear-gradient(90deg, var(--highlight) 0%, color-mix(in srgb, var(--highlight) 25%, transparent) 100%);
+}
+
+/* Liens de colonnes (hors liste contact) : zone tactile >= 44px, chevron orange
+   qui glisse a l'apparition — il remplace le soulignement, le libelle passe en
+   blanc (lisibilite conservee, cf. notes contraste de header.html). */
+.footer__col ul:not(.footer__contact) { gap: 2px; }
+.footer__col ul:not(.footer__contact) a {
+  display: inline-flex; align-items: center;
+  min-height: 44px;
+  padding-left: 18px;
+  position: relative;
+  transition: color .2s ease, transform .28s cubic-bezier(.2,.7,.2,1);
+}
+.footer__col ul:not(.footer__contact) a::before {
+  content: '';
+  position: absolute; left: 2px; top: 50%;
+  width: 7px; height: 7px;
+  border-top: 2px solid var(--highlight);
+  border-right: 2px solid var(--highlight);
+  border-radius: 1px;
+  transform: translate(-6px, -50%) rotate(45deg);
+  opacity: 0;
+  transition: opacity .25s ease, transform .25s ease;
+}
+.footer__col ul:not(.footer__contact) a:hover,
+.footer__col ul:not(.footer__contact) a:focus-visible {
+  color: #fff;
+  transform: translateX(4px);
+  text-decoration: none;
+}
+.footer__col ul:not(.footer__contact) a:hover::before,
+.footer__col ul:not(.footer__contact) a:focus-visible::before {
+  opacity: 1;
+  transform: translate(0, -50%) rotate(45deg);
+}
+.footer__soon { min-height: 44px; display: inline-flex; align-items: center; }
+
+/* Contact : icones en pastilles, lignes centrees, cibles tactiles genereuses */
+.footer .footer__contact { gap: 6px; }
+.footer .footer__contact li { align-items: center; gap: 12px; min-height: 48px; }
+.footer .footer__contact li svg {
+  width: 34px; height: 34px;
+  padding: 8px;
+  box-sizing: border-box;
+  margin-top: 0;
+  border-radius: 10px;
+  background: rgba(255,255,255,.07);
+  border: 1px solid rgba(255,255,255,.09);
+  transition: background .25s ease, border-color .25s ease, transform .25s ease;
+}
+.footer .footer__contact li:hover svg {
+  background: color-mix(in srgb, var(--highlight) 24%, transparent);
+  border-color: color-mix(in srgb, var(--highlight) 45%, transparent);
+  transform: scale(1.07);
+}
+.footer .footer__contact a { display: inline-flex; align-items: center; min-height: 44px; padding: 2px 0; }
+
+/* Icones sociales : 44px tactiles, lift ressort + rotation de l'icone */
+.footer .social {
+  width: 44px; height: 44px;
+  border: 1px solid rgba(255,255,255,.10);
+  transition: background .3s ease, border-color .3s ease, box-shadow .3s ease,
+              transform .3s cubic-bezier(.34,1.56,.64,1);
+}
+.footer .social svg { transition: transform .3s cubic-bezier(.34,1.56,.64,1); }
+.footer .social:hover, .footer .social:focus-visible {
+  background: var(--highlight);
+  border-color: transparent;
+  transform: translateY(-4px);
+  box-shadow: 0 12px 22px -10px color-mix(in srgb, var(--highlight) 75%, transparent);
+}
+.footer .social:hover svg { transform: scale(1.15) rotate(-8deg); }
+.footer .social:active { transform: translateY(-1px); }
+
+/* Barre copyright : filet degrade + soulignement anime des liens legaux */
+.footer .footer__bottom {
+  margin-top: 52px;
+  padding-top: 20px;
+  border-top: none;
+  position: relative;
+  gap: 14px;
+}
+.footer .footer__bottom::before {
+  content: '';
+  position: absolute; top: 0; left: 0; right: 0; height: 1px;
+  background: linear-gradient(90deg, transparent, rgba(255,255,255,.25) 18%, rgba(255,255,255,.25) 82%, transparent);
+}
+.footer .footer__bottom-links { gap: 4px 18px; }
+.footer .footer__bottom-links a {
+  display: inline-flex; align-items: center;
+  min-height: 44px;
+  position: relative;
+  transition: color .2s ease;
+}
+.footer .footer__bottom-links a::after {
+  content: '';
+  position: absolute; left: 0; right: 0; bottom: 9px;
+  height: 1px;
+  background: var(--highlight);
+  transform: scaleX(0);
+  transform-origin: left;
+  transition: transform .3s ease;
+}
+.footer .footer__bottom-links a:hover { color: #fff; }
+.footer .footer__bottom-links a:hover::after,
+.footer .footer__bottom-links a:focus-visible::after { transform: scaleX(1); }
+
+/* Bouton retour en haut (ancre pure : #top est gere nativement partout) */
+.footer__top-btn {
+  display: inline-flex; align-items: center; gap: 8px;
+  min-height: 44px;
+  padding: 0 16px;
+  border-radius: 999px;
+  border: 1px solid rgba(255,255,255,.16);
+  background: rgba(255,255,255,.05);
+  color: rgba(255,255,255,.8);
+  font-size: 13px; font-weight: 600;
+  align-self: flex-start;
+  transition: background .25s ease, border-color .25s ease, color .2s ease, transform .25s ease;
+}
+.footer__top-btn svg { width: 15px; height: 15px; transition: transform .25s ease; }
+.footer__top-btn:hover {
+  color: #fff;
+  border-color: rgba(255,255,255,.35);
+  background: rgba(255,255,255,.10);
+  transform: translateY(-2px);
+}
+.footer__top-btn:hover svg { transform: translateY(-2px); }
+@media (min-width: 768px) { .footer__top-btn { align-self: center; } }
+
+/* Responsive : contact en pleine largeur sous 768px, une seule colonne sous 380px */
+@media (max-width: 767.98px) {
+  .footer__grid { gap: 26px 20px; }
+  .footer__grid > .footer__col:last-child { grid-column: 1 / -1; }
+}
+@media (max-width: 379.98px) {
+  .footer__grid { grid-template-columns: 1fr; }
+}
+
+/* Cascade d'entree : quand une colonne est revelee (.reveal -> .in), ses lignes
+   montent une a une ; idem pour les icones sociales du bloc marque. Animation
+   (et non transition) pour ne pas interferer avec les hovers ci-dessus. */
+.footer__col.in li { animation: footItem .55s cubic-bezier(.2,.7,.2,1) backwards; }
+.footer__col.in li:nth-child(2) { animation-delay: .06s; }
+.footer__col.in li:nth-child(3) { animation-delay: .12s; }
+.footer__col.in li:nth-child(4) { animation-delay: .18s; }
+.footer__col.in li:nth-child(5) { animation-delay: .24s; }
+.footer__brand.in .social { animation: footItem .5s cubic-bezier(.2,.7,.2,1) backwards; }
+.footer__brand.in .social:nth-child(2) { animation-delay: .05s; }
+.footer__brand.in .social:nth-child(3) { animation-delay: .10s; }
+.footer__brand.in .social:nth-child(4) { animation-delay: .15s; }
+.footer__brand.in .social:nth-child(5) { animation-delay: .20s; }
+.footer__brand.in .social:nth-child(6) { animation-delay: .25s; }
+.footer__brand.in .social:nth-child(7) { animation-delay: .30s; }
+@keyframes footItem {
+  from { opacity: 0; transform: translateY(10px); }
+}
+
+/* Reduced motion : aucun deplacement au survol (les transitions sont deja
+   neutralisees globalement par header.html) */
+@media (prefers-reduced-motion: reduce) {
+  .cta-strip .hero__ctas .btn:hover,
+  .cta-strip .hero__ctas .btn:active,
+  .footer .social:hover,
+  .footer .social:hover svg,
+  .footer .social:active,
+  .footer__col ul:not(.footer__contact) a:hover,
+  .footer .footer__contact li:hover svg,
+  .footer__brand:hover .footer__badge img,
+  .footer__top-btn:hover,
+  .footer__top-btn:hover svg { transform: none; }
+  .footer__col.in li,
+  .footer__brand.in .social { animation: none; }
+}
+</style>
+<footer class="footer" id="contact">
   <div class="container">
     <div class="footer__grid">
-      <div>
-        <div class="footer__badge" style="margin-bottom: 18px;"><img src="{% static 'website/assets/imso-logo-badge.png' %}" alt="IMSO"></div>
+      <div class="footer__brand reveal">
+        <div class="footer__badge"><img src="{% static 'website/assets/imso-logo-badge.png' %}" alt="IMSO"></div>
         <p class="footer__tagline">
           {% if site.footer_text %}{{ site.footer_text }}{% else %}Impact Mutuelle de Solidarité — épargne collective, microcrédit
           responsable et formation continue au service des communautés haïtiennes.{% endif %}
@@ -33,7 +278,7 @@
           {% if not site or not site.facebook_url and not site.instagram_url and not site.contact_whatsapp and not site.twitter_url and not site.linkedin_url and not site.youtube_url and not site.tiktok_url %}<a class="social" href="#" aria-label="Facebook"><svg viewBox="0 0 24 24" fill="currentColor"><path d="M13 22v-8h3l1-4h-4V7.5c0-1.1.4-2 2-2h2V2h-3c-3 0-5 1.8-5 5v3H6v4h3v8z"></path></svg></a>{% endif %}
         </div>
       </div>
-      <div class="footer__col">
+      <div class="footer__col reveal" data-delay="1">
         <h4>{{ texts.foot_nav_title|default:"Navigation" }}</h4>
         <ul role="list">
           <li><a href="#mission">{{ texts.foot_nav_mission|default:"Notre mission" }}</a></li>
@@ -43,7 +288,7 @@
           <li><a href="#temoignages">{{ texts.foot_nav_temoignages|default:"Témoignages" }}</a></li>
         </ul>
       </div>
-      <div class="footer__col">
+      <div class="footer__col reveal" data-delay="2">
         <h4>{{ texts.foot_resources_title|default:"Ressources" }}</h4>
         {% comment %} Chaque lien n'apparait que si son URL est renseignee en admin : sinon les
            liens pointaient tous sur #contact (l'ancre du footer lui-meme), un clic
@@ -60,7 +305,7 @@
           {% endif %}
         </ul>
       </div>
-      <div class="footer__col">
+      <div class="footer__col reveal" data-delay="3">
         <h4>{{ texts.foot_contact_title|default:"Contact" }}</h4>
         {% comment %} Coordonnees actionnables : sur mobile, un numero cliquable lance l'appel
            et un email ouvre le client mail — au lieu d'un texte a recopier. {% endcomment %}
@@ -82,7 +327,7 @@
         {% endwith %}
       </div>
     </div>
-    <div class="footer__bottom">
+    <div class="footer__bottom reveal" data-delay="2">
       <span>© {% now "Y" %} IMSO — Impact Mutuelle de Solidarité. Tous droits réservés.</span>
       <div class="footer__bottom-links">
         {# Idem : on n'affiche que ce qui mene reellement quelque part. #}
@@ -90,6 +335,12 @@
         {% if site.url_confidentialite %}<a href="{{ site.url_confidentialite }}">Confidentialité</a>{% endif %}
         {% if site.url_statuts %}<a href="{{ site.url_statuts }}">Statuts</a>{% endif %}
       </div>
+      {# Ancre pure : le fragment "#top" est traite nativement par le navigateur, #}
+      {# meme sur les pages (blog...) ou l'element #top de la page d'accueil est absent. #}
+      <a class="footer__top-btn" href="#top">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M12 19V5M5 12l7-7 7 7"></path></svg>
+        <span>Haut de page</span>
+      </a>
     </div>
   </div>
 </footer>
@@ -205,7 +456,9 @@ if (drawer && scrim && hamburger && drawerClose) {
   sections.forEach((s) => spy.observe(s));
 })();
 
-// Reveal on scroll
+// Reveal on scroll — marge basse proportionnelle au viewport (-8%) plutot que
+// -50px fixes : sur un grand ecran l'element part un peu plus bas (entree mieux
+// synchronisee avec le defilement), sur un petit telephone il n'attend pas trop.
 const io = new IntersectionObserver((entries) => {
   entries.forEach(entry => {
     if (entry.isIntersecting) {
@@ -213,7 +466,7 @@ const io = new IntersectionObserver((entries) => {
       io.unobserve(entry.target);
     }
   });
-}, { threshold: 0.12, rootMargin: '0px 0px -50px 0px' });
+}, { threshold: 0.1, rootMargin: '0px 0px -8% 0px' });
 
 document.querySelectorAll('.reveal').forEach(el => io.observe(el));
 
@@ -270,9 +523,17 @@ function buildDots() {
   }
 }
 
+// Deplacement calcule en PIXELS (et non en % de la piste) : les slides peuvent
+// donc faire 86% en mobile (la carte suivante « depasse », indice de balayage)
+// et la derniere position est bornee pour ne jamais laisser de vide a droite.
+function currentX() {
+  const trackW = track.getBoundingClientRect().width;
+  const slideW = slides.length ? slides[0].getBoundingClientRect().width : trackW;
+  const maxX = Math.max(0, slideW * slides.length - trackW);
+  return Math.min(index * slideW, maxX);
+}
 function update() {
-  const slideWidth = 100 / perView;
-  track.style.transform = `translateX(-${index * slideWidth}%)`;
+  track.style.transform = `translateX(-${currentX()}px)`;
   dotsWrap.querySelectorAll('.dot').forEach((d, i) => d.classList.toggle('active', i === index));
 }
 
@@ -320,6 +581,60 @@ if (!reduceMotion) {
   });
 }
 
+// Balayage tactile / drag souris : la piste suit le doigt (transform uniquement,
+// via requestAnimationFrame) puis « snap » vers la carte la plus proche.
+// touch-action:pan-y (CSS) preserve le defilement vertical de la page.
+if (window.PointerEvent && slides.length > 1) {
+  let dragActive = false, dragHorizontal = null, dragRAF = 0;
+  let startX = 0, startY = 0, dx = 0, baseX = 0, dragMaxX = 0, dragSlideW = 1;
+  const renderDrag = () => {
+    dragRAF = 0;
+    let x = baseX - dx;
+    // Resistance elastique au-dela des bornes (sensation iOS, jamais de saut)
+    if (x < 0) x = x / 3;
+    else if (x > dragMaxX) x = dragMaxX + (x - dragMaxX) / 3;
+    track.style.transform = `translateX(-${x}px)`;
+  };
+  track.addEventListener('pointerdown', (e) => {
+    if (e.pointerType === 'mouse' && e.button !== 0) return;
+    dragActive = true; dragHorizontal = null;
+    startX = e.clientX; startY = e.clientY; dx = 0;
+    baseX = currentX();
+    const trackW = track.getBoundingClientRect().width;
+    dragSlideW = slides[0].getBoundingClientRect().width || trackW;
+    dragMaxX = Math.max(0, dragSlideW * slides.length - trackW);
+    pauseAuto();
+  });
+  track.addEventListener('pointermove', (e) => {
+    if (!dragActive) return;
+    dx = e.clientX - startX;
+    const dy = e.clientY - startY;
+    if (dragHorizontal === null && (Math.abs(dx) > 8 || Math.abs(dy) > 8)) {
+      dragHorizontal = Math.abs(dx) > Math.abs(dy);
+      if (dragHorizontal) {
+        track.classList.add('is-dragging');
+        try { track.setPointerCapture(e.pointerId); } catch (_) {}
+      } else { dragActive = false; return; }   // geste vertical : on rend la main
+    }
+    if (dragHorizontal && !dragRAF) dragRAF = requestAnimationFrame(renderDrag);
+  });
+  const endDrag = () => {
+    if (!dragActive) return;
+    dragActive = false;
+    if (dragRAF) { cancelAnimationFrame(dragRAF); dragRAF = 0; }
+    track.classList.remove('is-dragging');
+    if (dragHorizontal) {
+      // Seuil genereux : 18% d'une carte (ou 40px) suffit a tourner la page
+      if (Math.abs(dx) > Math.max(40, dragSlideW * 0.18)) goTo(index + (dx < 0 ? 1 : -1));
+      else update();
+      stopAuto();   // l'utilisateur a pris la main : plus d'auto-defilement
+    }
+    dragHorizontal = null;
+  };
+  track.addEventListener('pointerup', endDrag);
+  track.addEventListener('pointercancel', endDrag);
+}
+
 computePerView();
 buildDots();
 update();
@@ -331,8 +646,8 @@ window.addEventListener('resize', () => {
   if (oldPerView !== perView) {
     buildDots();
     index = Math.min(index, maxIndex);
-    update();
   }
+  update();   // position en px : toujours recalculee au redimensionnement
 });
 } // fin garde témoignages
 
@@ -653,13 +968,53 @@ modalForm.addEventListener('submit', async (e) => {
       if (data.payment_url) window.location.href = data.payment_url;
     }, 2500);
   } catch (_error) {
-    alert("Impossible d'envoyer la demande pour le moment. RÃ©essayez dans quelques instants.");
+    alert("Impossible d'envoyer la demande pour le moment. Réessayez dans quelques instants.");
   } finally {
     submitBtn.disabled = false;
     submitBtn.textContent = 'Envoyer la demande';
   }
 });
 } // fin garde calendrier de réservation
+
+// ====== Parallaxe decorative [data-parallax] ======
+// Deplace verticalement de purs ornements (orbes flous...) selon la position de
+// defilement. Performance : listener scroll PASSIF qui ne fait que programmer un
+// requestAnimationFrame ; les positions de base sont mesurees une fois (et au
+// resize), la frame n'ecrit que des transforms -> zero layout thrashing.
+// Respect de prefers-reduced-motion : le module ne demarre pas.
+(function () {
+  const nodes = Array.from(document.querySelectorAll('[data-parallax]'));
+  if (!nodes.length) return;
+  if (window.matchMedia && window.matchMedia('(prefers-reduced-motion: reduce)').matches) return;
+  const items = nodes.map((el) => ({
+    el,
+    speed: Math.max(-1, Math.min(1, parseFloat(el.dataset.parallax) || 0.1)),
+    mid: 0,
+  }));
+  let raf = 0;
+  function measure() {
+    items.forEach((it) => {
+      it.el.style.transform = '';           // mesure hors influence du transform
+      const r = it.el.getBoundingClientRect();
+      it.mid = r.top + window.scrollY + r.height / 2;
+    });
+  }
+  function frame() {
+    raf = 0;
+    const viewMid = window.scrollY + window.innerHeight / 2;
+    items.forEach((it) => {
+      const shift = (it.mid - viewMid) * -it.speed;
+      it.el.style.transform = 'translate3d(0,' + shift.toFixed(1) + 'px,0)';
+    });
+  }
+  function schedule() { if (!raf) raf = requestAnimationFrame(frame); }
+  window.addEventListener('scroll', schedule, { passive: true });
+  window.addEventListener('resize', () => { measure(); schedule(); });
+  // Les images lazy modifient la hauteur du document : on remesure a load.
+  window.addEventListener('load', () => { measure(); schedule(); });
+  measure();
+  frame();
+})();
 </script>
 
 </body></html>

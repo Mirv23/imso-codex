@@ -1,3 +1,243 @@
+{% comment %} Surcharges de design propres aux sections « Pourquoi nous rejoindre » et
+   « Processus ». Bloc charge APRES le CSS global de header.html : il gagne a
+   specificite egale, et chaque selecteur est scope par #rejoindre ou #processus.
+   Couleurs uniquement via les tokens var(--...) valides dans les 2 themes. {% endcomment %}
+<style>
+/* ===== Rejoindre : lift + ombre au survol, transitions fluides ===== */
+#rejoindre .why__item {
+  transition:
+    transform .4s cubic-bezier(.22, 1, .36, 1),
+    box-shadow .4s cubic-bezier(.22, 1, .36, 1),
+    border-color .3s ease;
+}
+#rejoindre .why__grid .why__item:hover {
+  transform: translateY(-5px);
+  box-shadow: var(--shadow-lg);
+}
+#rejoindre .why__icon {
+  transition: transform .45s cubic-bezier(.34, 1.56, .64, 1);
+}
+#rejoindre .why__grid .why__item:hover .why__icon {
+  transform: scale(1.08) rotate(-5deg);
+}
+
+/* Accents du logo avec parcimonie : les 3 dernieres cartes satellites prennent
+   chacune une teinte (orange / bleu / rouge), la vedette et la 2e restent vertes. */
+#rejoindre .why__item:nth-child(3) .why__icon { background: var(--highlight-soft); color: var(--tint-amber-ink); }
+#rejoindre .why__item:nth-child(4) .why__icon { background: var(--tint-blue); color: var(--logo-blue); }
+#rejoindre .why__item:nth-child(5) .why__icon { background: var(--tint-red); color: var(--logo-red); }
+#rejoindre .why__grid .why__item:nth-child(3):hover { border-color: var(--highlight); }
+#rejoindre .why__grid .why__item:nth-child(4):hover { border-color: var(--logo-blue); }
+#rejoindre .why__grid .why__item:nth-child(5):hover { border-color: var(--logo-red); }
+
+/* Filet d'accent en tete de carte, revele au survol (cartes en overflow:hidden :
+   le filet epouse les coins arrondis). Pas de filet sur la carte vedette verte. */
+#rejoindre .why__item::after {
+  content: '';
+  position: absolute;
+  top: 0; left: 0; right: 0;
+  height: 3px;
+  background: linear-gradient(90deg, var(--primary), var(--accent));
+  transform: scaleX(0);
+  transform-origin: left;
+  transition: transform .45s cubic-bezier(.22, 1, .36, 1);
+}
+#rejoindre .why__item--featured::after { content: none; }
+#rejoindre .why__item:hover::after { transform: scaleX(1); }
+#rejoindre .why__item:nth-child(3)::after { background: linear-gradient(90deg, var(--highlight), var(--tint-amber-ink)); }
+#rejoindre .why__item:nth-child(4)::after { background: linear-gradient(90deg, var(--logo-blue), var(--accent)); }
+#rejoindre .why__item:nth-child(5)::after { background: linear-gradient(90deg, var(--logo-red), var(--highlight)); }
+
+/* ===== Processus : numerotation stylee (chasse mono, zero devant) ===== */
+#processus .step__num {
+  font-family: 'JetBrains Mono', monospace;
+  font-size: 17px;
+  font-weight: 700;
+  letter-spacing: .04em;
+  background: linear-gradient(160deg, var(--green-soft) 0%, var(--surface) 75%);
+  transition:
+    transform .4s cubic-bezier(.34, 1.56, .64, 1),
+    background .3s ease,
+    border-color .3s ease;
+}
+#processus .step:hover .step__num {
+  transform: scale(1.07);
+  background: var(--green-soft);
+  border-color: var(--primary-dark);
+}
+#processus .step__title { transition: color .3s ease; }
+#processus .step:hover .step__title { color: var(--ink-on-tint); }
+
+/* Segment de liaison : teinte verte discrete + trace anime a l'apparition de
+   l'etape (vertical en mobile, horizontal des 900px). */
+#processus .step:not(:last-child)::after {
+  background: linear-gradient(180deg,
+    color-mix(in srgb, var(--primary) 45%, var(--border-strong)),
+    var(--border-strong));
+  transform: scaleY(0);
+  transform-origin: top;
+  transition: transform .9s cubic-bezier(.22, 1, .36, 1) .35s;
+}
+#processus .step.in:not(:last-child)::after { transform: scaleY(1); }
+@media (min-width: 900px) {
+  #processus .step:not(:last-child)::after {
+    background: linear-gradient(90deg,
+      color-mix(in srgb, var(--primary) 45%, var(--border-strong)),
+      var(--border-strong));
+    transform: scaleX(0);
+    transform-origin: left;
+  }
+  #processus .step.in:not(:last-child)::after { transform: scaleX(1); }
+}
+
+/* ===== Rejoindre : atmosphere de section =====
+   Halos radiaux orange (haut droit) et vert (bas gauche), tres faibles.
+   isolation:isolate : le ::before en z-index:-1 passe au-dessus du fond de
+   page mais sous tout le contenu. */
+#rejoindre { isolation: isolate; }
+#rejoindre::before {
+  content: '';
+  position: absolute; inset: 0;
+  z-index: -1;
+  pointer-events: none;
+  background:
+    radial-gradient(520px 400px at 92% 2%,
+      color-mix(in srgb, var(--highlight) 6%, transparent), transparent 70%),
+    radial-gradient(460px 380px at 4% 96%,
+      color-mix(in srgb, var(--primary) 6%, transparent), transparent 70%);
+}
+
+/* ===== Rejoindre : texture d'orfevre sur la carte vedette =====
+   Trame de points blancs fondue dans le coin superieur droit (zone vide de
+   texte). Le ::after de la vedette etait neutralise (content:none) : on le
+   reactive en couche decorative plein cadre, non interactive. Blanc pose sur
+   le degrade vert : identique en clair et en nuit. */
+#rejoindre .why__item--featured::after {
+  content: '';
+  position: absolute; inset: 0;
+  height: auto;
+  transform: none;
+  pointer-events: none;
+  background-image: radial-gradient(rgba(255,255,255,.6) 1px, transparent 1.4px);
+  background-size: 19px 19px;
+  opacity: .22;
+  -webkit-mask-image: radial-gradient(300px 210px at 100% 0%, #000, transparent 74%);
+  mask-image: radial-gradient(300px 210px at 100% 0%, #000, transparent 74%);
+}
+/* Lueur interne douce en tete de carte vedette (lumiere qui tombe du haut). */
+#rejoindre .why__item--featured {
+  background:
+    linear-gradient(180deg, rgba(255,255,255,.10), transparent 22%),
+    linear-gradient(160deg, var(--primary) 0%, var(--primary-dark) 100%);
+}
+
+/* Ombres colorees de marque au survol, assorties a la teinte de chaque carte. */
+#rejoindre .why__grid .why__item:hover {
+  box-shadow: var(--shadow-lg),
+    0 18px 40px -18px color-mix(in srgb, var(--primary) 35%, transparent);
+}
+#rejoindre .why__grid .why__item:nth-child(3):hover {
+  box-shadow: var(--shadow-lg),
+    0 18px 40px -18px color-mix(in srgb, var(--highlight) 35%, transparent);
+}
+#rejoindre .why__grid .why__item:nth-child(4):hover {
+  box-shadow: var(--shadow-lg),
+    0 18px 40px -18px color-mix(in srgb, var(--logo-blue) 30%, transparent);
+}
+#rejoindre .why__grid .why__item:nth-child(5):hover {
+  box-shadow: var(--shadow-lg),
+    0 18px 40px -18px color-mix(in srgb, var(--logo-red) 28%, transparent);
+}
+
+/* ===== Rejoindre : composition mobile façon app native =====
+   Sous 640px, les cartes satellites passent en « cellule de liste » : icone et
+   titre soudes sur une rangee, texte en dessous sur toute la largeur. La pile
+   verticale devient scannable d'un pouce. La vedette garde sa composition. */
+@media (max-width: 639.98px) {
+  #rejoindre .why__item:not(.why__item--featured) {
+    display: grid;
+    grid-template-columns: auto 1fr;
+    align-items: center;
+    column-gap: 14px;
+    row-gap: 10px;
+    padding: 20px;
+  }
+  #rejoindre .why__item:not(.why__item--featured) .why__icon {
+    width: 44px; height: 44px;
+  }
+  #rejoindre .why__item:not(.why__item--featured) .why__title {
+    font-size: clamp(16.5px, 4.5vw, 19px);
+  }
+  #rejoindre .why__item:not(.why__item--featured) .why__text {
+    grid-column: 1 / -1;
+    font-size: 14.5px;
+  }
+}
+
+/* ===== Processus : trame de points en fond de section =====
+   La section est deja sur --surface avec ses filets : la trame fondue en haut
+   a droite lui donne un grain d'atelier. Meme mecanique d'empilement. */
+#processus { isolation: isolate; }
+#processus::before {
+  content: '';
+  position: absolute; inset: 0;
+  z-index: -1;
+  pointer-events: none;
+  background-image: radial-gradient(
+    color-mix(in srgb, var(--primary) 16%, transparent) 1px, transparent 1.4px);
+  background-size: 24px 24px;
+  -webkit-mask-image: radial-gradient(56% 50% at 88% 8%, #000, transparent 76%);
+  mask-image: radial-gradient(56% 50% at 88% 8%, #000, transparent 76%);
+}
+
+/* Noeuds : halo vert au repos + pop elastique a l'apparition de l'etape
+   (backwards : l'etat initial ne vaut QUE pendant le delai). */
+#processus .step__num {
+  box-shadow: 0 0 0 6px var(--surface),
+    0 10px 24px -12px color-mix(in srgb, var(--primary) 45%, transparent);
+}
+#processus .step.in .step__num {
+  animation: stepNumPop .6s cubic-bezier(.34, 1.56, .64, 1) backwards;
+}
+#processus .step:nth-child(1).in .step__num { animation-delay: .15s; }
+#processus .step:nth-child(2).in .step__num { animation-delay: .30s; }
+#processus .step:nth-child(3).in .step__num { animation-delay: .45s; }
+#processus .step:nth-child(4).in .step__num { animation-delay: .60s; }
+@keyframes stepNumPop {
+  from { opacity: 0; transform: scale(.6); }
+  to   { opacity: 1; transform: none; }
+}
+
+/* Pastille de duree : fin lisere vert pour l'asseoir sur la teinte douce. */
+#processus .step__meta {
+  border: 1px solid color-mix(in srgb, var(--primary) 20%, transparent);
+}
+
+/* ===== Processus : respiration mobile ===== */
+@media (max-width: 899.98px) {
+  #processus .process__timeline { gap: 40px; margin-top: 40px; }
+  #processus .step { gap: 20px; }
+  #processus .step:not(:last-child)::after { bottom: -40px; }  /* suit le gap */
+  #processus .step__title { font-size: clamp(18px, 4.9vw, 20px); }
+}
+
+/* ===== Accessibilite : aucun mouvement si l'utilisateur le refuse ===== */
+@media (prefers-reduced-motion: reduce) {
+  #rejoindre *, #rejoindre *::before, #rejoindre *::after, #rejoindre::before,
+  #processus *, #processus *::before, #processus *::after, #processus::before {
+    animation: none !important;
+    transition-duration: .01ms !important;
+    transition-delay: 0s !important;
+  }
+  #rejoindre .why__grid .why__item:hover,
+  #rejoindre .why__grid .why__item:hover .why__icon,
+  #processus .step:hover .step__num { transform: none; }
+  #rejoindre .why__item:hover::after { transform: scaleX(1); }
+  #rejoindre .why__item--featured::after { transform: none; }
+  #processus .step:not(:last-child)::after { transform: none; }
+}
+</style>
+
 <!-- Pourquoi nous rejoindre -->
 <section class="section" id="rejoindre">
   <div class="container">
@@ -80,7 +320,7 @@
     <div class="process__timeline">
       {% for s in process_steps %}
       <div class="step reveal" data-delay="{{ forloop.counter }}">
-        <div class="step__num">{% if s.icon %}<span class="step__emoji">{{ s.icon }}</span>{% else %}{{ forloop.counter }}{% endif %}</div>
+        <div class="step__num">{% if s.icon %}<span class="step__emoji">{{ s.icon }}</span>{% else %}{{ forloop.counter|stringformat:"02d" }}{% endif %}</div>
         <div class="step__content">
           <h3 class="step__title">{{ s.title }}</h3>
           <p class="step__text">{{ s.text }}</p>
@@ -90,7 +330,7 @@
       </div>
       {% empty %}
       <div class="step reveal" data-delay="1">
-        <div class="step__num">1</div>
+        <div class="step__num">01</div>
         <div class="step__content">
           <h3 class="step__title">Candidature et entretien</h3>
           <p class="step__text">
@@ -101,7 +341,7 @@
         </div>
       </div>
       <div class="step reveal" data-delay="2">
-        <div class="step__num">2</div>
+        <div class="step__num">02</div>
         <div class="step__content">
           <h3 class="step__title">Formation d'intégration</h3>
           <p class="step__text">
@@ -112,7 +352,7 @@
         </div>
       </div>
       <div class="step reveal" data-delay="3">
-        <div class="step__num">3</div>
+        <div class="step__num">03</div>
         <div class="step__content">
           <h3 class="step__title">Activation de l'adhésion</h3>
           <p class="step__text">

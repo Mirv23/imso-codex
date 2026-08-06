@@ -13,7 +13,7 @@
     <p>Nous avons bien reçu vos documents. Un administrateur va vérifier votre identité. Vous aurez accès à votre espace professeur dès validation.</p>
     <a class="btn btn--o" href="/formation/verification/" style="margin-top:16px">Modifier mes documents</a>
   {% elif profile.kyc_status == "rejected" %}
-    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" style="color:#c0392b"><circle cx="12" cy="12" r="9"/><path d="M15 9l-6 6M9 9l6 6"/></svg>
+    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" style="color:var(--danger);background:var(--tint-red)"><circle cx="12" cy="12" r="9"/><path d="M15 9l-6 6M9 9l6 6"/></svg>
     <h3>Vérification refusée</h3>
     <p>{% if profile.kyc_note %}Motif : {{ profile.kyc_note }}.{% endif %} Vous pouvez corriger et resoumettre vos documents.</p>
     <a class="btn btn--p" href="/formation/verification/" style="margin-top:16px">Resoumettre ma vérification</a>

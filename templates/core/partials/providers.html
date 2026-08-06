@@ -1,5 +1,188 @@
 {% load static %}<!-- Espace -->
+{% comment %} Surcharges de style locales — section Espace / Réservation uniquement.
+   Le CSS global vit dans header.html (non modifiable ici) : ce bloc arrive APRÈS
+   lui dans le document et ne contient que des sélecteurs scopés à #espace /
+   #booking. Couleurs exclusivement via les tokens var(--...) : le mode nuit
+   bascule automatiquement. Aucun hook JS (id/classe de footer.html) n'est
+   renommé. {% endcomment %}
+<style>
+/* -- Pastilles d'usage : micro-interaction au survol -- */
+#espace .espace__pill {
+  transition: transform .25s ease, border-color .25s ease, background-color .25s ease, box-shadow .25s ease;
+}
+#espace .espace__pill:hover {
+  transform: translateY(-2px);
+  border-color: var(--accent);
+  background-color: var(--green-soft);
+  box-shadow: var(--shadow-sm);
+}
+
+/* -- Carte capacités : relief doux + halo décoratif (tokens uniquement) -- */
+#espace .espace__capacity {
+  overflow: hidden;
+  box-shadow: var(--shadow-sm);
+  transition: transform .3s ease, box-shadow .3s ease, border-color .3s ease;
+}
+#espace .espace__capacity::after {
+  content: '';
+  position: absolute;
+  top: -46px; right: -46px;
+  width: 170px; height: 170px;
+  border-radius: 50%;
+  background: radial-gradient(circle, var(--green-soft) 0%, transparent 70%);
+  pointer-events: none;
+}
+#espace .espace__capacity:hover {
+  transform: translateY(-3px);
+  border-color: var(--border-strong);
+  box-shadow: var(--shadow-md);
+}
+/* Cascade : la carte capacités suit le texte quand l'en-tête est révélé.
+   Animation (et non transition) pour ne pas entrer en conflit avec la
+   transition de survol ci-dessus ni avec le système .reveal global. */
+#espace .espace__head-row.in .espace__capacity {
+  animation: espaceRise .7s cubic-bezier(.6,.2,.2,1) .15s backwards;
+}
+
+/* -- Galerie : voile dégradé discret + légende qui se soulève au survol.
+      z-index : le voile (::after) passe sous la légende positionnée. -- */
+#espace .gphoto::after {
+  content: '';
+  position: absolute; inset: 0;
+  z-index: 1;
+  background: linear-gradient(180deg, transparent 55%, var(--overlay-ink) 140%);
+  opacity: 0;
+  transition: opacity .45s ease;
+  pointer-events: none;
+}
+#espace .gphoto:hover::after { opacity: 1; }
+#espace .gphoto__caption {
+  z-index: 2;
+  transition: transform .35s cubic-bezier(.6,.2,.2,1);
+}
+#espace .gphoto:hover .gphoto__caption { transform: translateY(-3px); }
+/* Entrée en cascade des photos quand la galerie est révélée (.reveal -> .in) */
+#espace .espace__gallery.in .gphoto {
+  animation: espaceRise .7s cubic-bezier(.6,.2,.2,1) backwards;
+}
+#espace .espace__gallery.in .gphoto:nth-child(2) { animation-delay: .09s; }
+#espace .espace__gallery.in .gphoto:nth-child(3) { animation-delay: .18s; }
+#espace .espace__gallery.in .gphoto:nth-child(4) { animation-delay: .27s; }
+
+/* -- Carte réservation : profondeur + cascade calendrier puis créneaux -- */
+#booking { box-shadow: var(--shadow-md); }
+#booking.reveal.in .booking__cal { animation: espaceRise .6s cubic-bezier(.6,.2,.2,1) backwards; }
+#booking.reveal.in .booking__slots { animation: espaceRise .6s cubic-bezier(.6,.2,.2,1) .12s backwards; }
+#booking .booking__nav button:active { transform: scale(.94); }
+
+/* -- Calendrier : la sélection porte une ombre dérivée de --primary + pop -- */
+#booking .cal__day--selected {
+  box-shadow: var(--shadow-cta);
+  animation: espacePop .28s ease;
+}
+
+/* -- Créneaux : liseré vert au survol, apparition en cascade à chaque date -- */
+#booking .slot:hover:not(.slot--booked) {
+  box-shadow: inset 3px 0 0 var(--primary), var(--shadow-sm);
+}
+#booking .slots__list .slot {
+  animation: espaceRise .45s cubic-bezier(.6,.2,.2,1) backwards;
+}
+#booking .slots__list .slot:nth-child(2) { animation-delay: .07s; }
+#booking .slots__list .slot:nth-child(3) { animation-delay: .14s; }
+
+@keyframes espaceRise {
+  from { opacity: 0; transform: translateY(20px); }
+}
+@keyframes espacePop {
+  50% { transform: scale(1.07); }
+}
+
+/* ===== Orfèvrerie v2 : ambiance, calendrier tactile, créneaux-pilules ===== */
+
+/* Orbes décoratifs en parallaxe douce (JS global [data-parallax], transform
+   uniquement — désactivé en reduced-motion). overflow:clip évite tout débord
+   horizontal ; le container repasse au-dessus. */
+#espace { position: relative; overflow: hidden; overflow: clip; }
+#espace > .container { position: relative; z-index: 1; }
+#espace .espace__orb {
+  position: absolute;
+  border-radius: 50%;
+  pointer-events: none;
+  z-index: 0;
+  filter: blur(48px);
+  will-change: transform;
+}
+#espace .espace__orb--a {
+  width: 340px; height: 340px;
+  top: 2%; right: -130px;
+  background: radial-gradient(circle, color-mix(in srgb, var(--accent) 20%, transparent) 0%, transparent 70%);
+}
+#espace .espace__orb--b {
+  width: 280px; height: 280px;
+  bottom: 5%; left: -120px;
+  background: radial-gradient(circle, color-mix(in srgb, var(--highlight) 14%, transparent) 0%, transparent 70%);
+}
+
+/* Carte réservation : bordure dégradée vert → orange (padding-box/border-box),
+   dérivée des tokens donc juste dans les deux thèmes. */
+#booking {
+  border-color: transparent;
+  background:
+    linear-gradient(var(--surface), var(--surface)) padding-box,
+    linear-gradient(150deg,
+      color-mix(in srgb, var(--primary) 42%, var(--border)) 0%,
+      var(--border) 34%, var(--border) 66%,
+      color-mix(in srgb, var(--highlight) 38%, var(--border)) 100%) border-box;
+}
+
+/* Calendrier : confort du pouce — retour tactile net, sans halo de tap */
+#booking .cal__day {
+  touch-action: manipulation;
+  -webkit-tap-highlight-color: transparent;
+}
+#booking .cal__day:active:not(:disabled) { transform: scale(.9); }
+#booking .cal__day--selected {
+  background: linear-gradient(145deg, var(--primary) 0%, var(--primary-dark) 115%);
+}
+#booking .booking__nav button { touch-action: manipulation; -webkit-tap-highlight-color: transparent; }
+
+/* Créneaux : pilules généreuses, heure en mono (rythme typographique) */
+#booking .slot { border-radius: 16px; padding: 15px 16px; }
+#booking .slot__time { font-family: 'JetBrains Mono', monospace; font-size: 14px; letter-spacing: -0.02em; }
+#booking .slot__action .btn { min-height: 44px; border-radius: 999px; }
+
+@media (max-width: 560px) {
+  /* Cellules du calendrier plus larges : la carte s'affine, la grille respire */
+  #booking { padding: 18px 14px; }
+  #booking .cal__grid { gap: 5px; }
+  #booking .cal__day { font-size: 14.5px; }
+  /* Le bouton Réserver devient une barre pleine largeur, franche sous le pouce */
+  #booking .slot { padding: 14px; }
+  #booking .slot__action { flex: 1 1 100%; }
+  #booking .slot__action .btn { width: 100%; }
+}
+
+/* Respect strict de prefers-reduced-motion : aucun mouvement ajouté */
+@media (prefers-reduced-motion: reduce) {
+  #espace .espace__gallery.in .gphoto,
+  #espace .espace__head-row.in .espace__capacity,
+  #booking.reveal.in .booking__cal,
+  #booking.reveal.in .booking__slots,
+  #booking .slots__list .slot,
+  #booking .cal__day--selected { animation: none; }
+  #espace .espace__pill:hover,
+  #espace .espace__capacity:hover,
+  #booking .cal__day:active:not(:disabled),
+  #espace .gphoto:hover .gphoto__caption { transform: none; }
+  #espace .espace__orb { transform: none !important; }
+}
+</style>
 <section class="section espace" id="espace">
+  {% comment %} Décor pur (aria-hidden) : deux orbes flous animés en parallaxe
+     par le JS global — transform uniquement, inertes en reduced-motion. {% endcomment %}
+  <span class="espace__orb espace__orb--a" data-parallax="0.16" aria-hidden="true"></span>
+  <span class="espace__orb espace__orb--b" data-parallax="0.1" aria-hidden="true"></span>
   <div class="container">
     <div class="espace__head-row reveal">
       <div>
@@ -31,7 +214,7 @@
       </div>
     </div>
 
-    <div class="espace__gallery reveal">
+    <div class="espace__gallery reveal" data-delay="1">
       <div class="gphoto img-wrap">
         <div class="img-fallback">Salle principale</div>
         {% if images.espace_photo_1 %}<img src="{{ images.espace_photo_1.image.url }}" alt="{{ images.espace_photo_1.alt }}" loading="lazy" onload="this.parentElement.classList.add('img-loaded')">{% else %}<img src="https://images.unsplash.com/photo-1505373877841-8d25f7d46678?w=900&amp;auto=format&amp;q=80" alt="Salle de conférence aménagée" loading="lazy" onload="this.parentElement.classList.add('img-loaded')">{% endif %}

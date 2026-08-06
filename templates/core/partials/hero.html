@@ -7,7 +7,12 @@
 
 <!-- Navbar -->
 <nav class="nav" id="nav">
-  <div class="container nav__inner">
+  {% comment %} Pilule flottante : .nav__inner EST la capsule (verre + ombre) —
+     plus de classe .container, la largeur est geree par le CSS de la pilule.
+     Le lisere 4 couleurs et la progression de lecture sont des elements decoratifs
+     poses sur les bords interieurs haut/bas de la capsule. {% endcomment %}
+  <div class="nav__inner">
+    <span class="nav__ribbon" aria-hidden="true"></span>
     <a href="#top" class="brand-logo" aria-label="IMSO accueil">
       <img src="{% static 'website/assets/imso-logo.png' %}" alt="IMSO — Impact Mutuelle de Solidarité">
     </a>
@@ -31,6 +36,7 @@
         <span class="hamburger__lines"><span></span><span></span><span></span></span>
       </button>
     </div>
+    <span class="nav__progress" aria-hidden="true"></span>
   </div>
 </nav>
 
@@ -139,6 +145,12 @@
       </div>
     </div>
   </div>
+  {% comment %} Indice de defilement (desktop, ecrans assez hauts) : guide l'oeil
+     vers la bande de chiffres cles juste sous le hero. {% endcomment %}
+  <a class="hero__scroll" href="#stats">
+    <span class="hero__scroll-line" aria-hidden="true"></span>
+    <span>{{ texts.hero_scroll|default:"Défiler" }}</span>
+  </a>
 </header>
 
 <!-- Stats -->

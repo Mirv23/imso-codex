@@ -1,4 +1,231 @@
 {% load static %}
+{% comment %} Surcharges scopées à la section Cours. Ce bloc arrive APRÈS le CSS
+   global de header.html : à spécificité égale il gagne, et le préfixe #cours
+   garantit qu'aucune règle ne fuit vers le reste de la page. Couleurs uniquement
+   via les tokens var(--...) existants → le mode nuit suit automatiquement. {% endcomment %}
+<style>
+/* ===== Section Cours — refonte (scopé #cours) ===== */
+
+/* Grille desktop : auto-fill + minmax. auto-fill (et non auto-fit) conserve les
+   pistes vides : une carte seule garde une largeur de carte au lieu de s'étirer
+   sur toute la ligne. Belle avec 1, 2 ou 10 cours, de 320px à 4K. */
+@media (min-width: 900px) {
+  #cours .courses__grid {
+    grid-template-columns: repeat(auto-fill, minmax(min(100%, 290px), 1fr));
+    gap: 24px;
+  }
+}
+
+{% comment %} Pas de « transition » redéclarée sur .course-card : la carte porte
+   désormais .reveal, dont la transition (déclarée plus loin dans header.html)
+   pilote l'entrée ET le survol — même comportement que .why__item/.value-card.
+   Une redéclaration avec spécificité ID annulerait le stagger data-delay. {% endcomment %}
+/* Carte : élévation et ombre premium au survol (l'ID bat `.reveal.in`,
+   qui sinon annulerait le mouvement — même bug corrigé sur .why__item).
+   transition-delay:0s : le survol répond immédiatement malgré data-delay. */
+@media (hover: hover) {
+  #cours .course-card:hover {
+    transform: translateY(-6px);
+    border-color: var(--primary);
+    box-shadow: var(--shadow-lg);
+    transition-delay: 0s;
+  }
+}
+
+/* Bandeau : accueille la bannière du cours (uploadée dans l'admin) avec zoom
+   subtil au survol. Sans image, le dégradé global existant reste tel quel.
+   isolation:isolate → les z-index négatifs restent internes à la carte. */
+#cours .course-card__band { height: 118px; isolation: isolate; }
+#cours .course-card__banner {
+  position: absolute; inset: 0;
+  width: 100%; height: 100%;
+  object-fit: cover;
+  z-index: -2;
+  transition: transform .9s cubic-bezier(.2,.7,.2,1);
+}
+/* Voile en bas de bandeau : garantit la lisibilité du tag posé sur photo comme
+   sur dégradé. Couleur posée sur un VISUEL : ne bascule pas en mode nuit
+   (même règle que --overlay-ink dans header.html). */
+#cours .course-card__band::before {
+  content: '';
+  position: absolute; inset: 0;
+  z-index: -1;
+  background: linear-gradient(to top, rgba(12,16,10,.42), transparent 62%);
+  pointer-events: none;
+}
+#cours .course-card__band::after { transition: transform .9s cubic-bezier(.2,.7,.2,1); }
+@media (hover: hover) {
+  #cours .course-card:hover .course-card__banner { transform: scale(1.06); }
+  #cours .course-card:hover .course-card__band::after { transform: scale(1.18); }
+}
+
+/* Badge niveau (Débutant / Intermédiaire / Avancé) en haut à droite du bandeau.
+   Blanc posé sur image/dégradé : identique en clair et en nuit. */
+#cours .course-card__level {
+  position: absolute; top: 12px; right: 12px;
+  font-size: 10px; font-weight: 700;
+  letter-spacing: .1em; text-transform: uppercase;
+  color: #fff;
+  background: rgba(10,14,8,.32);
+  border: 1px solid rgba(255,255,255,.28);
+  backdrop-filter: blur(6px);
+  padding: 5px 10px;
+  border-radius: 999px;
+}
+#cours .course-card__tag { font-weight: 600; }
+
+/* Prix : hiérarchie renforcée — montant fort, devise discrète en petites caps */
+#cours .course-card__price { font-size: 20px; font-weight: 800; letter-spacing: -0.02em; }
+#cours .course-card__price small {
+  font-size: 10.5px; font-weight: 600;
+  letter-spacing: .08em; text-transform: uppercase;
+  margin-left: 3px;
+}
+
+/* CTA de carte : zone tactile ≥ 44px + flèche qui glisse au survol */
+#cours .js-enroll { min-height: 44px; gap: 6px; }
+#cours .js-enroll svg { width: 13px; height: 13px; flex-shrink: 0; transition: transform .25s ease; }
+@media (hover: hover) {
+  #cours .js-enroll:hover svg { transform: translateX(3px); }
+}
+
+/* État vide soigné (aucun cours actif en base) */
+#cours .courses__empty {
+  grid-column: 1 / -1;
+  flex: 1;
+  min-width: min(560px, calc(100vw - 40px));
+  display: flex; flex-direction: column; align-items: center;
+  gap: 14px;
+  text-align: center;
+  padding: 56px 24px;
+  border: 1px dashed var(--border-strong);
+  border-radius: var(--radius-lg);
+  background: var(--surface);
+}
+#cours .courses__empty-icon {
+  width: 56px; height: 56px;
+  border-radius: 50%;
+  background: var(--green-soft);
+  color: var(--ink-on-tint);
+  display: flex; align-items: center; justify-content: center;
+}
+#cours .courses__empty-icon svg { width: 24px; height: 24px; }
+#cours .courses__empty p { margin: 0; color: var(--muted); font-size: 15px; line-height: 1.6; max-width: 46ch; }
+
+/* ===== Cours : atmosphère de section =====
+   Halo vert + trame de points fondue près du titre. isolation:isolate : le
+   ::before en z-index:-1 se glisse entre le fond de page et le contenu. */
+#cours { isolation: isolate; }
+#cours::before {
+  content: '';
+  position: absolute; inset: 0;
+  z-index: -1;
+  pointer-events: none;
+  background:
+    radial-gradient(520px 380px at 8% 2%,
+      color-mix(in srgb, var(--primary) 6%, transparent), transparent 70%),
+    radial-gradient(420px 340px at 96% 90%,
+      color-mix(in srgb, var(--logo-blue) 5%, transparent), transparent 72%);
+}
+#cours::after {
+  content: '';
+  position: absolute; inset: 0;
+  z-index: -1;
+  pointer-events: none;
+  background-image: radial-gradient(
+    color-mix(in srgb, var(--primary) 17%, transparent) 1px, transparent 1.4px);
+  background-size: 24px 24px;
+  -webkit-mask-image: radial-gradient(440px 300px at 92% 4%, #000, transparent 74%);
+  mask-image: radial-gradient(440px 300px at 92% 4%, #000, transparent 74%);
+}
+
+/* Lien « Voir tous les cours » : zone tactile ≥44px sans casser l'alignement. */
+#cours .link-arrow { min-height: 44px; align-items: center; padding-bottom: 0; }
+
+/* Bandeau : lumière diagonale ajoutée AU voile de lisibilité existant
+   (blanc posé sur visuel : identique clair/nuit). */
+#cours .course-card__band::before {
+  background:
+    linear-gradient(120deg, rgba(255,255,255,.18), transparent 42%),
+    linear-gradient(to top, rgba(12,16,10,.42), transparent 62%);
+}
+
+/* Ombre colorée de marque au survol, en plus de l'élévation existante. */
+@media (hover: hover) {
+  #cours .course-card:hover {
+    box-shadow: var(--shadow-lg),
+      0 18px 40px -18px color-mix(in srgb, var(--primary) 35%, transparent);
+  }
+}
+
+/* ===== État vide : largeur bornée =====
+   min-width:max-content sur la grille laissait la carte s'étirer sur la
+   largeur du paragraphe (~416px) et déborder dans le rail de scroll mobile.
+   On fixe la largeur : plus rien à faire défiler quand il n'y a rien. */
+#cours .courses__empty {
+  min-width: 0;
+  width: min(560px, calc(100vw - 40px));
+  margin-inline: auto;
+}
+
+/* ===== Jauge de défilement du carrousel mobile (scroll-driven, CSS pur) =====
+   Piste discrète sous les cartes ; remplissage dégradé vert piloté par la
+   position de scroll. Invisible sans support ou dès que la grille remplace le
+   carrousel (≥900px). Décoratif pur : aria-hidden côté HTML. */
+#cours .courses__scrollbar {
+  display: none;
+  width: min(160px, 42vw);
+  height: 3px;
+  margin: 2px auto 0;
+  border-radius: 999px;
+  background: color-mix(in srgb, var(--border-strong) 75%, transparent);
+  overflow: hidden;
+}
+#cours .courses__scrollbar::after {
+  content: '';
+  display: block;
+  height: 100%;
+  border-radius: 999px;
+  background: linear-gradient(90deg, var(--primary), var(--accent));
+  transform-origin: left;
+  transform: scaleX(.22);
+}
+@supports (animation-timeline: scroll()) {
+  #cours { timeline-scope: --cours-scroll; }
+  #cours .courses__wrap { scroll-timeline: --cours-scroll inline; }
+  #cours .courses__scrollbar::after {
+    animation: coursScrollProgress linear both;
+    animation-timeline: --cours-scroll;
+  }
+  @media (max-width: 899.98px) {
+    #cours .courses__scrollbar { display: block; }
+  }
+}
+@keyframes coursScrollProgress {
+  from { transform: scaleX(.22); }
+  to   { transform: scaleX(1); }
+}
+
+/* ===== Typo mobile recalibrée ===== */
+@media (max-width: 899.98px) {
+  #cours .courses__head-row { margin-bottom: 32px; }
+  #cours .course-card__title { font-size: clamp(15.5px, 4.3vw, 17px); }
+}
+
+/* Respect strict de prefers-reduced-motion pour toutes les nouveautés
+   (en plus de la règle globale de header.html qui neutralise déjà les durées).
+   La jauge de défilement reste : c'est un retour de position piloté par le
+   geste de l'utilisateur, pas un décor animé. */
+@media (prefers-reduced-motion: reduce) {
+  #cours .course-card__banner,
+  #cours .course-card__band::after,
+  #cours .js-enroll svg { transition: none !important; }
+  #cours .course-card:hover { transform: none; }
+  #cours .course-card:hover .course-card__banner,
+  #cours .course-card:hover .course-card__band::after,
+  #cours .js-enroll:hover svg { transform: none; }
+}
+</style>
 <section class="section" id="cours">
   <div class="container">
     <div class="courses__head-row reveal">
@@ -14,8 +241,12 @@
     <div class="courses__wrap reveal">
       <div class="courses__grid">
         {% for course in active_courses %}
-        <article class="course-card">
+        {% comment %} Entrée en cascade : chaque carte a son propre .reveal avec
+           un délai qui cycle 1→3, en plus du .reveal du conteneur. {% endcomment %}
+        <article class="course-card reveal" data-delay="{% cycle '1' '2' '3' %}">
           <div class="course-card__band course-card__band--{% cycle 'g' 'a' 't' 'g' 'a' 't' %}">
+            {% if course.banner %}<img class="course-card__banner" src="{{ course.banner.url }}" alt="" loading="lazy">{% endif %}
+            {% if course.level %}<span class="course-card__level">{{ course.get_level_display }}</span>{% endif %}
             <span class="course-card__tag">{{ course.category }}</span>
           </div>
           <div class="course-card__body">
@@ -39,15 +270,26 @@
               <button class="btn btn--ghost btn--small js-enroll"
                       data-id="{{ course.id }}"
                       data-name="{{ course.title }}"
-                      data-price="{{ course.price_htg }}">{{ texts.cours_card_cta|default:"S'inscrire" }}</button>
+                      data-price="{{ course.price_htg }}">{{ texts.cours_card_cta|default:"S'inscrire" }}<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" aria-hidden="true"><path d="M5 12h14M13 5l7 7-7 7"></path></svg></button>
             </div>
           </div>
         </article>
         {% empty %}
-        <p style="grid-column: 1 / -1; text-align: center; color: var(--muted); padding: 40px 0;">{{ texts.cours_empty|default:"Aucun cours disponible pour le moment. Revenez bientôt !" }}</p>
+        <div class="courses__empty">
+          <div class="courses__empty-icon">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M4 19.5A2.5 2.5 0 0 1 6.5 17H20"></path><path d="M6.5 2H20v20H6.5A2.5 2.5 0 0 1 4 19.5v-15A2.5 2.5 0 0 1 6.5 2z"></path></svg>
+          </div>
+          <p>{{ texts.cours_empty|default:"Aucun cours disponible pour le moment. Revenez bientôt !" }}</p>
+        </div>
         {% endfor %}
       </div>
     </div>
+    {% if active_courses|length > 1 %}
+    {% comment %} Jauge de progression du carrousel mobile (decorative :
+       aria-hidden). Pilotee par scroll-timeline en CSS pur ; invisible si
+       non supporte ou des que la grille remplace le carrousel. {% endcomment %}
+    <div class="courses__scrollbar" aria-hidden="true"></div>
+    {% endif %}
   </div>
 </section>
 

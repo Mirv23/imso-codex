@@ -1,3 +1,342 @@
+{% comment %} Surcharges de design propres aux sections Mission & Valeurs.
+   Ce bloc arrive APRES le CSS global de header.html : a specificite egale il gagne,
+   et chaque selecteur est scope par #mission ou #valeurs pour ne rien toucher d'autre.
+   Aucune couleur en dur : uniquement les tokens var(--...) definis pour les 2 themes. {% endcomment %}
+<style>
+/* ===== Mission : liste a cocher — separateurs subtils + micro-interactions ===== */
+#mission .mission__list li {
+  transition: transform .35s cubic-bezier(.22, 1, .36, 1);
+}
+#mission .mission__list li + li {
+  border-top: 1px dashed var(--border);
+  padding-top: 18px;
+}
+#mission .check {
+  transition: transform .4s cubic-bezier(.34, 1.56, .64, 1), background .25s ease;
+}
+#mission .mission__list li:hover { transform: translateX(4px); }
+#mission .mission__list li:hover .check {
+  transform: scale(1.12) rotate(-4deg);
+  background: var(--tint-green);
+}
+
+/* Cascade d'entree de la checklist : la colonne parente porte deja .reveal ;
+   quand l'observer lui ajoute .in, chaque ligne rejoue un fondu decale.
+   `backwards` : l'etat "from" ne s'applique QUE pendant le delai — une fois
+   l'animation finie, plus aucun style d'animation ne bloque les survols. */
+#mission .mission__grid > .reveal.in .mission__list li {
+  animation: aboutFadeUp .55s cubic-bezier(.22, 1, .36, 1) backwards;
+}
+#mission .mission__grid > .reveal.in .mission__list li:nth-child(1) { animation-delay: .18s; }
+#mission .mission__grid > .reveal.in .mission__list li:nth-child(2) { animation-delay: .28s; }
+#mission .mission__grid > .reveal.in .mission__list li:nth-child(3) { animation-delay: .38s; }
+#mission .mission__grid > .reveal.in .mission__list li:nth-child(4) { animation-delay: .48s; }
+
+/* ===== Mission : tuiles de stats — cascade + lift au survol ===== */
+#mission .mission__visual.in .mission__tile {
+  animation: aboutTileIn .6s cubic-bezier(.22, 1, .36, 1) backwards;
+}
+#mission .mission__visual.in .mission__tile:nth-child(1) { animation-delay: .10s; }
+#mission .mission__visual.in .mission__tile:nth-child(2) { animation-delay: .20s; }
+#mission .mission__visual.in .mission__tile:nth-child(3) { animation-delay: .30s; }
+#mission .mission__visual.in .mission__tile:nth-child(4) { animation-delay: .40s; }
+#mission .mission__tile {
+  transition:
+    transform .4s cubic-bezier(.22, 1, .36, 1),
+    box-shadow .4s cubic-bezier(.22, 1, .36, 1),
+    border-color .3s ease;
+}
+#mission .mission__visual .mission__tile:hover {
+  transform: translateY(-4px);
+  box-shadow: var(--shadow-md);
+  border-color: color-mix(in srgb, var(--primary) 40%, var(--border));
+}
+#mission .mission__tile-icon {
+  transition: transform .45s cubic-bezier(.34, 1.56, .64, 1);
+}
+#mission .mission__tile:hover .mission__tile-icon {
+  transform: scale(1.1) rotate(-5deg);
+}
+
+/* ===== Valeurs : cascade d'entree des cartes =====
+   Le .reveal reste volontairement sur le CONTENEUR (correctif carrousel existant) ;
+   le decalage par carte est porte ici en CSS pur, declenche par .values__wrap.in. */
+#valeurs .values__wrap.in .value-card {
+  animation: aboutFadeUp .55s cubic-bezier(.22, 1, .36, 1) backwards;
+  animation-delay: .06s;
+}
+#valeurs .values__wrap.in .value-card:nth-child(2) { animation-delay: .16s; }
+#valeurs .values__wrap.in .value-card:nth-child(3) { animation-delay: .26s; }
+#valeurs .values__wrap.in .value-card:nth-child(4) { animation-delay: .36s; }
+#valeurs .values__wrap.in .value-card:nth-child(5) { animation-delay: .46s; }
+#valeurs .values__wrap.in .value-card:nth-child(6) { animation-delay: .56s; }
+
+/* ===== Valeurs : micro-interactions des cartes ===== */
+#valeurs .value-card {
+  transition:
+    transform .4s cubic-bezier(.22, 1, .36, 1),
+    box-shadow .4s cubic-bezier(.22, 1, .36, 1),
+    border-color .3s ease;
+}
+#valeurs .values__grid .value-card:hover {
+  transform: translateY(-6px);
+  border-color: color-mix(in srgb, var(--primary) 55%, var(--border));
+  box-shadow: var(--shadow-lg);
+}
+/* Filet d'accent en tete de carte, revele au survol (la carte est deja en
+   overflow:hidden : le filet epouse les coins arrondis). */
+#valeurs .value-card::before {
+  content: '';
+  position: absolute;
+  top: 0; left: 0; right: 0;
+  height: 3px;
+  background: linear-gradient(90deg, var(--primary), var(--accent));
+  transform: scaleX(0);
+  transform-origin: left;
+  transition: transform .45s cubic-bezier(.22, 1, .36, 1);
+}
+#valeurs .value-card:hover::before { transform: scaleX(1); }
+/* Accent assorti a la teinte de l'icone (progressif : sans :has(), le degrade
+   vert par defaut reste en place). */
+#valeurs .value-card:has(.value-card__icon--amber)::before {
+  background: linear-gradient(90deg, var(--highlight), var(--tint-amber-ink));
+}
+#valeurs .value-card:has(.value-card__icon--teal)::before {
+  background: linear-gradient(90deg, var(--logo-blue), var(--accent));
+}
+#valeurs .value-card__icon {
+  transition: transform .45s cubic-bezier(.34, 1.56, .64, 1);
+}
+#valeurs .value-card:hover .value-card__icon {
+  transform: scale(1.08) rotate(-5deg);
+}
+#valeurs .value-card__num { transition: color .3s ease; }
+#valeurs .value-card:hover .value-card__num { color: var(--ink-on-tint); }
+
+/* ===== Mission : atmosphere de section =====
+   Halo radial vert + trame de points en pur CSS, poses derriere le contenu.
+   isolation:isolate cree le contexte d'empilement qui permet au ::before en
+   z-index:-1 de passer AU-DESSUS du fond de page mais SOUS tout le contenu. */
+#mission { isolation: isolate; }
+#mission::before {
+  content: '';
+  position: absolute; inset: 0;
+  z-index: -1;
+  pointer-events: none;
+  background:
+    radial-gradient(560px 420px at 12% 4%,
+      color-mix(in srgb, var(--primary) 7%, transparent), transparent 70%),
+    radial-gradient(420px 360px at 96% 88%,
+      color-mix(in srgb, var(--highlight) 5%, transparent), transparent 70%);
+}
+#mission::after {
+  content: '';
+  position: absolute; inset: 0;
+  z-index: -1;
+  pointer-events: none;
+  background-image: radial-gradient(
+    color-mix(in srgb, var(--primary) 18%, transparent) 1px, transparent 1.4px);
+  background-size: 24px 24px;
+  -webkit-mask-image: radial-gradient(480px 340px at 10% 6%, #000, transparent 72%);
+  mask-image: radial-gradient(480px 340px at 10% 6%, #000, transparent 72%);
+}
+{% comment %} Micro-parallaxe scroll-driven en CSS pur : le halo derive doucement
+   pendant la traversee de la section. Progressif (Chrome 115+), sans repli
+   necessaire : sans support, le halo reste simplement immobile. {% endcomment %}
+@supports (animation-timeline: view()) {
+  @media (prefers-reduced-motion: no-preference) {
+    #mission::before {
+      animation: missionGlowDrift linear both;
+      animation-timeline: view();
+    }
+  }
+}
+@keyframes missionGlowDrift {
+  from { transform: translateY(48px); }
+  to   { transform: translateY(-56px); }
+}
+
+/* ===== Mission : coche avec fin lisere de marque ===== */
+#mission .check {
+  box-shadow: inset 0 0 0 1px color-mix(in srgb, var(--primary) 28%, transparent);
+}
+
+/* ===== Mission : panneau visuel — bordure degradee + ombre coloree =====
+   Double fond padding-box/border-box : le degrade d'origine reste identique,
+   la bordure devient un fin degrade vert -> neutre -> ambre (les tokens
+   basculent d'eux-memes en nuit). */
+#mission .mission__visual {
+  border: 1px solid transparent;
+  background:
+    linear-gradient(135deg, var(--mission-visual-from) 0%, var(--mission-visual-to) 100%) padding-box,
+    linear-gradient(150deg,
+      color-mix(in srgb, var(--primary) 55%, var(--border)),
+      var(--border) 38%,
+      var(--border) 62%,
+      color-mix(in srgb, var(--highlight) 45%, var(--border))) border-box;
+  box-shadow: 0 32px 64px -32px color-mix(in srgb, var(--primary) 30%, transparent);
+  isolation: isolate;
+}
+{% comment %} Trame de points dans les gouttieres du panneau. position:absolute :
+   le pseudo-element sort du flux grid et ne cree PAS de 5e cellule ;
+   z-index:-1 + isolation le glisse entre le fond du panneau et les tuiles. {% endcomment %}
+#mission .mission__visual::before {
+  content: '';
+  position: absolute; inset: 0;
+  z-index: -1;
+  border-radius: inherit;
+  pointer-events: none;
+  background-image: radial-gradient(
+    color-mix(in srgb, var(--primary) 22%, transparent) 1px, transparent 1.4px);
+  background-size: 18px 18px;
+  -webkit-mask-image: radial-gradient(closest-side at 50% 50%, #000, transparent);
+  mask-image: radial-gradient(closest-side at 50% 50%, #000, transparent);
+}
+
+/* Chiffres des tuiles : leger degrade d'encre vers le vert de marque (meme
+   grammaire que .stat__num, en plus discret). Repli : couleur pleine. */
+@supports ((-webkit-background-clip: text) or (background-clip: text)) {
+  #mission .mission__tile-num {
+    background: linear-gradient(120deg, var(--text) 35%,
+      color-mix(in srgb, var(--text) 45%, var(--primary)) 100%);
+    -webkit-background-clip: text;
+    background-clip: text;
+    color: transparent;
+  }
+}
+/* Ombres colorees par tuile au survol : chaque teinte du logo repond. */
+#mission .mission__visual .mission__tile:nth-child(1):hover {
+  box-shadow: 0 16px 32px -14px color-mix(in srgb, var(--primary) 45%, transparent);
+}
+#mission .mission__visual .mission__tile:nth-child(2):hover {
+  box-shadow: 0 16px 32px -14px color-mix(in srgb, var(--highlight) 45%, transparent);
+}
+#mission .mission__visual .mission__tile:nth-child(3):hover {
+  box-shadow: 0 16px 32px -14px color-mix(in srgb, var(--logo-blue) 40%, transparent);
+}
+#mission .mission__visual .mission__tile:nth-child(4):hover {
+  box-shadow: 0 16px 32px -14px color-mix(in srgb, var(--logo-red) 35%, transparent);
+}
+
+/* ===== Mission : respiration mobile recalibree ===== */
+@media (max-width: 899.98px) {
+  #mission .mission__grid { gap: 44px; }
+  #mission .mission__list { margin-top: 28px; gap: 16px; }
+  #mission .mission__list li { font-size: clamp(15px, 4.1vw, 16.5px); }
+  #mission .mission__list li + li { padding-top: 16px; }
+}
+
+/* ===== Valeurs : lavis d'angle assorti a l'icone (multi-fonds, sans pseudo
+   supplementaire : rien ne passe au-dessus du texte) ===== */
+#valeurs .value-card {
+  background:
+    radial-gradient(240px 170px at -8% -10%,
+      color-mix(in srgb, var(--primary) 8%, transparent), transparent 72%),
+    var(--surface);
+}
+#valeurs .value-card:has(.value-card__icon--amber) {
+  background:
+    radial-gradient(240px 170px at -8% -10%,
+      color-mix(in srgb, var(--highlight) 9%, transparent), transparent 72%),
+    var(--surface);
+}
+#valeurs .value-card:has(.value-card__icon--teal) {
+  background:
+    radial-gradient(240px 170px at -8% -10%,
+      color-mix(in srgb, var(--logo-blue) 8%, transparent), transparent 72%),
+    var(--surface);
+}
+/* Ombre coloree assortie au survol (posee par-dessus la regle generique). */
+#valeurs .values__grid .value-card:hover {
+  box-shadow: var(--shadow-lg),
+    0 18px 40px -18px color-mix(in srgb, var(--primary) 35%, transparent);
+}
+#valeurs .values__grid .value-card:has(.value-card__icon--amber):hover {
+  border-color: color-mix(in srgb, var(--highlight) 55%, var(--border));
+  box-shadow: var(--shadow-lg),
+    0 18px 40px -18px color-mix(in srgb, var(--highlight) 35%, transparent);
+}
+#valeurs .values__grid .value-card:has(.value-card__icon--teal):hover {
+  border-color: color-mix(in srgb, var(--logo-blue) 50%, var(--border));
+  box-shadow: var(--shadow-lg),
+    0 18px 40px -18px color-mix(in srgb, var(--logo-blue) 30%, transparent);
+}
+
+/* ===== Valeurs : jauge de defilement du carrousel (scroll-driven, CSS pur) =====
+   Piste discrete sous les cartes ; le remplissage degrade vert suit la position
+   de defilement via scroll-timeline. Masquee par defaut : elle n'apparait que
+   la ou le carrousel existe (mobile, ou variante --carousel) ET si le
+   navigateur sait piloter une animation par le scroll. */
+#valeurs .values__scrollbar {
+  display: none;
+  width: min(160px, 42vw);
+  height: 3px;
+  margin: 2px auto 0;
+  border-radius: 999px;
+  background: color-mix(in srgb, var(--border-strong) 75%, transparent);
+  overflow: hidden;
+}
+#valeurs .values__scrollbar::after {
+  content: '';
+  display: block;
+  height: 100%;
+  border-radius: 999px;
+  background: linear-gradient(90deg, var(--primary), var(--accent));
+  transform-origin: left;
+  transform: scaleX(.22);
+}
+@supports (animation-timeline: scroll()) {
+  #valeurs { timeline-scope: --val-scroll; }
+  #valeurs .values__wrap { scroll-timeline: --val-scroll inline; }
+  #valeurs .values__scrollbar::after {
+    animation: valScrollProgress linear both;
+    animation-timeline: --val-scroll;
+  }
+  @media (max-width: 899.98px) {
+    #valeurs .values__scrollbar { display: block; }
+  }
+  /* 4+ valeurs : le carrousel persiste sur desktop, la jauge aussi. */
+  #valeurs .values__wrap--carousel + .values__scrollbar { display: block; }
+}
+@keyframes valScrollProgress {
+  from { transform: scaleX(.22); }
+  to   { transform: scaleX(1); }
+}
+
+@keyframes aboutFadeUp {
+  from { opacity: 0; transform: translateY(18px); }
+  to   { opacity: 1; transform: none; }
+}
+@keyframes aboutTileIn {
+  from { opacity: 0; transform: translateY(16px) scale(.97); }
+  to   { opacity: 1; transform: none; }
+}
+
+/* ===== Accessibilite : aucun mouvement si l'utilisateur le refuse =====
+   (la jauge de defilement reste : c'est un retour de position, pas un decor
+   anime — elle ne bouge que si l'utilisateur fait defiler lui-meme). */
+@media (prefers-reduced-motion: reduce) {
+  #mission *, #mission::before, #mission::after,
+  #valeurs *, #valeurs *::before, #valeurs *::after,
+  #mission *::before, #mission *::after {
+    animation: none !important;
+    transition-duration: .01ms !important;
+    transition-delay: 0s !important;
+  }
+  #mission .mission__list li:hover,
+  #mission .mission__list li:hover .check,
+  #mission .mission__visual .mission__tile:hover,
+  #mission .mission__tile:hover .mission__tile-icon,
+  #valeurs .values__grid .value-card:hover,
+  #valeurs .value-card:hover .value-card__icon { transform: none; }
+  #valeurs .value-card:hover::before { transform: scaleX(1); }
+  #valeurs .values__scrollbar::after {
+    animation: valScrollProgress linear both !important;
+    animation-timeline: --val-scroll !important;
+  }
+}
+</style>
+
 <!-- Mission -->
 <section class="section" id="mission">
   <div class="container">
@@ -132,6 +471,9 @@
         {% endfor %}
       </div>
     </div>
+    {% comment %} Jauge de progression du carrousel (decorative : aria-hidden).
+       Pilotee par scroll-timeline en CSS pur ; invisible si non supporte. {% endcomment %}
+    <div class="values__scrollbar" aria-hidden="true"></div>
     {% if core_values|length > 3 %}
     <div class="values__nav reveal" data-delay="1">
       <button class="values__arrow" id="valPrev" aria-label="Valeurs précédentes" type="button">

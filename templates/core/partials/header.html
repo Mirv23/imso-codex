@@ -319,6 +319,11 @@
   --overlay-ink: rgba(26,32,20,.62);  /* pose sur une PHOTO : ne bascule PAS en nuit */
   --shadow-cta: 0 8px 20px -8px color-mix(in srgb, var(--primary) 55%, transparent);
   --shadow-cta-hover: 0 12px 26px -8px color-mix(in srgb, var(--primary) 65%, transparent);
+  --nav-shadow: 0 14px 36px -16px rgba(26,32,20,.22), 0 3px 10px -4px rgba(26,32,20,.08);
+  /* Pilule de navigation flottante : filet, fond condense au scroll, ombre levee. */
+  --nav-pill-border: rgba(26,32,20,.08);
+  --nav-bg-scrolled: rgba(255,255,255,.93);
+  --nav-shadow-strong: 0 20px 48px -16px rgba(26,32,20,.30), 0 5px 14px -6px rgba(26,32,20,.10);
   --mission-visual-from: #f4f7f1;
   --mission-visual-to: #e8f3ec;
   /* Remontes : a #c5c8c0 / #d4d7d1 la pastille « complet » tombait a 1,45:1 et un
@@ -378,6 +383,10 @@
   --shadow-sm: 0 1px 2px rgba(0,0,0,.5);
   --shadow-md: 0 8px 24px -8px rgba(0,0,0,.6), 0 2px 6px rgba(0,0,0,.4);
   --shadow-lg: 0 24px 48px -16px rgba(0,0,0,.7), 0 8px 16px -8px rgba(0,0,0,.5);
+  --nav-shadow: 0 14px 34px -16px rgba(0,0,0,.65);
+  --nav-pill-border: rgba(255,255,255,.10);
+  --nav-bg-scrolled: rgba(13,19,13,.92);
+  --nav-shadow-strong: 0 20px 48px -14px rgba(0,0,0,.8), 0 5px 14px -6px rgba(0,0,0,.5);
 }
 
 *, *::before, *::after { box-sizing: border-box; }
@@ -430,8 +439,13 @@ a { color: inherit; text-decoration: none; }
   transition: transform .35s cubic-bezier(.6,.2,.2,1);
 }
 .brand-logo:hover img { transform: rotate(-3deg) scale(1.05); }
-.nav .brand-logo img { height: 42px; }
-.nav.scrolled .brand-logo img { height: 36px; }
+.nav .brand-logo img {
+  height: 40px;
+  /* La hauteur suit la meme courbe que la condensation de la capsule :
+     sans cela le logo sautait d'une taille a l'autre au premier scroll. */
+  transition: height .5s cubic-bezier(.22,1,.36,1), transform .35s cubic-bezier(.6,.2,.2,1);
+}
+.nav.scrolled .brand-logo img { height: 34px; }
 .drawer .brand-logo img { height: 48px; }
 .loader .brand-logo img { height: 90px; }
 .footer .brand-logo img {
@@ -491,24 +505,94 @@ a { color: inherit; text-decoration: none; }
   .container { padding: 0 32px; }
 }
 
-/* Navbar */
+/* Navbar — PILULE FLOTTANTE detachee des bords, visible des le chargement.
+   .nav n'est plus qu'une bande fixe transparente (pointer-events:none) qui
+   positionne la capsule ; .nav__inner est la pilule elle-meme : verre depoli,
+   filet, ombre portee qui la fait leviter. Le JS (footer.html, LECTURE SEULE)
+   pose toujours .scrolled sur #nav : la capsule se condense alors. */
 .nav {
   position: fixed;
   top: 0; left: 0; right: 0;
   z-index: 100;
-  padding: 14px 0;
-  transition: background .35s ease, border-color .35s ease, padding .35s ease, backdrop-filter .35s ease;
-  border-bottom: 1px solid transparent;
+  padding: 12px clamp(10px, 2vw, 22px) 0;
+  pointer-events: none;   /* la bande laisse passer les clics hors capsule */
+  transition: padding .5s cubic-bezier(.22,1,.36,1);
 }
-.nav.scrolled {
-  background: var(--nav-bg);
-  backdrop-filter: blur(16px) saturate(140%);
-  -webkit-backdrop-filter: blur(16px) saturate(140%);
-  border-bottom-color: var(--border);
-  padding: 10px 0;
+@media (min-width: 768px) {
+  .nav { padding-top: 16px; }
 }
 .nav__inner {
+  pointer-events: auto;
+  position: relative;
+  width: 100%;
+  max-width: 1148px;
+  margin: 0 auto;
   display: flex; align-items: center; justify-content: space-between;
+  gap: 12px;
+  padding: 9px 12px 9px 16px;
+  border-radius: 999px;
+  background: var(--nav-bg);
+  -webkit-backdrop-filter: blur(18px) saturate(160%);
+  backdrop-filter: blur(18px) saturate(160%);
+  border: 1px solid var(--nav-pill-border);
+  box-shadow: var(--nav-shadow);
+  transition: padding .5s cubic-bezier(.22,1,.36,1), box-shadow .5s ease,
+              background .5s ease, border-color .5s ease;
+}
+@media (min-width: 768px) {
+  .nav__inner { padding: 10px 14px 10px 20px; }
+}
+/* Lisere identitaire : rappel des 4 carres du logo (vert, orange, rouge, bleu).
+   Reinterprete pour la capsule : fine ligne posee sur son bord interieur haut,
+   fondue aux extremites pour epouser l'arrondi de la pilule. */
+.nav__ribbon {
+  position: absolute;
+  top: 0; left: 34px; right: 34px;
+  height: 2.5px;
+  border-radius: 0 0 99px 99px;
+  background: linear-gradient(90deg,
+    var(--primary) 0 42%,
+    var(--highlight) 42% 72%,
+    var(--logo-red) 72% 86%,
+    var(--logo-blue) 86% 100%);
+  -webkit-mask: linear-gradient(90deg, transparent, #000 7%, #000 93%, transparent);
+  mask: linear-gradient(90deg, transparent, #000 7%, #000 93%, transparent);
+  pointer-events: none;
+}
+/* Etat condense au scroll : la capsule s'affine, s'opacifie et leve plus d'ombre. */
+.nav.scrolled { padding-top: 8px; }
+.nav.scrolled .nav__inner {
+  padding-top: 6px;
+  padding-bottom: 6px;
+  background: var(--nav-bg-scrolled);
+  box-shadow: var(--nav-shadow-strong);
+}
+/* Barre de progression de lecture (CSS pur, scroll-driven) : fine ligne le long
+   du bord interieur bas de la capsule, en degrade de marque. Aucun JS ; les
+   navigateurs sans animation-timeline ne la voient simplement pas. */
+.nav__progress { display: none; }
+@supports (animation-timeline: scroll()) {
+  .nav__progress {
+    display: block;
+    position: absolute;
+    bottom: 0; left: 34px; right: 34px;
+    height: 2.5px;
+    border-radius: 99px 99px 0 0;
+    background: linear-gradient(90deg, var(--primary), var(--accent) 55%, var(--highlight));
+    transform-origin: left;
+    transform: scaleX(0);
+    pointer-events: none;
+    animation: nav-progress linear both;
+    animation-timeline: scroll(root);
+  }
+  @keyframes nav-progress {
+    from { transform: scaleX(0); }
+    to { transform: scaleX(1); }
+  }
+}
+/* Le CTA de la barre ressort : lift discret au survol, ombre derivee de --primary. */
+@media (hover: hover) {
+  .nav .btn--primary:hover { transform: translateY(-2px) scale(1.02); }
 }
 .logo {
   font-weight: 800;
@@ -545,19 +629,23 @@ a { color: inherit; text-decoration: none; }
   font-weight: 500;
   color: var(--text);
   position: relative;
-  padding: 4px 0;
-  transition: color .2s;
+  /* Zone verticale elargie (~34px) sans toucher a la largeur : la gouttiere
+     resserree entre 900 et 1060px reste juste. */
+  padding: 8px 0;
+  transition: color .25s cubic-bezier(.22,1,.36,1);
 }
 .nav__link::after {
   content: '';
   position: absolute;
-  left: 0; bottom: -2px;
+  left: 0; bottom: 1px;
   /* On anime transform (composable) et non width (declenche une mise en page). */
-  width: 100%; height: 2px;
-  background: var(--primary);
+  width: 100%; height: 2.5px;
+  border-radius: 99px;
+  background: linear-gradient(90deg, var(--primary), var(--accent));
   transform: scaleX(0);
-  transform-origin: left;
-  transition: transform .35s cubic-bezier(.6,.2,.2,1);
+  /* Croissance depuis le centre : plus organique qu'un balayage gauche-droite. */
+  transform-origin: center;
+  transition: transform .38s cubic-bezier(.22,1,.36,1);
 }
 /* --primary sur le fond de page tombait a 3,59:1 : le survol RENDAIT le lien moins
    lisible qu'au repos. --nav-link-hover est plus fonce en clair, plus clair en nuit. */
@@ -576,9 +664,12 @@ a { color: inherit; text-decoration: none; }
   background: var(--surface);
   border: 1px solid var(--border);
   box-shadow: var(--shadow-sm);
-  transition: transform .2s ease, background .2s, border-color .2s;
+  transition: transform .25s cubic-bezier(.22,1,.36,1), background .2s, border-color .2s;
 }
 .hamburger:hover { transform: scale(1.04); border-color: var(--primary); }
+.hamburger:active { transform: scale(.94); }
+/* Le JS (footer) pose .open : le bouton reste marque tant que le tiroir est ouvert. */
+.hamburger.open { border-color: var(--primary); background: var(--green-soft); }
 .hamburger__lines {
   width: 18px; height: 14px;
   position: relative;
@@ -588,7 +679,8 @@ a { color: inherit; text-decoration: none; }
   width: 100%; height: 2px;
   background: var(--text);
   border-radius: 2px;
-  transition: transform .35s ease, opacity .25s, top .35s;
+  /* Leger rebond a la fermeture en croix : le geste se sent, sans exageration. */
+  transition: transform .4s cubic-bezier(.34,1.4,.44,1), opacity .25s, top .4s cubic-bezier(.34,1.4,.44,1);
 }
 .hamburger__lines > span:nth-child(1) { top: 0; }
 .hamburger__lines > span:nth-child(2) { top: 6px; }
@@ -610,7 +702,12 @@ a { color: inherit; text-decoration: none; }
   transition: transform .2s ease, background .2s, border-color .2s, color .2s;
 }
 .theme-toggle:hover { transform: scale(1.04); border-color: var(--primary); color: var(--primary); }
-.theme-toggle svg { width: 20px; height: 20px; }
+.theme-toggle:active { transform: scale(.94); }
+.theme-toggle svg {
+  width: 20px; height: 20px;
+  transition: transform .5s cubic-bezier(.22,1,.36,1);
+}
+.theme-toggle:hover svg { transform: rotate(-24deg) scale(1.08); }
 /* Lune en mode clair (pour passer en sombre), soleil en mode sombre. */
 .theme-toggle__sun { display: none; }
 :root[data-theme="dark"] .theme-toggle__moon { display: none; }
@@ -628,9 +725,10 @@ a { color: inherit; text-decoration: none; }
   /* visibility:hidden sort les liens du tiroir de l'ordre de tabulation quand il
      est ferme (sinon ~10 arrets de tabulation invisibles) sans changer l'animation. */
   visibility: hidden;
-  transition: transform .45s cubic-bezier(.7,.1,.2,1), visibility .45s;
+  transition: transform .5s cubic-bezier(.32,.72,.13,1), visibility .5s;
   box-shadow: var(--shadow-lg);
   border-left: 1px solid var(--border);
+  border-radius: var(--radius-lg) 0 0 var(--radius-lg);
   padding: 24px;
   display: flex; flex-direction: column;
   /* Le contenu du tiroir fait ~731px de haut. Sans defilement, sous ~732px de
@@ -641,6 +739,29 @@ a { color: inherit; text-decoration: none; }
   padding-bottom: max(24px, env(safe-area-inset-bottom));
 }
 .drawer.open { transform: translateX(0); visibility: visible; }
+/* Entree en cascade : chaque lien glisse en fondu avec un leger decalage. A la
+   fermeture, les delais retombent a 0 (ils ne sont poses que sur l'etat .open). */
+.drawer__links li,
+.drawer__cta {
+  opacity: 0;
+  transform: translateX(22px);
+  transition: opacity .4s ease, transform .45s cubic-bezier(.22,1,.36,1);
+}
+.drawer.open .drawer__links li,
+.drawer.open .drawer__cta {
+  opacity: 1;
+  transform: translateX(0);
+}
+.drawer.open .drawer__links li:nth-child(1) { transition-delay: .07s; }
+.drawer.open .drawer__links li:nth-child(2) { transition-delay: .12s; }
+.drawer.open .drawer__links li:nth-child(3) { transition-delay: .17s; }
+.drawer.open .drawer__links li:nth-child(4) { transition-delay: .22s; }
+.drawer.open .drawer__links li:nth-child(5) { transition-delay: .27s; }
+.drawer.open .drawer__links li:nth-child(6) { transition-delay: .32s; }
+.drawer.open .drawer__links li:nth-child(7) { transition-delay: .37s; }
+.drawer.open .drawer__links li:nth-child(8) { transition-delay: .42s; }
+.drawer.open .drawer__links li:nth-child(9) { transition-delay: .47s; }
+.drawer.open .drawer__cta { transition-delay: .45s; }
 .drawer__head {
   display: flex; align-items: center; justify-content: space-between;
   padding-bottom: 24px;
@@ -707,10 +828,11 @@ a { color: inherit; text-decoration: none; }
 .scrim {
   position: fixed; inset: 0;
   background: var(--scrim);   /* seule couleur en dur du bloc nav : invisible en nuit */
-  backdrop-filter: blur(4px);
+  backdrop-filter: blur(7px);
+  -webkit-backdrop-filter: blur(7px);
   z-index: 150;
   opacity: 0; pointer-events: none;
-  transition: opacity .3s;
+  transition: opacity .35s ease;
 }
 .scrim.show { opacity: 1; pointer-events: auto; }
 
@@ -865,6 +987,60 @@ a { color: inherit; text-decoration: none; }
   0%,100% { transform: translate(0,0); }
   50% { transform: translate(-20px, 30px); }
 }
+/* Parallaxe leger des formes decoratives au defilement (CSS pur, scroll-driven) :
+   le calque de halos descend doucement pendant qu'on quitte le hero, ce qui donne
+   de la profondeur sans toucher au JS. Ignore par les navigateurs sans support. */
+@supports (animation-timeline: scroll()) {
+  .hero__shapes {
+    animation: hero-shapes-parallax linear both;
+    animation-timeline: scroll(root);
+    animation-range: 0 120vh;
+  }
+  @keyframes hero-shapes-parallax {
+    to { transform: translateY(110px); }
+  }
+}
+
+/* Indice de defilement — desktop et ecrans assez hauts uniquement : sur mobile il
+   chevaucherait le contenu, et sous 640px de haut il n'apporte rien. */
+.hero__scroll {
+  position: absolute;
+  left: 50%; bottom: 22px;
+  transform: translateX(-50%);
+  display: none;
+  flex-direction: column; align-items: center; gap: 9px;
+  color: var(--muted);
+  font-family: 'JetBrains Mono', monospace;
+  font-size: 10px;
+  font-weight: 500;
+  letter-spacing: 0.28em;
+  text-transform: uppercase;
+  z-index: 2;
+  transition: color .25s;
+}
+@media (min-width: 900px) and (min-height: 640px) {
+  .hero__scroll { display: inline-flex; }
+}
+.hero__scroll:hover { color: var(--nav-link-hover); }
+.hero__scroll-line {
+  width: 2px; height: 44px;
+  border-radius: 2px;
+  background: var(--border-strong);
+  position: relative;
+  overflow: hidden;
+}
+.hero__scroll-line::after {
+  content: '';
+  position: absolute; left: 0; top: 0;
+  width: 100%; height: 40%;
+  border-radius: 2px;
+  background: var(--primary);
+  animation: scrollcue 2.4s cubic-bezier(.6,.2,.2,1) infinite;
+}
+@keyframes scrollcue {
+  0% { transform: translateY(-110%); }
+  60%, 100% { transform: translateY(280%); }
+}
 
 .hero__grid {
   position: relative;
@@ -906,8 +1082,13 @@ a { color: inherit; text-decoration: none; }
   opacity: .35;
   z-index: -1;
   border-radius: 4px;
-  transform: skew(-6deg);
+  /* Le surligneur se « trace » une fois le titre revele (classe .in posee par
+     l'IntersectionObserver du footer). Retabli sans animation en reduced-motion. */
+  transform: skew(-6deg) scaleX(0);
+  transform-origin: left;
+  transition: transform .8s cubic-bezier(.22,1,.36,1) .55s;
 }
+.hero__title.reveal.in em::after { transform: skew(-6deg) scaleX(1); }
 .hero__sub {
   font-size: 17px;
   color: var(--muted);
@@ -1005,9 +1186,15 @@ a { color: inherit; text-decoration: none; }
   border-radius: 20px;
   padding: 14px 18px;
   box-shadow: var(--shadow-lg);
+  /* Filet : en nuit, l'ombre seule ne detachait plus la carte du visuel. */
+  border: 1px solid var(--border);
   display: flex; align-items: center; gap: 14px;
-  animation: float 5s ease-in-out infinite;
+  animation: float 5.5s ease-in-out infinite;
   z-index: 2;
+}
+/* Au survol, le flottement se fige : la carte se laisse lire. */
+@media (hover: hover) {
+  .float-card:hover { animation-play-state: paused; }
 }
 .float-card--members {
   /* Remontee : a bottom:-10px elle recouvrait integralement la pastille de la
@@ -1116,9 +1303,10 @@ a { color: inherit; text-decoration: none; }
 .stat + .stat::before {
   content: '';
   position: absolute;
-  left: -8px; top: 12%; bottom: 12%;
+  left: -8px; top: 8%; bottom: 8%;
   width: 1px;
-  background: var(--border);
+  /* Fondu haut/bas : le separateur structure sans dessiner de barreau. */
+  background: linear-gradient(180deg, transparent, var(--border-strong), transparent);
 }
 .stat__num {
   font-weight: 800;
@@ -1128,22 +1316,34 @@ a { color: inherit; text-decoration: none; }
   line-height: 1;
   font-variant-numeric: tabular-nums;
 }
+/* Degrade de marque sur les chiffres (les deux tokens basculent en nuit).
+   Le repli color:var(--primary) ci-dessus couvre les navigateurs sans clip. */
+@supports ((-webkit-background-clip: text) or (background-clip: text)) {
+  .stat__num {
+    background: linear-gradient(120deg, var(--primary) 20%, var(--accent) 90%);
+    -webkit-background-clip: text;
+    background-clip: text;
+    color: transparent;
+  }
+}
 .stat__num sup {
   font-size: 0.5em;
   /* Le « + » est un modificateur du chiffre, pas un accent autonome : il suit la
-     couleur du chiffre. L'orange reste reserve aux accents non textuels. */
-  color: var(--primary);
+     couleur du chiffre (donc le meme degrade quand il est supporte). */
+  color: inherit;
   margin-left: 2px;
   vertical-align: super;
 }
 .stat__label {
-  font-size: 12px;
-  font-weight: 600;      /* le libelle decrochait du chiffre : il redevient lisible */
-  letter-spacing: 0.10em;
+  /* Libelle technique en mono : meme grammaire que les numeros du tiroir. */
+  font-family: 'JetBrains Mono', monospace;
+  font-size: 11.5px;
+  font-weight: 500;
+  letter-spacing: 0.14em;
   line-height: 1.35;
   text-transform: uppercase;
   color: var(--muted);
-  margin-top: 10px;
+  margin-top: 12px;
 }
 @media (max-width: 600px) {
   /* La grille reste a 3 colonnes sur mobile : a 7vw le chiffre debordait de sa
@@ -2192,11 +2392,13 @@ a { color: inherit; text-decoration: none; }
 }
 .footer__bottom a:hover { color: white; }
 
-/* Reveal */
+/* Reveal — courbes organiques : l'opacite s'installe un peu plus vite que le
+   deplacement (ease-out-cubic vs ease-out-quint), le mouvement se pose en
+   douceur au lieu de freiner mecaniquement. */
 .reveal {
   opacity: 0;
-  transform: translateY(28px);
-  transition: opacity .9s cubic-bezier(.6,.2,.2,1), transform .9s cubic-bezier(.6,.2,.2,1);
+  transform: translateY(26px);
+  transition: opacity .7s cubic-bezier(.33,1,.68,1), transform .95s cubic-bezier(.22,1,.36,1);
 }
 .reveal.in {
   opacity: 1;
@@ -2209,8 +2411,23 @@ a { color: inherit; text-decoration: none; }
 .reveal[data-delay="5"] { transition-delay: .40s; }
 
 @media (prefers-reduced-motion: reduce) {
-  *, *::before, *::after { animation-duration: .01ms !important; transition-duration: .01ms !important; }
+  *, *::before, *::after {
+    animation-duration: .01ms !important;
+    animation-iteration-count: 1 !important;   /* stoppe aussi les boucles infinies */
+    transition-duration: .01ms !important;
+    transition-delay: 0s !important;           /* les cascades deviennent instantanees */
+  }
+  html { scroll-behavior: auto; }
   .reveal { opacity: 1; transform: none; }
+  /* Etats finaux poses d'office : ces elements attendent une classe JS/une
+     transition pour apparaitre, ils doivent etre visibles sans animation. */
+  .hero__title em::after { transform: skew(-6deg) scaleX(1); }
+  .drawer__links li, .drawer__cta { opacity: 1; transform: none; }
+  .hero__scroll-line::after { animation: none; transform: translateY(60%); }
+  /* Les animations pilotees par le scroll ne passent pas par animation-duration :
+     on les coupe explicitement (progression de lecture et parallaxe du hero). */
+  .nav__progress { display: none; }
+  .hero__shapes { animation: none; }
 }
 
 /* ===== Hero photo collage ===== */
@@ -2235,9 +2452,9 @@ a { color: inherit; text-decoration: none; }
   width: 100%; height: 100%;
   object-fit: cover;
   display: block;
-  transition: transform 1.2s ease;
+  transition: transform 1.2s cubic-bezier(.22,1,.36,1), filter .6s ease;
 }
-.hero__photo:hover img { transform: scale(1.04); }
+.hero__photo:hover img { transform: scale(1.06); filter: saturate(1.12) brightness(1.03); }
 .hero__photo:nth-child(1) { grid-row: span 2; }
 /* .hero__photo--label supprime : les 3 pastilles doublonnaient mot pour mot
    l'overlay central (lui, pilote par texts.hero_visual_overlay), l'une d'elles

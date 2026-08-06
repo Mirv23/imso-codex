@@ -1,4 +1,163 @@
 {% load static %}<!-- Témoignages (masquable via Paramètres → Affichage) -->
+{% comment %} Surcharges de style locales — témoignages, bande CTA et modale de
+   réservation uniquement. Le CSS global vit dans header.html (non modifiable
+   ici) : ce bloc arrive APRÈS lui et ne contient que des sélecteurs scopés à
+   #temoignages / .cta-strip / #bookingModal. Couleurs exclusivement via les
+   tokens var(--...) ; le seul token nouveau (--imso-select-arrow, chevron du
+   <select> en data-URI inline, aucune ressource externe) est défini pour les
+   DEUX thèmes ci-dessous. Aucun hook JS (id/classe de footer.html) ni attribut
+   de formulaire (name/id) n'est modifié. {% endcomment %}
+<style>
+/* -- Témoignages : cartes en relief, survol doux -- */
+#temoignages .testi__card {
+  box-shadow: var(--shadow-sm);
+  transition: transform .35s cubic-bezier(.6,.2,.2,1), border-color .35s ease, box-shadow .35s ease;
+}
+#temoignages .testi__card:hover {
+  transform: translateY(-4px);
+  border-color: var(--border-strong);
+  box-shadow: var(--shadow-md);
+}
+#temoignages .testi__avatar {
+  box-shadow: inset 0 0 0 2px color-mix(in srgb, var(--primary) 22%, transparent);
+}
+#temoignages .testi__arrow:active { transform: scale(.92); }
+
+/* -- Bande CTA : lift des boutons (le ripple global reste actif) -- */
+.cta-strip .btn:hover { transform: translateY(-2px); }
+.cta-strip .btn:active { transform: translateY(0) scale(.97); }
+
+/* -- Modale de réservation : formulaire modernisé -- */
+#bookingModal {
+  /* Chevron du <select> : encre = --muted de chaque thème (data-URI inline). */
+  --imso-select-arrow: url("data:image/svg+xml;utf8,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='none' stroke='%236B7560' stroke-width='2.2' stroke-linecap='round' stroke-linejoin='round'><path d='M6 9l6 6 6-6'/></svg>");
+}
+:root[data-theme="dark"] #bookingModal {
+  --imso-select-arrow: url("data:image/svg+xml;utf8,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='none' stroke='%2399A791' stroke-width='2.2' stroke-linecap='round' stroke-linejoin='round'><path d='M6 9l6 6 6-6'/></svg>");
+}
+#bookingModal .modal { border: 1px solid var(--border); }
+#bookingModal .field label { transition: color .2s ease; }
+#bookingModal .field:focus-within label { color: var(--ink-on-tint); }
+#bookingModal .field input,
+#bookingModal .field select {
+  min-height: 48px;   /* zone tactile confortable au pouce */
+  transition: border-color .2s ease, background-color .2s ease, box-shadow .2s ease;
+}
+#bookingModal .field input::placeholder { color: var(--muted); opacity: .65; }
+#bookingModal .field input:hover,
+#bookingModal .field select:hover { border-color: var(--border-strong); }
+#bookingModal .field input:focus,
+#bookingModal .field select:focus {
+  border-color: var(--focus-ring);
+  background-color: var(--surface);
+  box-shadow: 0 0 0 3px color-mix(in srgb, var(--focus-ring) 18%, transparent);
+}
+#bookingModal .field input:focus-visible,
+#bookingModal .field select:focus-visible { outline-color: var(--focus-ring); }
+#bookingModal .field select {
+  appearance: none;
+  -webkit-appearance: none;
+  padding-right: 42px;
+  background-image: var(--imso-select-arrow);
+  background-repeat: no-repeat;
+  background-position: right 14px center;
+  background-size: 16px 16px;
+  cursor: pointer;
+}
+/* Erreurs natives : bordure danger une fois le champ touché (amélioration
+   progressive — les navigateurs sans :user-invalid ignorent ces règles). */
+#bookingModal .field input:user-invalid { border-color: var(--danger); }
+#bookingModal .field input:user-invalid:focus {
+  box-shadow: 0 0 0 3px color-mix(in srgb, var(--danger) 15%, transparent);
+}
+#bookingModal .modal__form .btn--primary:hover:not(:disabled) { transform: translateY(-1px); }
+#bookingModal .modal__close { transition: background-color .2s ease, color .2s ease; }
+#bookingModal .modal__close:hover { background: var(--tint-red); color: var(--danger); }
+#bookingModal .modal__close svg { transition: transform .3s cubic-bezier(.6,.2,.2,1); }
+#bookingModal .modal__close:hover svg { transform: rotate(90deg); }
+/* Succès : icône qui « pop » puis coche qui se dessine */
+#bookingModal .modal__success-icon { animation: imsoPop .55s cubic-bezier(.34,1.56,.64,1) both; }
+#bookingModal .modal__success-icon svg polyline {
+  stroke-dasharray: 24;
+  stroke-dashoffset: 24;
+  animation: imsoCheck .4s ease-out .25s forwards;
+}
+@keyframes imsoPop {
+  from { opacity: 0; transform: scale(.55); }
+}
+@keyframes imsoCheck {
+  to { stroke-dashoffset: 0; }
+}
+
+/* ===== Orfèvrerie v2 : balayage naturel, indices, bottom sheet mobile ===== */
+
+/* Témoignages : la piste se saisit au doigt comme à la souris (drag JS global).
+   touch-action:pan-y préserve le défilement vertical de la page. */
+#temoignages .testi__track {
+  touch-action: pan-y;
+  cursor: grab;
+  /* Un carrousel se saisit : sans cela, le drag souris surlignait le texte
+     des cartes au lieu de faire glisser la piste. */
+  user-select: none;
+  -webkit-user-select: none;
+}
+#temoignages .testi__track.is-dragging { transition: none; cursor: grabbing; }
+#temoignages .testi__track.is-dragging .testi__card { pointer-events: none; }
+/* Filet dégradé au sommet de la carte, révélé au survol/focus */
+#temoignages .testi__card { overflow: hidden; }
+#temoignages .testi__card::before {
+  content: '';
+  position: absolute; top: 0; left: 0; right: 0; height: 3px;
+  background: linear-gradient(90deg, var(--primary), var(--accent) 45%, transparent 90%);
+  opacity: 0;
+  transition: opacity .35s ease;
+}
+#temoignages .testi__card:hover::before { opacity: 1; }
+/* Pastille active : dégradé primaire → accent (indice de position élégant) */
+#temoignages .dot.active { background: linear-gradient(90deg, var(--primary), var(--accent)); }
+/* Mobile : la carte suivante dépasse légèrement — invitation naturelle au
+   balayage (le JS calcule désormais le déplacement en px, pas en %). */
+@media (max-width: 699.98px) {
+  #temoignages .testi__slide { flex: 0 0 86%; }
+}
+
+/* Modale mobile : bottom sheet — la carte monte du bas de l'écran, poignée de
+   préhension, zone sûre iOS respectée. Desktop : comportement global intact. */
+@media (max-width: 560px) {
+  #bookingModal { align-items: flex-end; padding: 0; }
+  #bookingModal .modal {
+    max-width: none;
+    width: 100%;
+    border-radius: 26px 26px 0 0;
+    max-height: calc(100dvh - 28px);
+    padding: 22px 20px calc(24px + env(safe-area-inset-bottom));
+    transform: translateY(12%);
+    transition: transform .45s cubic-bezier(.32,.72,.28,1);
+  }
+  #bookingModal.open .modal { transform: translateY(0); }
+  #bookingModal .modal::before {
+    content: '';
+    display: block;
+    width: 44px; height: 5px;
+    border-radius: 999px;
+    background: var(--border-strong);
+    margin: -4px auto 16px;
+  }
+}
+
+/* Respect strict de prefers-reduced-motion : aucun mouvement ajouté */
+@media (prefers-reduced-motion: reduce) {
+  #temoignages .testi__card:hover,
+  .cta-strip .btn:hover,
+  #bookingModal .modal__close:hover svg,
+  #bookingModal .modal__form .btn--primary:hover:not(:disabled) { transform: none; }
+  #bookingModal .modal__success-icon { animation: none; }
+  #bookingModal .modal__success-icon svg polyline { animation: none; stroke-dashoffset: 0; }
+  @media (max-width: 560px) {
+    #bookingModal .modal { transition: none; transform: none; }
+  }
+}
+</style>
 {% if site.show_testimonials %}<section class="section testimonials" id="temoignages">
   <div class="container">
     <div class="section__head reveal">
@@ -31,7 +190,7 @@
         {% endfor %}
       </div>
     </div>
-    <div class="testi__nav reveal">
+    <div class="testi__nav reveal" data-delay="2">
       <div class="testi__dots" id="testiDots"></div>
       <div class="testi__arrows">
         <button class="testi__arrow" id="testiPrev" aria-label="Précédent">
@@ -48,9 +207,9 @@
 <!-- CTA Strip -->
 <div class="cta-strip reveal">
   <div class="cta-strip__inner">
-    <h2>{{ texts.cta_title|default:"Prêt·e à entreprendre avec votre communauté ?" }}</h2>
-    <p>{{ texts.cta_paragraph|default:"Rejoignez l'un des cinq GEI actifs et accédez immédiatement à l'épargne collective, aux formations et au mentorat de pair-à-pair." }}</p>
-    <div class="hero__ctas" style="justify-content:center;">
+    <h2 class="reveal">{{ texts.cta_title|default:"Prêt·e à entreprendre avec votre communauté ?" }}</h2>
+    <p class="reveal" data-delay="1">{{ texts.cta_paragraph|default:"Rejoignez l'un des cinq GEI actifs et accédez immédiatement à l'épargne collective, aux formations et au mentorat de pair-à-pair." }}</p>
+    <div class="hero__ctas reveal" data-delay="2" style="justify-content:center;">
       <a href="#rejoindre" class="btn btn--primary">{{ texts.cta_btn_join|default:"Démarrer mon adhésion" }}</a>
       <a href="#contact" class="btn btn--outline-amber">{{ texts.cta_btn_contact|default:"Nous contacter" }}</a>
     </div>

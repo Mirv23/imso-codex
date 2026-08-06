@@ -1,4 +1,238 @@
 {% load static %}
+{% comment %} Surcharges scopées à la section Boutique. Ce bloc arrive APRÈS le
+   CSS global de header.html : à spécificité égale il gagne, et le préfixe
+   #boutique garantit qu'aucune règle ne fuit ailleurs. Couleurs uniquement via
+   les tokens var(--...) existants → le mode nuit suit automatiquement. {% endcomment %}
+<style>
+/* ===== Section Boutique / Kit — refonte (scopé #boutique) ===== */
+
+/* Visuel du kit : reflet lumineux premium + zoom légèrement renforcé.
+   Blanc posé sur photo/dégradé : identique en clair et en nuit. */
+#boutique .kit__media::after {
+  content: '';
+  position: absolute; inset: 0;
+  background: linear-gradient(160deg, rgba(255,255,255,.16), transparent 45%);
+  pointer-events: none;
+}
+#boutique .kit__media img { transition: transform 1s cubic-bezier(.2,.7,.2,1); }
+@media (hover: hover) {
+  #boutique .kit__media:hover img { transform: scale(1.05); }
+}
+#boutique .kit__media-badge { letter-spacing: .18em; box-shadow: var(--shadow-sm); }
+
+{% comment %} Pas de « transition » redéclarée sur les li ni sur .shop-card :
+   ils portent désormais .reveal, dont la transition (déclarée plus loin dans
+   header.html) pilote l'entrée ET le survol. Une redéclaration avec spécificité
+   ID annulerait le stagger data-delay. transition-delay:0s au survol : la
+   réponse est immédiate malgré le délai d'entrée. {% endcomment %}
+/* Arguments du kit : puces posées sur cartes discrètes, glissement au survol */
+#boutique .kit__points { gap: 12px; margin-top: 26px; }
+#boutique .kit__points li {
+  align-items: flex-start;
+  padding: 13px 16px;
+  background: var(--surface);
+  border: 1px solid var(--border);
+  border-radius: var(--radius-sm);
+}
+@media (hover: hover) {
+  #boutique .kit__points li:hover {
+    transform: translateX(4px);
+    border-color: var(--primary);
+    box-shadow: var(--shadow-sm);
+    transition-delay: 0s;
+  }
+}
+
+/* Prix du kit : hiérarchie renforcée — montant fort, devise en petites caps */
+#boutique .kit__price { font-size: 34px; }
+#boutique .kit__price small { font-size: 12px; font-weight: 600; letter-spacing: .08em; text-transform: uppercase; }
+#boutique .kit__soon { color: var(--muted); font-size: 14px; }
+
+/* CTA kit : flèche qui glisse au survol */
+#boutique .kit__cta .js-order svg { width: 15px; height: 15px; flex-shrink: 0; transition: transform .25s ease; }
+@media (hover: hover) {
+  #boutique .kit__cta .js-order:hover svg { transform: translateX(3px); }
+}
+
+/* Autres produits : grille auto-fill + minmax. auto-fill (et non auto-fit)
+   conserve les pistes vides : un produit seul garde une largeur de carte.
+   Belle avec 1, 2 ou 10 produits, de 320px à 4K, sans débordement. */
+#boutique .shop-grid {
+  grid-template-columns: repeat(auto-fill, minmax(min(100%, 250px), 1fr));
+  gap: 24px;
+}
+#boutique .shop-card { border-radius: var(--radius-lg); }
+#boutique .shop-card__media { position: relative; }
+#boutique .shop-card__media img { transition: transform .8s cubic-bezier(.2,.7,.2,1); }
+@media (hover: hover) {
+  #boutique .shop-card:hover {
+    transform: translateY(-6px);
+    border-color: var(--primary);
+    box-shadow: var(--shadow-lg);
+    transition-delay: 0s;
+  }
+  #boutique .shop-card:hover .shop-card__media img { transform: scale(1.07); }
+}
+
+/* Étiquette de disponibilité posée sur le visuel produit (verre dépoli) */
+#boutique .shop-card__flag {
+  position: absolute; top: 12px; left: 12px;
+  font-size: 10px; font-weight: 700;
+  letter-spacing: .1em; text-transform: uppercase;
+  padding: 5px 10px;
+  border-radius: 999px;
+  background: var(--glass);
+  border: 1px solid var(--border);
+  color: var(--text);
+  box-shadow: var(--shadow-sm);
+  backdrop-filter: blur(6px);
+}
+#boutique .shop-card__flag--out { color: var(--danger); }
+#boutique .shop-card__flag--low { color: var(--tint-amber-ink); }
+
+/* Prix produit : montant fort, devise discrète */
+#boutique .shop-card__price { font-size: 18px; font-weight: 800; letter-spacing: -0.02em; }
+#boutique .shop-card__price small { font-size: 10.5px; font-weight: 600; letter-spacing: .08em; text-transform: uppercase; }
+
+/* Zones tactiles ≥ 44px sur les petits boutons de cartes */
+#boutique .btn--small { min-height: 44px; }
+
+/* ===== Boutique : atmosphère de section =====
+   Halo ambre derrière le visuel du kit + halo vert au pied de section.
+   isolation:isolate : le ::before en z-index:-1 se glisse entre le fond de
+   page et le contenu. */
+#boutique { isolation: isolate; }
+#boutique::before {
+  content: '';
+  position: absolute; inset: 0;
+  z-index: -1;
+  pointer-events: none;
+  background:
+    radial-gradient(560px 420px at 10% 8%,
+      color-mix(in srgb, var(--highlight) 6%, transparent), transparent 70%),
+    radial-gradient(520px 400px at 90% 96%,
+      color-mix(in srgb, var(--primary) 6%, transparent), transparent 72%);
+}
+
+/* ===== Visuel du kit : écrin premium =====
+   Ombre colorée de marque sous l'ombre existante + micro-parallaxe
+   scroll-driven du badge (CSS pur, progressif). */
+#boutique .kit__media {
+  box-shadow: var(--shadow-lg),
+    0 32px 64px -24px color-mix(in srgb, var(--primary) 40%, transparent);
+}
+{% comment %} Trame de points blancs sur le PLACEHOLDER uniquement (:has —
+   progressif : avec une vraie photo uploadée, rien ne change). Vignette :
+   le masque radial chasse les points du centre, le livre et le titre restent
+   sur un fond propre. Blanc posé sur dégradé : identique clair/nuit. {% endcomment %}
+#boutique .kit__media:not(:has(img))::before {
+  content: '';
+  position: absolute; inset: 0;
+  pointer-events: none;
+  background-image: radial-gradient(rgba(255,255,255,.55) 1px, transparent 1.4px);
+  background-size: 22px 22px;
+  opacity: .5;
+  -webkit-mask-image: radial-gradient(88% 76% at 50% 50%, transparent 46%, #000 92%);
+  mask-image: radial-gradient(88% 76% at 50% 50%, transparent 46%, #000 92%);
+}
+/* Badge « Édition IMSO » : flottement organique très lent (décoratif). */
+#boutique .kit__media-badge { animation: kitBadgeFloat 6s ease-in-out infinite; }
+@keyframes kitBadgeFloat {
+  0%, 100% { transform: translateY(0); }
+  50%      { transform: translateY(-4px); }
+}
+
+/* Prix du kit : dégradé de marque sur le montant (repli : couleur pleine). */
+@supports ((-webkit-background-clip: text) or (background-clip: text)) {
+  #boutique .kit__price {
+    background: linear-gradient(120deg, var(--text) 30%,
+      color-mix(in srgb, var(--text) 40%, var(--primary)) 100%);
+    -webkit-background-clip: text;
+    background-clip: text;
+    color: transparent;
+  }
+  /* small hérite du clip : on le repose en encre attenuee lisible. */
+  #boutique .kit__price small {
+    background: none;
+    -webkit-background-clip: border-box;
+    background-clip: border-box;
+    color: var(--muted);
+  }
+}
+
+/* Arguments du kit : lavis vert au coin de chaque puce + coche cerclée. */
+#boutique .kit__points li {
+  background:
+    radial-gradient(160px 90px at -6% -20%,
+      color-mix(in srgb, var(--primary) 7%, transparent), transparent 72%),
+    var(--surface);
+}
+#boutique .kit__points .check {
+  box-shadow: inset 0 0 0 1px color-mix(in srgb, var(--primary) 28%, transparent);
+}
+
+/* ===== CTA kit : pleine largeur au pouce sur mobile ===== */
+@media (max-width: 559.98px) {
+  #boutique .kit__cta {
+    flex-direction: column;
+    align-items: stretch;
+    gap: 14px;
+  }
+  #boutique .kit__cta .kit__price { text-align: center; }
+  #boutique .kit__cta .btn { width: 100%; justify-content: center; }
+  #boutique .kit__soon { text-align: center; }
+}
+
+/* ===== Autres produits : grille 2 colonnes compacte sur téléphone =====
+   Façon boutique native : 2 cartes par rangée, description bornée à 2 lignes,
+   bouton pleine largeur sous le prix (zone tactile ≥44px déjà garantie). */
+@media (max-width: 639.98px) {
+  #boutique .shop-grid { grid-template-columns: repeat(2, 1fr); gap: 14px; }
+  #boutique .shop-card__body { padding: 14px; gap: 6px; }
+  #boutique .shop-card__name { font-size: 14.5px; }
+  #boutique .shop-card__desc {
+    font-size: 12.5px;
+    display: -webkit-box;
+    -webkit-line-clamp: 2;
+    -webkit-box-orient: vertical;
+    overflow: hidden;
+  }
+  #boutique .shop-card__foot {
+    flex-direction: column;
+    align-items: stretch;
+    gap: 8px;
+  }
+  #boutique .shop-card__foot .btn { width: 100%; justify-content: center; }
+  #boutique .shop-card__price { font-size: 16px; }
+  #boutique .shop-more { margin-top: 44px; padding-top: 32px; }
+}
+@media (max-width: 359.98px) {
+  #boutique .shop-grid { gap: 10px; }
+  #boutique .shop-card__body { padding: 12px; }
+}
+
+/* Ombre colorée de marque au survol des cartes produit. */
+@media (hover: hover) {
+  #boutique .shop-card:hover {
+    box-shadow: var(--shadow-lg),
+      0 18px 40px -18px color-mix(in srgb, var(--primary) 35%, transparent);
+  }
+}
+
+/* Respect strict de prefers-reduced-motion pour toutes les nouveautés
+   (en plus de la règle globale de header.html qui neutralise déjà les durées) */
+@media (prefers-reduced-motion: reduce) {
+  #boutique .kit__media img,
+  #boutique .shop-card__media img,
+  #boutique .kit__cta .js-order svg { transition: none !important; }
+  #boutique .kit__media-badge { animation: none !important; }
+  #boutique .kit__media:hover img,
+  #boutique .kit__points li:hover,
+  #boutique .shop-card:hover,
+  #boutique .shop-card:hover .shop-card__media img,
+  #boutique .kit__cta .js-order:hover svg { transform: none; }
+}
+</style>
 <!-- Kit d'éducation financière : image + grand titre & texte à côté -->
 <section class="section" id="boutique">
   <div class="container">
@@ -26,10 +260,12 @@
         <p class="section__intro">
           {% if site.shop_intro %}{{ site.shop_intro }}{% elif kit and kit.description %}{{ kit.description }}{% else %}Un livre et un cahier pratique pour maîtriser l'épargne, le budget et l'entrepreneuriat. Commandez en ligne, payez via nos moyens locaux ; nous vous livrons après confirmation du paiement.{% endif %}
         </p>
+        {% comment %} Cascade : chaque argument a son propre .reveal, décalé
+           après le .reveal du bloc parent (data-delay="2"). {% endcomment %}
         <ul class="kit__points">
-          <li><span class="check"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3" stroke-linecap="round" stroke-linejoin="round"><polyline points="20 6 9 17 4 12"></polyline></svg></span><span>{{ texts.kit_point1|default:"Méthode d'épargne mutualisée expliquée pas à pas." }}</span></li>
-          <li><span class="check"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3" stroke-linecap="round" stroke-linejoin="round"><polyline points="20 6 9 17 4 12"></polyline></svg></span><span>{{ texts.kit_point2|default:"Cahier d'exercices pour bâtir votre budget familial." }}</span></li>
-          <li><span class="check"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3" stroke-linecap="round" stroke-linejoin="round"><polyline points="20 6 9 17 4 12"></polyline></svg></span><span>{{ texts.kit_point3|default:"Livraison après confirmation du paiement local." }}</span></li>
+          <li class="reveal" data-delay="2"><span class="check"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3" stroke-linecap="round" stroke-linejoin="round"><polyline points="20 6 9 17 4 12"></polyline></svg></span><span>{{ texts.kit_point1|default:"Méthode d'épargne mutualisée expliquée pas à pas." }}</span></li>
+          <li class="reveal" data-delay="3"><span class="check"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3" stroke-linecap="round" stroke-linejoin="round"><polyline points="20 6 9 17 4 12"></polyline></svg></span><span>{{ texts.kit_point2|default:"Cahier d'exercices pour bâtir votre budget familial." }}</span></li>
+          <li class="reveal" data-delay="4"><span class="check"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3" stroke-linecap="round" stroke-linejoin="round"><polyline points="20 6 9 17 4 12"></polyline></svg></span><span>{{ texts.kit_point3|default:"Livraison après confirmation du paiement local." }}</span></li>
         </ul>
 
         {% if kit %}
@@ -39,7 +275,7 @@
           <button class="btn btn--primary js-order"
                   data-id="{{ kit.id }}"
                   data-name="{{ kit.name }}"
-                  data-price="{{ kit.price_htg }}">Commander le kit</button>
+                  data-price="{{ kit.price_htg }}">Commander le kit<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" aria-hidden="true"><path d="M5 12h14M13 5l7 7-7 7"></path></svg></button>
           {% else %}
           <button class="btn btn--muted" disabled>Rupture de stock</button>
           {% endif %}
@@ -47,7 +283,7 @@
         {% else %}
         <div class="kit__cta">
           <button class="btn btn--muted" disabled>Bientôt disponible</button>
-          <span style="color:var(--muted);font-size:14px;">Le kit arrive très vite — revenez le commander.</span>
+          <span class="kit__soon">Le kit arrive très vite — revenez le commander.</span>
         </div>
         {% endif %}
       </div>
@@ -59,10 +295,14 @@
       <h3 class="shop-more__title">{{ texts.shop_more_title|default:"Autres produits" }}</h3>
       <div class="shop-grid">
         {% for p in products %}{% if not forloop.first %}
-        <article class="shop-card">
+        {% comment %} Entrée en cascade : chaque carte produit a son propre
+           .reveal avec un délai qui cycle 1→3. {% endcomment %}
+        <article class="shop-card reveal" data-delay="{% cycle '1' '2' '3' %}">
           <div class="shop-card__media">
             {% if p.image %}<img src="{{ p.image.url }}" alt="{{ p.name }}" loading="lazy">
             {% else %}<div class="shop-card__ph"><svg viewBox="0 0 24 24" width="34" height="34" fill="none" stroke="currentColor" stroke-width="1.4"><path d="M20 7l-8-4-8 4m16 0l-8 4m8-4v10l-8 4m0-10L4 7m8 4v10M4 7v10l8 4"/></svg></div>{% endif %}
+            {% if p.track_stock and p.stock == 0 %}<span class="shop-card__flag shop-card__flag--out">Rupture</span>
+            {% elif p.track_stock and p.stock <= 5 %}<span class="shop-card__flag shop-card__flag--low">Stock limité</span>{% endif %}
           </div>
           <div class="shop-card__body">
             <h4 class="shop-card__name">{{ p.name }}</h4>
