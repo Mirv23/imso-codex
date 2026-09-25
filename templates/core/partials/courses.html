@@ -82,11 +82,34 @@
   margin-left: 3px;
 }
 
-/* CTA de carte : zone tactile ≥ 44px + flèche qui glisse au survol */
-#cours .js-enroll { min-height: 44px; gap: 6px; }
-#cours .js-enroll svg { width: 13px; height: 13px; flex-shrink: 0; transition: transform .25s ease; }
+/* Carte entièrement cliquable (motif « lien étiré ») : le lien du titre étend sa
+   zone de clic à toute la carte via ::after. Un seul lien par carte, nommé par le
+   titre du cours → simple au clavier et au lecteur d'écran. z-index:1 : passe
+   au-dessus du bandeau (isolation:isolate) et du CTA (position:relative). */
+#cours .course-card { position: relative; }
+#cours .course-card__link::after {
+  content: '';
+  position: absolute; inset: 0;
+  z-index: 1;
+}
+
+/* CTA de carte : repère visuel (le clic est porté par la carte), hauteur ≥ 44px
+   conservée ; il réagit au survol de la CARTE, puisque c'est elle qu'on survole. */
+#cours .course-card__cta { min-height: 44px; gap: 6px; }
+#cours .course-card__cta svg { width: 13px; height: 13px; flex-shrink: 0; transition: transform .25s ease; }
 @media (hover: hover) {
-  #cours .js-enroll:hover svg { transform: translateX(3px); }
+  #cours .course-card:hover .course-card__cta { background: var(--ghost-hover); }
+  #cours .course-card:hover .course-card__cta svg { transform: translateX(3px); }
+}
+
+/* Focus clavier : l'anneau entoure toute la carte (la vraie zone cliquable) au
+   lieu du seul titre. Sans :has(), l'anneau par défaut du titre reste en place. */
+@supports selector(:has(*)) {
+  #cours .course-card__link:focus-visible { outline: none; }
+  #cours .course-card:has(.course-card__link:focus-visible) {
+    outline: 2px solid var(--focus-ring);
+    outline-offset: 3px;
+  }
 }
 
 /* État vide soigné (aucun cours actif en base) */
@@ -219,11 +242,11 @@
 @media (prefers-reduced-motion: reduce) {
   #cours .course-card__banner,
   #cours .course-card__band::after,
-  #cours .js-enroll svg { transition: none !important; }
+  #cours .course-card__cta svg { transition: none !important; }
   #cours .course-card:hover { transform: none; }
   #cours .course-card:hover .course-card__banner,
   #cours .course-card:hover .course-card__band::after,
-  #cours .js-enroll:hover svg { transform: none; }
+  #cours .course-card:hover .course-card__cta svg { transform: none; }
 }
 </style>
 <section class="section" id="cours">
@@ -250,7 +273,10 @@
             <span class="course-card__tag">{{ course.category }}</span>
           </div>
           <div class="course-card__body">
-            <h3 class="course-card__title">{{ course.title }}</h3>
+            {% comment %} Le titre porte LE lien du cours, étiré sur toute la carte :
+               un clic n'importe où ouvre le cours dans l'espace Formation, où se
+               font l'inscription (compte élève) et le suivi des chapitres. {% endcomment %}
+            <h3 class="course-card__title"><a class="course-card__link" href="{% url 'formation:course_detail' course.pk %}">{{ course.title }}</a></h3>
             <div class="course-card__instructor">
               <span class="avatar avatar--b">{% firstof course.instructor|make_list|first|upper course.instructor|first|upper %}</span>
               <span>{{ course.instructor }} · {{ course.city }}</span>
@@ -267,10 +293,7 @@
             </div>
             <div class="course-card__meta">
               <div class="course-card__price">{{ course.price_htg }}  <small>HTG</small></div>
-              <button class="btn btn--ghost btn--small js-enroll"
-                      data-id="{{ course.id }}"
-                      data-name="{{ course.title }}"
-                      data-price="{{ course.price_htg }}">{{ texts.cours_card_cta|default:"S'inscrire" }}<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" aria-hidden="true"><path d="M5 12h14M13 5l7 7-7 7"></path></svg></button>
+              <span class="btn btn--ghost btn--small course-card__cta" aria-hidden="true">{{ texts.cours_card_cta|default:"S'inscrire" }}<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round"><path d="M5 12h14M13 5l7 7-7 7"></path></svg></span>
             </div>
           </div>
         </article>
@@ -292,120 +315,3 @@
     {% endif %}
   </div>
 </section>
-
-<!-- Modal inscription à un cours -->
-<div class="modal-scrim" id="enrollModal" aria-hidden="true">
-  <div class="modal" role="dialog" aria-modal="true" aria-labelledby="enrollModalTitle">
-    <div class="modal__head">
-      <h3 class="modal__title" id="enrollModalTitle">{{ texts.cours_modal_title|default:"S'inscrire" }}</h3>
-      <button class="modal__close" id="enrollModalClose" aria-label="Fermer">
-        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><path d="M18 6L6 18M6 6l12 12"></path></svg>
-      </button>
-    </div>
-    <p class="modal__sub" id="enrollModalSub">{{ texts.cours_modal_sub|default:"Renseignez vos coordonnées. Le paiement se fait à l'étape suivante." }}</p>
-    <form class="modal__form" id="enrollForm" novalidate="">
-      {% csrf_token %}
-      <input type="hidden" name="course_id" id="eCourseId">
-      <div class="field">
-        <label for="eName">{{ texts.cours_field_name|default:"Nom complet" }}</label>
-        <input id="eName" name="full_name" type="text" required="" autocomplete="name" placeholder="Marie-Claire Pierre">
-      </div>
-      <div class="field">
-        <label for="ePhone">{{ texts.cours_field_phone|default:"Téléphone" }}</label>
-        <input id="ePhone" name="phone" type="tel" required="" autocomplete="tel" placeholder="+509 38 22 18 04">
-      </div>
-      <div class="field">
-        <label for="eEmail">{{ texts.cours_field_email|default:"Email (optionnel)" }}</label>
-        <input id="eEmail" name="email" type="email" autocomplete="email" placeholder="exemple@email.com">
-      </div>
-      <p class="modal__sub" id="enrollTotal" style="font-weight:600;color:var(--text);"></p>
-      <p class="modal__error" id="enrollError" role="alert" style="display:none;color:var(--danger,#EF4444);font-size:13px;"></p>
-      <button type="submit" class="btn btn--primary btn--block" id="enrollSubmit" style="margin-top:8px;">{{ texts.cours_submit|default:"Continuer vers le paiement" }}</button>
-    </form>
-  </div>
-</div>
-
-<script>
-(function () {
-  function getCookie(name) {
-    var m = document.cookie.match(new RegExp('(^|; )' + name + '=([^;]+)'));
-    return m ? decodeURIComponent(m[2]) : '';
-  }
-  var modal = document.getElementById('enrollModal');
-  var form = document.getElementById('enrollForm');
-  if (!modal || !form) return;
-  var totalEl = document.getElementById('enrollTotal');
-  var errorEl = document.getElementById('enrollError');
-  var submitBtn = document.getElementById('enrollSubmit');
-
-  function fmt(n) { return Number(n).toLocaleString('fr-FR'); }
-  function openModal(id, name, price) {
-    document.getElementById('eCourseId').value = id;
-    document.getElementById('enrollModalTitle').textContent = "S'inscrire — " + name;
-    var p = Number(price) || 0;
-    totalEl.textContent = p > 0 ? 'Montant : ' + fmt(p) + ' HTG' : '';
-    errorEl.style.display = 'none';
-    submitBtn.disabled = false;
-    modal.setAttribute('aria-hidden', 'false');
-    modal.classList.add('open');
-    document.body.style.overflow = 'hidden';   /* bloque le defilement de fond */
-    setTimeout(function () { document.getElementById('eName').focus(); }, 60);
-  }
-  function closeModal() {
-    modal.setAttribute('aria-hidden', 'true');
-    modal.classList.remove('open');
-    document.body.style.overflow = '';
-  }
-
-  document.querySelectorAll('.js-enroll').forEach(function (btn) {
-    btn.addEventListener('click', function () {
-      openModal(btn.dataset.id, btn.dataset.name, btn.dataset.price);
-    });
-  });
-  document.getElementById('enrollModalClose').addEventListener('click', closeModal);
-  modal.addEventListener('click', function (e) { if (e.target === modal) closeModal(); });
-  document.addEventListener('keydown', function (e) {
-    if (e.key === 'Escape' && modal.classList.contains('open')) closeModal();
-  });
-
-  form.addEventListener('submit', function (e) {
-    e.preventDefault();
-    errorEl.style.display = 'none';
-    submitBtn.disabled = true;
-    var payload = {
-      course_id: parseInt(document.getElementById('eCourseId').value, 10),
-      full_name: document.getElementById('eName').value.trim(),
-      phone: document.getElementById('ePhone').value.trim(),
-      email: document.getElementById('eEmail').value.trim()
-    };
-    fetch('/api/course-enrollments/', {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json', 'X-CSRFToken': getCookie('csrftoken') },
-      credentials: 'same-origin',
-      body: JSON.stringify(payload)
-    }).then(function (r) {
-      return r.json().then(function (data) { return { ok: r.ok, data: data }; });
-    }).then(function (res) {
-      if (res.ok && res.data.payment_url) {
-        window.location.href = res.data.payment_url;
-      } else {
-        var msg = 'Impossible de finaliser l\'inscription. Vérifiez vos informations.';
-        if (res.data && res.data.errors) {
-          var first = Object.keys(res.data.errors)[0];
-          if (first) {
-            var val = res.data.errors[first];
-            msg = Array.isArray(val) ? val[0] : String(val);
-          }
-        }
-        errorEl.textContent = msg;
-        errorEl.style.display = 'block';
-        submitBtn.disabled = false;
-      }
-    }).catch(function () {
-      errorEl.textContent = 'Erreur réseau. Réessayez.';
-      errorEl.style.display = 'block';
-      submitBtn.disabled = false;
-    });
-  });
-})();
-</script>

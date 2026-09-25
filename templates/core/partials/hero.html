@@ -20,8 +20,10 @@
       <li><a class="nav__link" href="#mission">Mission</a></li>
       <li><a class="nav__link" href="#valeurs">Valeurs</a></li>
       <li><a class="nav__link" href="#processus">Processus</a></li>
-      <li><a class="nav__link" href="#cours">Cours</a></li>
-      <li><a class="nav__link" href="/formation/">Formation</a></li>
+      {% comment %} Meme interrupteur que la section #cours (Parametres > Affichage) :
+         section masquee = lien masque, sinon il pointerait dans le vide. L'espace
+         Formation n'a plus de lien de nav : on y entre en cliquant un cours. {% endcomment %}
+      {% if site.show_courses %}<li><a class="nav__link" href="#cours">Cours</a></li>{% endif %}
       <li><a class="nav__link" href="#boutique">Kit financier</a></li>
       {% if site.show_blog %}<li><a class="nav__link" href="/blog/">Blog</a></li>{% endif %}
       <li><a class="nav__link" href="#contact">Contact</a></li>
@@ -53,8 +55,7 @@
     <li><a href="#mission"><span>Mission</span></a></li>
     <li><a href="#valeurs"><span>Valeurs</span></a></li>
     <li><a href="#processus"><span>Processus</span></a></li>
-    <li><a href="#cours"><span>Cours</span></a></li>
-    <li><a href="/formation/"><span>Formation</span></a></li>
+    {% if site.show_courses %}<li><a href="#cours"><span>Cours</span></a></li>{% endif %}
     <li><a href="#boutique"><span>Kit financier</span></a></li>
     {% if site.show_blog %}<li><a href="/blog/"><span>Blog</span></a></li>{% endif %}
     <li><a href="#contact"><span>Contact</span></a></li>
@@ -92,7 +93,7 @@
           {{ site.hero_cta_text|default:"Rejoindre un GEI" }}
           <svg viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round"><path d="M5 12h14M13 5l7 7-7 7"></path></svg>
         </a>
-        <a href="#cours" class="btn btn--outline-amber">{{ texts.hero_cta2|default:"Découvrir les cours" }}</a>
+        {% if site.show_courses %}<a href="#cours" class="btn btn--outline-amber">{{ texts.hero_cta2|default:"Découvrir les cours" }}</a>{% endif %}
       </div>
       <div class="hero__trust reveal" data-delay="4">
         <div class="avatars" aria-hidden="true">

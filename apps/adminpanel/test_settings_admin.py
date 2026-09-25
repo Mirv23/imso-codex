@@ -8,7 +8,7 @@ from django.core.files.uploadedfile import SimpleUploadedFile
 from django.test import Client
 from django.urls import reverse
 
-from .models import PaymentProvider, Product, SiteSetting
+from .models import Course, PaymentProvider, Product, SiteSetting
 
 User = get_user_model()
 
@@ -69,6 +69,37 @@ class TestSiteSettings:
         home = Client().get("/")
         assert home.status_code == 200
         assert b"Titre personnalis\xc3\xa9 IMSO" in home.content
+
+    def test_show_courses_off_hides_every_cours_link(self):
+        """« Afficher les cours » coupé : la section #cours disparaît ET tous les
+        liens qui y menaient (nav, menu mobile, bouton du héro, pied de page)."""
+        client = Client()
+        _super(client)
+        client.put(
+            reverse("adminpanel:settings-detail"),
+            data=json.dumps({"show_courses": False}),
+            content_type="application/json",
+        )
+        html = Client().get("/").content.decode()
+        assert 'id="cours"' not in html
+        assert 'href="#cours"' not in html
+
+    def test_nav_has_cours_but_no_formation_and_cards_open_formation(self):
+        """La nav garde « Cours » (ancre #cours) sans lien « Formation » ; c'est
+        chaque carte de cours qui ouvre sa page dans l'espace Formation."""
+        course = Course.objects.create(title="Gestion de caisse", category="Finance", price_htg=500)
+        html = Client().get("/").content.decode()
+
+        def block(start: str, end: str) -> str:
+            i = html.index(start)
+            return html[i:html.index(end, i)]
+
+        for menu in (block('<nav class="nav"', "</nav>"), block('<aside class="drawer"', "</aside>")):
+            assert 'href="#cours"' in menu
+            assert "/formation/" not in menu
+        card_url = f"/formation/cours/{course.pk}/"
+        assert f'href="{card_url}"' in html
+        assert Client().get(card_url).status_code == 200
 
     def test_non_staff_forbidden(self):
         client = Client()
