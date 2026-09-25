@@ -285,7 +285,7 @@ sur les deux degrades sombres (le footer est fonce meme en mode clair).
           <li><a href="#valeurs">{{ texts.foot_nav_valeurs|default:"Nos valeurs" }}</a></li>
           <li><a href="#processus">{{ texts.foot_nav_processus|default:"Le processus" }}</a></li>
           {% if site.show_courses %}<li><a href="#cours">{{ texts.foot_nav_cours|default:"Les cours" }}</a></li>{% endif %}
-          <li><a href="#temoignages">{{ texts.foot_nav_temoignages|default:"Témoignages" }}</a></li>
+          {% if site.show_testimonials %}<li><a href="#temoignages">{{ texts.foot_nav_temoignages|default:"Témoignages" }}</a></li>{% endif %}
         </ul>
       </div>
       <div class="footer__col reveal" data-delay="2">

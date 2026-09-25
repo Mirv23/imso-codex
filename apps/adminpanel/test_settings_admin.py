@@ -70,19 +70,25 @@ class TestSiteSettings:
         assert home.status_code == 200
         assert b"Titre personnalis\xc3\xa9 IMSO" in home.content
 
-    def test_show_courses_off_hides_every_cours_link(self):
-        """« Afficher les cours » coupé : la section #cours disparaît ET tous les
-        liens qui y menaient (nav, menu mobile, bouton du héro, pied de page)."""
+    @pytest.mark.parametrize("field, anchor", [
+        ("show_courses", "cours"),
+        ("show_shop", "boutique"),
+        ("show_testimonials", "temoignages"),
+    ])
+    def test_section_toggle_off_hides_section_and_its_links(self, field, anchor):
+        """Interrupteur d'affichage coupé : la section disparaît ET tous les liens
+        qui y menaient (nav, menu mobile, bouton du héro, pied de page)."""
+        assert f'href="#{anchor}"' in Client().get("/").content.decode()  # présent par défaut
         client = Client()
         _super(client)
         client.put(
             reverse("adminpanel:settings-detail"),
-            data=json.dumps({"show_courses": False}),
+            data=json.dumps({field: False}),
             content_type="application/json",
         )
         html = Client().get("/").content.decode()
-        assert 'id="cours"' not in html
-        assert 'href="#cours"' not in html
+        assert f'id="{anchor}"' not in html
+        assert f'href="#{anchor}"' not in html
 
     def test_nav_has_cours_but_no_formation_and_cards_open_formation(self):
         """La nav garde « Cours » (ancre #cours) sans lien « Formation » ; c'est
@@ -106,6 +112,63 @@ class TestSiteSettings:
         u = User.objects.create_user("client1", "c@t.com", "password123")  # non staff
         client.force_login(u)
         assert client.get(reverse("adminpanel:settings-detail")).status_code == 403
+
+
+# ── Mode maintenance ─────────────────────────────────────────────
+
+@pytest.mark.django_db
+class TestMaintenanceMode:
+    def _admin_sets_maintenance(self, on: bool) -> Client:
+        """Bascule via le vrai bouton du panel (API des paramètres)."""
+        admin = Client()
+        _super(admin)
+        r = admin.put(
+            reverse("adminpanel:settings-detail"),
+            data=json.dumps({"maintenance_mode": on}),
+            content_type="application/json",
+        )
+        assert r.status_code == 200
+        return admin
+
+    def test_visitors_get_503_maintenance_page(self):
+        self._admin_sets_maintenance(True)
+        visitor = Client()
+        for path in ("/", "/blog/", "/formation/"):
+            r = visitor.get(path)
+            assert r.status_code == 503, path
+            assert r["Retry-After"] == "3600"
+            assert "Maintenance en cours" in r.content.decode()
+        api = visitor.post("/api/contact-requests/", data="{}", content_type="application/json")
+        assert api.status_code == 503
+        assert api.json()["ok"] is False
+
+    def test_admin_login_health_and_payment_webhooks_stay_open(self, monkeypatch):
+        monkeypatch.setenv("WEBHOOK_SECRET", "s3cret")
+        self._admin_sets_maintenance(True)
+        visitor = Client()
+        assert visitor.get("/login/").status_code == 200
+        assert visitor.get("/dashboard/").status_code == 302  # -> connexion, pas la maintenance
+        assert visitor.get("/health/").status_code == 200
+        # Le webhook atteint sa vue (401 : secret absent) au lieu d'être bloqué.
+        assert visitor.post("/api/webhook/moncash/", data="{}", content_type="application/json").status_code == 401
+
+    def test_staff_sees_real_site_with_reminder_banner(self):
+        admin = self._admin_sets_maintenance(True)
+        r = admin.get("/")
+        assert r.status_code == 200
+        assert "Mode maintenance actif" in r.content.decode()
+
+    def test_switching_off_reopens_site(self):
+        admin = self._admin_sets_maintenance(True)
+        admin.put(
+            reverse("adminpanel:settings-detail"),
+            data=json.dumps({"maintenance_mode": False}),
+            content_type="application/json",
+        )
+        r = Client().get("/")
+        assert r.status_code == 200
+        assert "Maintenance en cours" not in r.content.decode()
+        assert "Mode maintenance actif" not in admin.get("/").content.decode()
 
 
 # ── Administrateurs ──────────────────────────────────────────────
