@@ -1,6 +1,7 @@
 """Tests: paramètres du site, administrateurs, upload d'images, secrets fournisseurs."""
 
 import json
+import re
 
 import pytest
 from django.contrib.auth import get_user_model
@@ -130,14 +131,17 @@ class TestMaintenanceMode:
         assert r.status_code == 200
         return admin
 
-    def test_visitors_get_503_maintenance_page(self):
+    def test_site_shows_only_en_mode_maintenance(self):
         self._admin_sets_maintenance(True)
         visitor = Client()
         for path in ("/", "/blog/", "/formation/"):
             r = visitor.get(path)
             assert r.status_code == 503, path
             assert r["Retry-After"] == "3600"
-            assert "Maintenance en cours" in r.content.decode()
+            html = r.content.decode()
+            body = html[html.index("<body"):]
+            # Rien d'autre que ce texte : ni menu, ni lien, ni contact.
+            assert re.sub(r"<[^>]+>", " ", body).split() == ["En", "mode", "maintenance"]
         api = visitor.post("/api/contact-requests/", data="{}", content_type="application/json")
         assert api.status_code == 503
         assert api.json()["ok"] is False
@@ -152,11 +156,21 @@ class TestMaintenanceMode:
         # Le webhook atteint sa vue (401 : secret absent) au lieu d'être bloqué.
         assert visitor.post("/api/webhook/moncash/", data="{}", content_type="application/json").status_code == 401
 
-    def test_staff_sees_real_site_with_reminder_banner(self):
+    def test_logged_in_admin_also_sees_maintenance_but_keeps_the_panel(self):
         admin = self._admin_sets_maintenance(True)
-        r = admin.get("/")
-        assert r.status_code == 200
-        assert "Mode maintenance actif" in r.content.decode()
+        assert admin.get("/").status_code == 503
+        assert admin.get("/dashboard/").status_code == 200
+        assert admin.get(reverse("adminpanel:settings-detail")).json()["maintenance_mode"] is True
+
+    def test_only_an_administrator_can_lift_it(self):
+        self._admin_sets_maintenance(True)
+        url = reverse("adminpanel:settings-detail")
+        body = json.dumps({"maintenance_mode": False})
+        assert Client().put(url, data=body, content_type="application/json").status_code == 401
+        eleve = Client()
+        eleve.force_login(User.objects.create_user("eleve", "eleve@t.com", "password123"))
+        assert eleve.put(url, data=body, content_type="application/json").status_code == 403
+        assert SiteSetting.load().maintenance_mode is True
 
     def test_switching_off_reopens_site(self):
         admin = self._admin_sets_maintenance(True)
@@ -165,10 +179,8 @@ class TestMaintenanceMode:
             data=json.dumps({"maintenance_mode": False}),
             content_type="application/json",
         )
-        r = Client().get("/")
-        assert r.status_code == 200
-        assert "Maintenance en cours" not in r.content.decode()
-        assert "Mode maintenance actif" not in admin.get("/").content.decode()
+        assert Client().get("/").status_code == 200
+        assert admin.get("/").status_code == 200
 
 
 # ── Administrateurs ──────────────────────────────────────────────
