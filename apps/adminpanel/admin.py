@@ -26,6 +26,7 @@ from .models import (
     Profile,
     SiteSetting,
     Testimonial,
+    TrainingRegistration,
     VenueBooking,
 )
 
@@ -84,6 +85,13 @@ class ContactRequestAdmin(admin.ModelAdmin):
     list_display = ("full_name", "subject", "phone", "is_processed", "created_at")
     list_filter = ("subject", "is_processed")
     search_fields = ("full_name", "phone", "email")
+
+
+@admin.register(TrainingRegistration)
+class TrainingRegistrationAdmin(admin.ModelAdmin):
+    list_display = ("first_name", "last_name", "phone", "status", "age_range", "is_confirmed", "created_at")
+    list_filter = ("event", "status", "age_range", "is_confirmed")
+    search_fields = ("first_name", "last_name", "phone", "interests")
 
 
 @admin.register(Testimonial)

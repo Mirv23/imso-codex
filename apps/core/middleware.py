@@ -6,7 +6,8 @@ pour TOUT le monde — visiteurs comme comptes connectés, administrateurs compr
 (page core/maintenance.html en 503 + Retry-After, que les moteurs traitent comme
 une indisponibilité temporaire ; JSON 503 sur l'API publique). Le mode ne se lève
 que depuis le panel admin, par un administrateur : restent donc ouverts le panel et
-sa connexion, l'admin Django, les statiques/médias, la sonde de santé, et les
+sa connexion, l'admin Django, les statiques/médias, la sonde de santé, la page
+d'inscription a la formation (/register/, lien du flyer), et les
 appels serveur-à-serveur des fournisseurs de paiement (un encaissement ne doit
 jamais être perdu pendant une maintenance).
 """
@@ -26,6 +27,10 @@ _ALWAYS_OPEN = (
     "/health/",
     "/api/webhook/",
     "/api/paiement/confirm-manual/",
+    # Inscription a la formation : l'adresse est imprimee sur le flyer, elle doit
+    # repondre meme quand le reste du site est en maintenance. Sans barre finale :
+    # « /register » doit atteindre la redirection vers « /register/ ».
+    "/register",
 )
 
 

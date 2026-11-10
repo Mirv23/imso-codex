@@ -11,6 +11,8 @@ from .views import (
     PaymentConfirmationView,
     PaymentPageView,
     PaymentProcessView,
+    TrainingRegisterDoneView,
+    TrainingRegisterView,
     VenueBookingCreateView,
     confirm_manual_payment,
     get_active_courses,
@@ -31,6 +33,10 @@ urlpatterns = [
     # previsualisation pendant la maintenance) redirige definitivement vers /.
     path("", HomeView.as_view(), name="home"),
     path("view/", RedirectView.as_view(pattern_name="core:home", permanent=True)),
+    # Inscription a la formation du moment (adresse imprimee sur le flyer :
+    # imsohaiti.com/register — APPEND_SLASH redirige vers /register/).
+    path("register/", TrainingRegisterView.as_view(), name="register"),
+    path("register/merci/", TrainingRegisterDoneView.as_view(), name="register_done"),
     path("robots.txt", robots_txt, name="robots_txt"),
     path("sitemap.xml", sitemap_xml, name="sitemap_xml"),
     path("api/contact-requests/", ContactRequestCreateView.as_view(), name="contact_request_create"),

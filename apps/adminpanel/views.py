@@ -53,6 +53,7 @@ from .models import (
     SiteSetting,
     SiteText,
     Testimonial,
+    TrainingRegistration,
     VenueBooking,
 )
 
@@ -2114,6 +2115,80 @@ def contact_detail(request: HttpRequest, pk: int) -> JsonResponse:
     return _ok()
 
 
+# ── Inscriptions formation (page publique /register/) ─────────
+
+def _serialize_registration(r: TrainingRegistration) -> dict[str, Any]:
+    return {
+        "id": r.pk,
+        "event": r.event,
+        "first_name": r.first_name,
+        "last_name": r.last_name,
+        "phone": r.phone,
+        "status": r.status,
+        "status_label": r.status_label,
+        "status_other": r.status_other,
+        "age_range": r.age_range,
+        "age_range_label": r.get_age_range_display(),
+        "interests": r.interests,
+        "is_confirmed": r.is_confirmed,
+        "created_at": r.created_at.isoformat(),
+    }
+
+
+@staff_required
+def registration_list(request: HttpRequest) -> JsonResponse:
+    qs = TrainingRegistration.objects.all()
+    status = request.GET.get("status")
+    if status:
+        qs = qs.filter(status=status)
+    confirmed = request.GET.get("confirmed")
+    if confirmed is not None and confirmed != "":
+        qs = qs.filter(is_confirmed=confirmed.lower() in ("1", "true"))
+    search = request.GET.get("search")
+    if search:
+        qs = qs.filter(
+            Q(first_name__icontains=search) | Q(last_name__icontains=search)
+            | Q(phone__icontains=search) | Q(status_other__icontains=search)
+            | Q(interests__icontains=search)
+        )
+    resp = _paginated_response(qs.order_by("-created_at"), request, _serialize_registration)
+    if request.GET.get("stats"):
+        by_status = {
+            row["status"]: row["n"]
+            for row in TrainingRegistration.objects.values("status").annotate(n=Count("id"))
+        }
+        payload = json.loads(resp.content)
+        payload["stats"] = {
+            "total": TrainingRegistration.objects.count(),
+            "confirmed": TrainingRegistration.objects.filter(is_confirmed=True).count(),
+            "by_status": by_status,
+        }
+        return JsonResponse(payload)
+    return resp
+
+
+@ensure_csrf_cookie
+@staff_required
+@require_http_methods(["GET", "PUT", "DELETE"])
+def registration_detail(request: HttpRequest, pk: int) -> JsonResponse:
+    try:
+        r = TrainingRegistration.objects.get(pk=pk)
+    except TrainingRegistration.DoesNotExist:
+        return _error("Inscription introuvable", 404)
+    if request.method == "GET":
+        return JsonResponse(_serialize_registration(r))
+    if request.method == "PUT":
+        data = _json_body(request)
+        if "is_confirmed" in data:
+            r.is_confirmed = bool(data["is_confirmed"])
+            r.save(update_fields=["is_confirmed", "updated_at"])
+        logger.info("Registration %d updated by user %s (confirmed: %s)", pk, request.user.username, r.is_confirmed)
+        return JsonResponse(_serialize_registration(r))
+    r.delete()
+    logger.info("Registration %d deleted by user %s", pk, request.user.username)
+    return _ok()
+
+
 # ── GEIs ─────────────────────────────────────────────────
 
 def _serialize_gei(g: GEI, member_count: int | None = None) -> dict[str, Any]:
@@ -3737,6 +3812,7 @@ ALLOWED_EXPORT_MODELS = {
     "products": Product,
     "orders": Order,
     "blog": BlogPost,
+    "registrations": TrainingRegistration,
 }
 
 # Champs jamais exportés (secrets fournisseurs de paiement, etc.).

@@ -1,0 +1,145 @@
+{% load static %}{% include 'core/partials/header.html' %}
+{% comment %} Gabarit des pages d'inscription a la formation (/register/ et
+   /register/merci/). Reprend l'en-tete du site (polices, couleurs, mode nuit)
+   mais pas le pied de page de l'accueil : ses ancres (#mission...) ne menent
+   nulle part ici et son JavaScript ne sert qu'a l'accueil. {% endcomment %}
+<style>
+.reg-top { padding: 18px 0; border-bottom: 1px solid var(--border); background: var(--surface); }
+.reg-top .container { display: flex; align-items: center; justify-content: space-between; gap: 16px; }
+.reg-top img { height: 40px; width: auto; display: block; }
+.reg-top a.reg-top__back { font-size: 14px; color: var(--muted); text-decoration: none; }
+.reg-top a.reg-top__back:hover { color: var(--text); }
+
+.reg { padding: 48px 0 72px; }
+.reg__grid { display: grid; gap: 40px; }
+@media (min-width: 900px) {
+  .reg { padding: 72px 0 96px; }
+  .reg__grid { grid-template-columns: .9fr 1.1fr; gap: 64px; align-items: start; }
+  .reg__event { position: sticky; top: 32px; }
+}
+
+.reg__kicker { margin: 0 0 12px; font-size: 14px; font-weight: 600; color: var(--ink-on-tint); }
+.reg__title {
+  margin: 0 0 28px;
+  font-weight: 800;
+  font-size: clamp(32px, 6vw, 48px);
+  line-height: 1.08;
+  letter-spacing: -0.03em;
+  text-wrap: balance;
+}
+.reg__facts { margin: 0; border-top: 1px solid var(--border); }
+.reg__facts div { display: grid; grid-template-columns: 96px 1fr; gap: 12px; padding: 14px 0; border-bottom: 1px solid var(--border); }
+.reg__facts dt { font-size: 14px; color: var(--muted); }
+.reg__facts dd { margin: 0; font-size: 15.5px; line-height: 1.5; font-weight: 500; }
+.reg__note { margin: 18px 0 0; font-size: 14px; color: var(--muted); }
+
+.reg__card {
+  background: var(--surface);
+  border: 1px solid var(--border);
+  border-radius: var(--radius-lg);
+  padding: 24px 20px;
+  box-shadow: var(--shadow-sm);
+}
+@media (min-width: 560px) { .reg__card { padding: 36px; } }
+.reg__card h2 { margin: 0 0 6px; font-size: 24px; font-weight: 800; letter-spacing: -0.02em; }
+.reg__card-sub { margin: 0 0 28px; color: var(--muted); font-size: 15px; line-height: 1.55; }
+
+.reg-form { display: grid; gap: 22px; }
+.reg-form__row { display: grid; gap: 22px; }
+@media (min-width: 560px) { .reg-form__row { grid-template-columns: 1fr 1fr; } }
+.reg .field label, .reg .field legend {
+  text-transform: none; letter-spacing: 0;
+  font-size: 15px; font-weight: 600; color: var(--text);
+  padding: 0;
+}
+.reg .field { border: 0; margin: 0; padding: 0; min-width: 0; }
+.reg .field input, .reg .field select, .reg .field textarea { width: 100%; min-height: 48px; }
+.reg .field textarea { min-height: 112px; resize: vertical; line-height: 1.5; }
+.reg .field select {
+  appearance: none; -webkit-appearance: none;
+  padding-right: 42px;
+  background-image: url("data:image/svg+xml;utf8,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='none' stroke='%2399A791' stroke-width='2.2' stroke-linecap='round' stroke-linejoin='round'><path d='M6 9l6 6 6-6'/></svg>");
+  background-repeat: no-repeat; background-position: right 14px center; background-size: 16px;
+}
+.reg-hint { margin: 0; font-size: 13.5px; color: var(--muted); line-height: 1.45; }
+.reg-error { margin: 0; font-size: 13.5px; color: var(--danger); font-weight: 500; }
+.reg .field--error input, .reg .field--error select, .reg .field--error textarea { border-color: var(--danger); }
+.reg-alert {
+  margin: 0 0 22px; padding: 12px 14px;
+  border-radius: 12px;
+  border: 1px solid color-mix(in srgb, var(--danger) 35%, transparent);
+  background: color-mix(in srgb, var(--danger) 8%, transparent);
+  color: var(--text); font-size: 14.5px;
+}
+.reg [hidden] { display: none !important; }  /* .field impose display:flex */
+.reg-hp { position: absolute !important; left: -9999px !important; width: 1px; height: 1px; overflow: hidden; }
+
+/* Curseur de tranche d'age : 6 crans, l'age exact n'est jamais demande. */
+.reg-age__value { display: block; margin: 2px 0 10px; font-size: 20px; font-weight: 700; color: var(--primary); }
+.reg-age--unset .reg-age__value { color: var(--muted); font-size: 16px; font-weight: 500; }
+.reg-age__track { position: relative; padding-bottom: 26px; }
+.reg-age input[type=range] {
+  -webkit-appearance: none; appearance: none;
+  width: 100%; height: 28px; min-height: 0;
+  padding: 0; margin: 0; border: 0;
+  background: transparent; cursor: pointer;
+  touch-action: pan-y;
+}
+.reg-age input[type=range]::-webkit-slider-runnable-track { height: 6px; border-radius: 999px; background: var(--border-strong); }
+.reg-age input[type=range]::-moz-range-track { height: 6px; border-radius: 999px; background: var(--border-strong); }
+.reg-age input[type=range]::-webkit-slider-thumb {
+  -webkit-appearance: none; appearance: none;
+  width: 28px; height: 28px; margin-top: -11px;
+  border-radius: 50%; border: 3px solid var(--surface);
+  background: var(--primary); box-shadow: 0 1px 4px rgba(0,0,0,.25);
+}
+.reg-age input[type=range]::-moz-range-thumb {
+  width: 22px; height: 22px;
+  border-radius: 50%; border: 3px solid var(--surface);
+  background: var(--primary); box-shadow: 0 1px 4px rgba(0,0,0,.25);
+}
+.reg-age--unset input[type=range]::-webkit-slider-thumb { background: var(--muted); }
+.reg-age--unset input[type=range]::-moz-range-thumb { background: var(--muted); }
+.reg-age input[type=range]:focus-visible { outline: 2px solid var(--primary); outline-offset: 4px; border-radius: 8px; }
+.reg-age__ticks span {
+  position: absolute; bottom: 0;
+  left: calc(14px + (100% - 28px) * var(--i) / 5);
+  transform: translateX(-50%);
+  font-size: 12px; color: var(--muted); white-space: nowrap;
+  font-variant-numeric: tabular-nums;
+}
+
+.reg-submit { width: 100%; justify-content: center; }
+.reg-closed { margin: 0; font-size: 16px; line-height: 1.6; }
+
+.reg-done { max-width: 640px; }
+.reg-done h1 { margin: 0 0 14px; font-size: clamp(30px, 6vw, 42px); font-weight: 800; letter-spacing: -0.03em; line-height: 1.1; }
+.reg-done p { font-size: 16.5px; line-height: 1.6; color: var(--muted); margin: 0 0 16px; }
+.reg-done .reg__facts { margin: 28px 0 32px; }
+.reg-done__actions { display: flex; flex-wrap: wrap; gap: 12px; }
+
+.reg-foot { padding: 28px 0 40px; border-top: 1px solid var(--border); font-size: 14px; color: var(--muted); }
+.reg-foot a { color: inherit; }
+</style>
+
+<header class="reg-top">
+  <div class="container">
+    <a href="/" aria-label="IMSO, retour au site"><img src="{% static 'website/assets/imso-logo.png' %}" alt="IMSO"></a>
+    <a class="reg-top__back" href="/">imsohaiti.com</a>
+  </div>
+</header>
+
+<main class="reg">
+  <div class="container">
+    {% block content %}{% endblock %}
+  </div>
+</main>
+
+<footer class="reg-foot">
+  <div class="container">
+    IMSO · {{ training.place }} ·
+    <a href="https://wa.me/{{ training.whatsapp }}" target="_blank" rel="noopener">WhatsApp {{ training.whatsapp_display }}</a>
+  </div>
+</footer>
+{% block scripts %}{% endblock %}
+</body></html>

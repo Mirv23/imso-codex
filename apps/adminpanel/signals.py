@@ -23,6 +23,7 @@ from .models import (
     Payment,
     Product,
     Testimonial,
+    TrainingRegistration,
     VenueBooking,
 )
 
@@ -241,6 +242,24 @@ def payment_cascade_status(sender: type[Payment], instance: Payment, created: bo
         # ci-dessus decremente le stock (source unique, pas de double decrement).
         instance.order.status = Order.Status.PAID
         instance.order.save(update_fields=["status", "updated_at"])
+
+
+@receiver(post_save, sender=TrainingRegistration)
+def training_registration_notification(sender: type[TrainingRegistration], instance: TrainingRegistration, created: bool, **kwargs: Any) -> None:
+    if created:
+        AdminNotification.objects.create(
+            message=f"Inscription formation : {instance.first_name} {instance.last_name}",
+            notification_type=AdminNotification.NotificationType.NEW_ENROLLMENT,
+            related_id=instance.pk,
+        )
+        _notify_admin_by_email(
+            "Nouvelle inscription a la formation",
+            f"{instance.first_name} {instance.last_name}\n"
+            f"Téléphone : {instance.phone}\n"
+            f"Statut : {instance.status_label}\n"
+            f"Tranche d'âge : {instance.get_age_range_display()}\n"
+            f"Intérêt : {instance.interests}",
+        )
 
 
 @receiver(post_save, sender=ContactRequest)

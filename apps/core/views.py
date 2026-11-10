@@ -30,10 +30,17 @@ from apps.adminpanel.models import (
     ProcessStep,
     SiteSetting,
     Testimonial,
+    TrainingRegistration,
     VenueBooking,
 )
-from .forms import ContactRequestForm, CourseEnrollmentRequestForm, VenueBookingRequestForm
+from .forms import (
+    ContactRequestForm,
+    CourseEnrollmentRequestForm,
+    TrainingRegistrationForm,
+    VenueBookingRequestForm,
+)
 from .payment_tokens import make_payment_token, read_payment_token
+from .training import CURRENT_TRAINING
 
 logger = logging.getLogger(__name__)
 
@@ -68,6 +75,54 @@ class HomeView(TemplateView):
         )
 
         return context
+
+
+# ── Inscription a une formation (/register/, lien du flyer) ─────────
+
+def _training_context(form: TrainingRegistrationForm | None = None) -> dict[str, Any]:
+    training = CURRENT_TRAINING
+    return {
+        "training": training,
+        "form": form,
+        "closed": timezone.localdate() > training["last_day"],
+        "status_choices": TrainingRegistration.Status.choices,
+        "age_choices": TrainingRegistration.AgeRange.choices,
+        "page_title": training["title"],
+    }
+
+
+class TrainingRegisterView(View):
+    template_name = "core/register.html"
+
+    def get(self, request: HttpRequest) -> HttpResponse:
+        return render(request, self.template_name, _training_context(TrainingRegistrationForm()))
+
+    # Par IP, large : a l'accueil d'un evenement, plusieurs personnes s'inscrivent
+    # souvent depuis le meme reseau (wifi, operateur mobile).
+    @method_decorator(ratelimit(key="ip", rate="20/m", method="POST", block=True))
+    def post(self, request: HttpRequest) -> HttpResponse:
+        context = _training_context()
+        if context["closed"]:
+            return render(request, self.template_name, context)
+        # Pot de miel rempli : un robot. On fait comme si tout allait bien.
+        if request.POST.get("website"):
+            return redirect("core:register_done")
+        form = TrainingRegistrationForm(request.POST, event=CURRENT_TRAINING["slug"])
+        if not form.is_valid():
+            context["form"] = form
+            return render(request, self.template_name, context)
+        registration = form.save()
+        request.session["register_first_name"] = registration.first_name
+        return redirect("core:register_done")
+
+
+class TrainingRegisterDoneView(View):
+    template_name = "core/register_done.html"
+
+    def get(self, request: HttpRequest) -> HttpResponse:
+        context = _training_context()
+        context["first_name"] = request.session.pop("register_first_name", "")
+        return render(request, self.template_name, context)
 
 
 class BlogListView(TemplateView):

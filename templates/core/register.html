@@ -1,0 +1,157 @@
+{% extends 'core/register_base.html' %}
+
+{% block content %}
+<div class="reg__grid">
+  <section class="reg__event" aria-labelledby="regTitle">
+    <p class="reg__kicker">{{ training.partners }} · {{ training.kicker }}</p>
+    <h1 class="reg__title" id="regTitle">{{ training.title }}</h1>
+    <dl class="reg__facts">
+      <div><dt>Dates</dt><dd>{{ training.dates }}</dd></div>
+      <div><dt>Horaire</dt><dd>{{ training.hours }}</dd></div>
+      <div><dt>Lieu</dt><dd>{{ training.place }}</dd></div>
+      <div><dt>Frais</dt><dd>Inscription : {{ training.fee_registration }}<br>Participation : {{ training.fee_participation }}</dd></div>
+      <div><dt>Inclus</dt><dd>{{ training.included }}</dd></div>
+    </dl>
+    <p class="reg__note">Places limitées.</p>
+  </section>
+
+  <section class="reg__card" aria-labelledby="regFormTitle">
+    {% if closed %}
+    <h2 id="regFormTitle">Inscriptions closes</h2>
+    <p class="reg-closed">Cette formation est terminée. Pour connaître les prochaines sessions, écrivez à IMSO sur
+      <a href="https://wa.me/{{ training.whatsapp }}" target="_blank" rel="noopener">WhatsApp</a>.</p>
+    {% else %}
+    <h2 id="regFormTitle">Je m'inscris</h2>
+    <p class="reg__card-sub">Deux minutes suffisent. IMSO vous recontacte pour confirmer votre place.</p>
+
+    {% if form.errors %}
+    <p class="reg-alert" role="alert">Quelques informations manquent ou sont à corriger ci-dessous.</p>
+    {% endif %}
+
+    <form class="reg-form" method="post" action="{% url 'core:register' %}" novalidate>
+      {% csrf_token %}
+      <div class="reg-hp" aria-hidden="true">
+        <label for="regWebsite">Ne pas remplir</label>
+        <input id="regWebsite" name="website" type="text" tabindex="-1" autocomplete="off">
+      </div>
+
+      <div class="reg-form__row">
+        <div class="field{% if form.first_name.errors %} field--error{% endif %}">
+          <label for="regFirst">Prénom</label>
+          <input id="regFirst" name="first_name" type="text" autocomplete="given-name" maxlength="100" required value="{{ form.first_name.value|default:'' }}"{% if form.first_name.errors %} aria-invalid="true" aria-describedby="regFirstErr"{% endif %}>
+          {% for e in form.first_name.errors %}<p class="reg-error" id="regFirstErr">{{ e }}</p>{% endfor %}
+        </div>
+        <div class="field{% if form.last_name.errors %} field--error{% endif %}">
+          <label for="regLast">Nom</label>
+          <input id="regLast" name="last_name" type="text" autocomplete="family-name" maxlength="100" required value="{{ form.last_name.value|default:'' }}"{% if form.last_name.errors %} aria-invalid="true" aria-describedby="regLastErr"{% endif %}>
+          {% for e in form.last_name.errors %}<p class="reg-error" id="regLastErr">{{ e }}</p>{% endfor %}
+        </div>
+      </div>
+
+      <div class="field{% if form.phone.errors %} field--error{% endif %}">
+        <label for="regPhone">Téléphone (WhatsApp)</label>
+        <input id="regPhone" name="phone" type="tel" inputmode="tel" autocomplete="tel" maxlength="40" required placeholder="+509" value="{{ form.phone.value|default:'' }}" aria-describedby="regPhoneHint{% if form.phone.errors %} regPhoneErr{% endif %}"{% if form.phone.errors %} aria-invalid="true"{% endif %}>
+        <p class="reg-hint" id="regPhoneHint">Pour confirmer votre place. Il n'est pas affiché ni partagé.</p>
+        {% for e in form.phone.errors %}<p class="reg-error" id="regPhoneErr">{{ e }}</p>{% endfor %}
+      </div>
+
+      <div class="field{% if form.status.errors %} field--error{% endif %}">
+        <label for="regStatus">Vous êtes</label>
+        <select id="regStatus" name="status" required{% if form.status.errors %} aria-invalid="true" aria-describedby="regStatusErr"{% endif %}>
+          <option value="" {% if not form.status.value %}selected{% endif %} disabled>Choisir…</option>
+          {% for value, label in status_choices %}
+          <option value="{{ value }}" {% if form.status.value == value %}selected{% endif %}>{% if value == 'autre' %}Autre (à préciser){% else %}{{ label }}{% endif %}</option>
+          {% endfor %}
+        </select>
+        {% for e in form.status.errors %}<p class="reg-error" id="regStatusErr">{{ e }}</p>{% endfor %}
+      </div>
+
+      <div class="field{% if form.status_other.errors %} field--error{% endif %}" id="regOtherWrap">
+        <label for="regOther">Précisez votre statut</label>
+        <input id="regOther" name="status_other" type="text" maxlength="100" placeholder="Ex. : commerçante, enseignant, retraité…" value="{{ form.status_other.value|default:'' }}"{% if form.status_other.errors %} aria-invalid="true" aria-describedby="regOtherErr"{% endif %}>
+        {% for e in form.status_other.errors %}<p class="reg-error" id="regOtherErr">{{ e }}</p>{% endfor %}
+      </div>
+
+      <fieldset class="field reg-age reg-age--unset{% if form.age_range.errors %} field--error{% endif %}" id="regAge">
+        <legend>Tranche d'âge</legend>
+        <output class="reg-age__value" id="regAgeOut" for="regAgeSlider" aria-live="polite">Faites glisser le curseur</output>
+        <div class="reg-age__track">
+          <input type="range" id="regAgeSlider" min="0" max="5" step="1" value="2" aria-label="Tranche d'âge" aria-describedby="regAgeOut">
+          <div class="reg-age__ticks" aria-hidden="true">
+            <span style="--i:0">−18</span><span style="--i:1">18–24</span><span style="--i:2">25–34</span><span style="--i:3">35–44</span><span style="--i:4">45–54</span><span style="--i:5">55+</span>
+          </div>
+        </div>
+        <input type="hidden" name="age_range" id="regAgeValue" value="{{ form.age_range.value|default:'' }}">
+        <noscript>
+          <select name="age_range" aria-label="Tranche d'âge">
+            {% for value, label in age_choices %}<option value="{{ value }}" {% if form.age_range.value == value %}selected{% endif %}>{{ label }}</option>{% endfor %}
+          </select>
+        </noscript>
+        {% for e in form.age_range.errors %}<p class="reg-error">{{ e }}</p>{% endfor %}
+      </fieldset>
+
+      <div class="field{% if form.interests.errors %} field--error{% endif %}">
+        <label for="regInterests">Qu'aimeriez-vous apprendre pendant ces deux jours ?</label>
+        <textarea id="regInterests" name="interests" maxlength="600" required placeholder="Ex. : tenir un budget pour ma famille, épargner pour lancer mon commerce, comprendre le crédit avant d'emprunter…"{% if form.interests.errors %} aria-invalid="true" aria-describedby="regInterestsErr"{% endif %}>{{ form.interests.value|default:'' }}</textarea>
+        {% for e in form.interests.errors %}<p class="reg-error" id="regInterestsErr">{{ e }}</p>{% endfor %}
+      </div>
+
+      <button type="submit" class="btn btn--primary reg-submit">Envoyer mon inscription</button>
+    </form>
+    {% endif %}
+  </section>
+</div>
+{% endblock %}
+
+{% block scripts %}
+{% if not closed %}
+<script>
+(function () {
+  // Un message d'erreur disparait des que la personne corrige le champ concerne.
+  function clearError(field) {
+    field.classList.remove('field--error');
+    field.querySelectorAll('.reg-error').forEach(function (e) { e.remove(); });
+    field.querySelectorAll('[aria-invalid]').forEach(function (e) { e.removeAttribute('aria-invalid'); });
+  }
+  document.querySelectorAll('.reg-form .field').forEach(function (field) {
+    field.addEventListener('input', function () { clearError(field); });
+    field.addEventListener('change', function () { clearError(field); });
+  });
+
+  // Statut « Autre » : le champ de precision n'apparait que s'il sert.
+  var status = document.getElementById('regStatus');
+  var otherWrap = document.getElementById('regOtherWrap');
+  function syncOther() { otherWrap.hidden = status.value !== 'autre'; }
+  status.addEventListener('change', function () {
+    syncOther();
+    if (status.value === 'autre') document.getElementById('regOther').focus();
+  });
+  syncOther();
+
+  // Tranche d'age : la valeur n'est envoyee qu'une fois le curseur touche, pour
+  // ne pas enregistrer une tranche par defaut que la personne n'a pas choisie.
+  var choices = [{% for value, label in age_choices %}["{{ value }}", "{{ label|escapejs }}"]{% if not forloop.last %}, {% endif %}{% endfor %}];
+  var box = document.getElementById('regAge');
+  var slider = document.getElementById('regAgeSlider');
+  var out = document.getElementById('regAgeOut');
+  var hidden = document.getElementById('regAgeValue');
+  function choose() {
+    var c = choices[Number(slider.value)];
+    hidden.value = c[0];
+    out.textContent = c[1];
+    slider.setAttribute('aria-valuetext', c[1]);
+    box.classList.remove('reg-age--unset');
+    clearError(box);
+  }
+  for (var i = 0; i < choices.length; i++) {
+    if (choices[i][0] === hidden.value) { slider.value = i; choose(); }
+  }
+  slider.addEventListener('input', choose);
+  slider.addEventListener('pointerdown', choose);
+  slider.addEventListener('keydown', function (e) {
+    if (e.key === 'Enter' || e.key === ' ') { e.preventDefault(); choose(); }
+  });
+})();
+</script>
+{% endif %}
+{% endblock %}

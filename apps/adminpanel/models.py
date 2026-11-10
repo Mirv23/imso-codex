@@ -436,6 +436,53 @@ class ContactRequest(TimestampedModel):
         return f"{self.full_name} - {self.get_subject_display()}"
 
 
+class TrainingRegistration(TimestampedModel):
+    """Inscription a une formation ponctuelle via la page publique /register/
+    (premiere : Formation en education financiere IMSO | CCFOR, 21-22 nov. 2026).
+
+    `event` identifie la formation : la meme page et la meme table resserviront
+    pour les prochaines sessions sans migration. L'age n'est jamais demande,
+    seulement une tranche.
+    """
+
+    class Status(models.TextChoices):
+        STUDENT = "etudiant", "Étudiant·e"
+        EMPLOYEE = "salarie", "Salarié·e"
+        ENTREPRENEUR = "entrepreneur", "Entrepreneur·e"
+        OTHER = "autre", "Autre"
+
+    class AgeRange(models.TextChoices):
+        UNDER_18 = "moins_18", "Moins de 18 ans"
+        FROM_18 = "18_24", "18 – 24 ans"
+        FROM_25 = "25_34", "25 – 34 ans"
+        FROM_35 = "35_44", "35 – 44 ans"
+        FROM_45 = "45_54", "45 – 54 ans"
+        FROM_55 = "55_plus", "55 ans et plus"
+
+    event = models.CharField(max_length=80, db_index=True)
+    first_name = models.CharField(max_length=100)
+    last_name = models.CharField(max_length=100)
+    phone = models.CharField(max_length=40)
+    status = models.CharField(max_length=20, choices=Status.choices)
+    status_other = models.CharField(max_length=100, blank=True)
+    age_range = models.CharField(max_length=10, choices=AgeRange.choices)
+    interests = models.TextField(max_length=600)
+    # Coche par IMSO une fois la place confirmee (frais d'inscription regles).
+    is_confirmed = models.BooleanField(default=False)
+
+    class Meta:
+        ordering = ["-created_at"]
+
+    def __str__(self) -> str:
+        return f"{self.first_name} {self.last_name} - {self.event}"
+
+    @property
+    def status_label(self) -> str:
+        if self.status == self.Status.OTHER and self.status_other:
+            return self.status_other
+        return self.get_status_display()
+
+
 class Testimonial(TimestampedModel):
     author_name = models.CharField(max_length=140)
     author_initials = models.CharField(max_length=6, blank=True, help_text="Ex: MJ, JV")
