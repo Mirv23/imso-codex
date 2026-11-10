@@ -8,7 +8,7 @@
   transition: transform .35s cubic-bezier(.22, 1, .36, 1);
 }
 #mission .mission__list li + li {
-  border-top: 1px dashed var(--border);
+  border-top: 1px solid var(--border);
   padding-top: 18px;
 }
 #mission .check {
@@ -109,17 +109,6 @@
     radial-gradient(420px 360px at 96% 88%,
       color-mix(in srgb, var(--highlight) 5%, transparent), transparent 70%);
 }
-#mission::after {
-  content: '';
-  position: absolute; inset: 0;
-  z-index: -1;
-  pointer-events: none;
-  background-image: radial-gradient(
-    color-mix(in srgb, var(--primary) 18%, transparent) 1px, transparent 1.4px);
-  background-size: 24px 24px;
-  -webkit-mask-image: radial-gradient(480px 340px at 10% 6%, #000, transparent 72%);
-  mask-image: radial-gradient(480px 340px at 10% 6%, #000, transparent 72%);
-}
 {% comment %} Micro-parallaxe scroll-driven en CSS pur : le halo derive doucement
    pendant la traversee de la section. Progressif (Chrome 115+), sans repli
    necessaire : sans support, le halo reste simplement immobile. {% endcomment %}
@@ -156,21 +145,6 @@
       color-mix(in srgb, var(--highlight) 45%, var(--border))) border-box;
   box-shadow: 0 32px 64px -32px color-mix(in srgb, var(--primary) 30%, transparent);
   isolation: isolate;
-}
-{% comment %} Trame de points dans les gouttieres du panneau. position:absolute :
-   le pseudo-element sort du flux grid et ne cree PAS de 5e cellule ;
-   z-index:-1 + isolation le glisse entre le fond du panneau et les tuiles. {% endcomment %}
-#mission .mission__visual::before {
-  content: '';
-  position: absolute; inset: 0;
-  z-index: -1;
-  border-radius: inherit;
-  pointer-events: none;
-  background-image: radial-gradient(
-    color-mix(in srgb, var(--primary) 22%, transparent) 1px, transparent 1.4px);
-  background-size: 18px 18px;
-  -webkit-mask-image: radial-gradient(closest-side at 50% 50%, #000, transparent);
-  mask-image: radial-gradient(closest-side at 50% 50%, #000, transparent);
 }
 
 
@@ -274,9 +248,9 @@
   <div class="container">
     <div class="mission__grid">
       <div class="reveal">
-        <span class="label"><span class="label__bullet"></span>{{ texts.mission_label|default:"Notre mission" }}</span>
+        <span class="label">{{ texts.mission_label|default:"Notre mission" }}</span>
         <h2 class="section__title">
-          {% if site.about_title %}{{ site.about_title }}{% else %}Bâtir une <span class="section__title-underline">économie solidaire</span> portée par les communautés.{% endif %}
+          {% if site.about_title %}{{ site.about_title }}{% else %}Bâtir une <span class="section__title-underline">économie solidaire</span> portée par les communautés{% endif %}
         </h2>
         <p class="section__intro">
           {% if site.about_text %}{{ site.about_text }}{% else %}IMSO accompagne les Haïtiennes et Haïtiens dans la création de richesse
@@ -348,7 +322,7 @@
 <section class="section section--tight" id="valeurs">
   <div class="container">
     <div class="section__head reveal">
-      <h2 class="section__title">{{ texts.val_title|default:"Mutuellement et solidairement responsables." }}</h2>
+      <h2 class="section__title">{{ texts.val_title|default:"Mutuellement et solidairement responsables" }}</h2>
     </div>
     {% comment %} reveal sur le CONTENEUR, pas sur chaque carte : une carte de carrousel qui
        deborde a droite n'intersecte jamais le viewport, restait donc a opacity:0 —

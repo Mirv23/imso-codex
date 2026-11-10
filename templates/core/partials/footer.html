@@ -41,14 +41,11 @@ sur les deux degrades sombres (le footer est fonce meme en mode clair).
 
 /* ================= Footer ================= */
 .footer {
-  /* Memes halos que l'existant mais derives des tokens (editables en admin),
-     + fine trame de points qui donne de la matiere au degrade. */
+  /* Memes halos que l'existant mais derives des tokens (editables en admin). */
   background:
     radial-gradient(circle at 12% 0%, color-mix(in srgb, var(--highlight) 17%, transparent), transparent 45%),
     radial-gradient(circle at 88% 100%, color-mix(in srgb, var(--logo-blue) 13%, transparent), transparent 50%),
-    radial-gradient(rgba(255,255,255,.035) 1px, transparent 1.5px),
     linear-gradient(180deg, var(--footer-from) 0%, var(--footer-to) 100%);
-  background-size: auto, auto, 30px 30px, auto;
   padding: 84px 0 28px;
 }
 /* L'anneau de focus global (vert) est invisible sur le fond vert fonce. */

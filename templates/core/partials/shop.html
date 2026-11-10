@@ -121,20 +121,6 @@
   box-shadow: var(--shadow-lg),
     0 32px 64px -24px color-mix(in srgb, var(--primary) 40%, transparent);
 }
-{% comment %} Trame de points blancs sur le PLACEHOLDER uniquement (:has —
-   progressif : avec une vraie photo uploadée, rien ne change). Vignette :
-   le masque radial chasse les points du centre, le livre et le titre restent
-   sur un fond propre. Blanc posé sur dégradé : identique clair/nuit. {% endcomment %}
-#boutique .kit__media:not(:has(img))::before {
-  content: '';
-  position: absolute; inset: 0;
-  pointer-events: none;
-  background-image: radial-gradient(rgba(255,255,255,.55) 1px, transparent 1.4px);
-  background-size: 22px 22px;
-  opacity: .5;
-  -webkit-mask-image: radial-gradient(88% 76% at 50% 50%, transparent 46%, #000 92%);
-  mask-image: radial-gradient(88% 76% at 50% 50%, transparent 46%, #000 92%);
-}
 /* Badge « Édition IMSO » : flottement organique très lent (décoratif). */
 #boutique .kit__media-badge { animation: kitBadgeFloat 6s ease-in-out infinite; }
 @keyframes kitBadgeFloat {
@@ -254,7 +240,7 @@
       <!-- Grand titre + petit texte à côté -->
       <div class="kit__body reveal" data-delay="2">
         <h2 class="section__title">
-          {% if kit %}{{ kit.name }}{% else %}Apprenez à maîtriser votre argent.{% endif %}
+          {% if kit %}{{ kit.name }}{% else %}Apprenez à maîtriser votre argent{% endif %}
         </h2>
         <p class="section__intro">
           {% if site.shop_intro %}{{ site.shop_intro }}{% elif kit and kit.description %}{{ kit.description }}{% else %}Un livre et un cahier pratique pour maîtriser l'épargne, le budget et l'entrepreneuriat. Commandez en ligne, payez via nos moyens locaux ; nous vous livrons après confirmation du paiement.{% endif %}
@@ -355,7 +341,7 @@
       </div>
       <div class="field">
         <label for="oCity">Ville</label>
-        <input id="oCity" name="city" type="text" autocomplete="address-level2" placeholder="Port-au-Prince">
+        <input id="oCity" name="city" type="text" autocomplete="address-level2" placeholder="Les Cayes">
       </div>
       <div class="field">
         <label for="oAddress">Adresse de livraison</label>

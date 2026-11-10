@@ -88,23 +88,6 @@
       color-mix(in srgb, var(--primary) 6%, transparent), transparent 70%);
 }
 
-/* ===== Rejoindre : texture d'orfevre sur la carte vedette =====
-   Trame de points blancs fondue dans le coin superieur droit (zone vide de
-   texte). Le ::after de la vedette etait neutralise (content:none) : on le
-   reactive en couche decorative plein cadre, non interactive. Blanc pose sur
-   le degrade vert : identique en clair et en nuit. */
-#rejoindre .why__item--featured::after {
-  content: '';
-  position: absolute; inset: 0;
-  height: auto;
-  transform: none;
-  pointer-events: none;
-  background-image: radial-gradient(rgba(255,255,255,.6) 1px, transparent 1.4px);
-  background-size: 19px 19px;
-  opacity: .22;
-  -webkit-mask-image: radial-gradient(300px 210px at 100% 0%, #000, transparent 74%);
-  mask-image: radial-gradient(300px 210px at 100% 0%, #000, transparent 74%);
-}
 /* Lueur interne douce en tete de carte vedette (lumiere qui tombe du haut). */
 #rejoindre .why__item--featured {
   background:
@@ -140,21 +123,6 @@
   }
 }
 
-/* ===== Processus : trame de points en fond de section =====
-   La section est deja sur --surface avec ses filets : la trame fondue en haut
-   a droite lui donne un grain d'atelier. Meme mecanique d'empilement. */
-#processus { isolation: isolate; }
-#processus::before {
-  content: '';
-  position: absolute; inset: 0;
-  z-index: -1;
-  pointer-events: none;
-  background-image: radial-gradient(
-    color-mix(in srgb, var(--primary) 16%, transparent) 1px, transparent 1.4px);
-  background-size: 24px 24px;
-  -webkit-mask-image: radial-gradient(56% 50% at 88% 8%, #000, transparent 76%);
-  mask-image: radial-gradient(56% 50% at 88% 8%, #000, transparent 76%);
-}
 
 /* Noeuds : halo vert au repos + pop elastique a l'apparition de l'etape
    (backwards : l'etat initial ne vaut QUE pendant le delai). */
@@ -198,7 +166,6 @@
   #rejoindre .why__grid .why__item:hover,
   #processus .step:hover .step__num { transform: none; }
   #rejoindre .why__item:hover::after { transform: scaleX(1); }
-  #rejoindre .why__item--featured::after { transform: none; }
   #processus .step:not(:last-child)::after { transform: none; }
 }
 </style>
@@ -207,7 +174,7 @@
 <section class="section" id="rejoindre">
   <div class="container">
     <div class="section__head reveal">
-      <h2 class="section__title">{{ texts.why_title|default:"Épargner ensemble, emprunter sans collatéral abusif." }}</h2>
+      <h2 class="section__title">{{ texts.why_title|default:"Épargner ensemble, emprunter sans collatéral abusif" }}</h2>
     </div>
     <div class="why__grid">
       <div class="why__item why__item--featured reveal" data-delay="1">
@@ -275,7 +242,7 @@
 <section class="section process" id="processus">
   <div class="container">
     <div class="section__head reveal">
-      <h2 class="section__title">{{ texts.process_title|default:"Comment rejoindre un GEI." }}</h2>
+      <h2 class="section__title">{{ texts.process_title|default:"Comment rejoindre un GEI" }}</h2>
       <p class="section__intro">
         {{ texts.process_intro|default:"Un parcours pensé pour vous accueillir progressivement, le temps de comprendre les règles communes et de bâtir des liens avec votre groupe." }}
       </p>

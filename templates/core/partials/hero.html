@@ -77,7 +77,6 @@
   <div class="container hero__grid">
     <div class="hero__text">
       <span class="label hero__label reveal">
-        <span class="label__bullet"></span>
         {{ texts.hero_label|default:"Mutuelle de solidarité · Haïti" }}
       </span>
       <h1 class="hero__title reveal" data-delay="1">
@@ -121,7 +120,6 @@
           {% if images.hero_photo_3 %}<img src="{{ images.hero_photo_3.image.url }}" alt="{{ images.hero_photo_3.alt }}" loading="eager" fetchpriority="high" decoding="async" onload="this.parentElement.classList.add('img-loaded')" onerror="this.remove()">{% else %}<img src="https://images.unsplash.com/photo-1531123897727-8f129e1688ce?w=500&amp;auto=format&amp;q=80" alt="Entrepreneur fier devant son commerce" loading="eager" fetchpriority="high" decoding="async" onload="this.parentElement.classList.add('img-loaded')" onerror="this.remove()">{% endif %}
         </div>
       </div>
-      <div class="hero__visual-overlay">{{ texts.hero_visual_overlay|default:"Solidarité · Épargne · Croissance" }}</div>
       {% comment %} Les deux bulles de chiffres flottantes (membres, « +38 % ») et
          l'indice « Défiler » ont ete retires (audit du 5 nov. 2026) : decor de
          gabarit qui faisait « site genere », et chiffres non confirmes par IMSO.
