@@ -147,9 +147,9 @@
 }
 #booking .booking__nav button { touch-action: manipulation; -webkit-tap-highlight-color: transparent; }
 
-/* Créneaux : pilules généreuses, heure en mono (rythme typographique) */
+/* Créneaux : pilules généreuses, heure en chiffres à chasse fixe */
 #booking .slot { border-radius: 16px; padding: 15px 16px; }
-#booking .slot__time { font-family: 'JetBrains Mono', monospace; font-size: 14px; letter-spacing: -0.02em; }
+#booking .slot__time { font-variant-numeric: tabular-nums; font-size: 14px; }
 #booking .slot__action .btn { min-height: 44px; border-radius: 999px; }
 
 @media (max-width: 560px) {
@@ -186,10 +186,9 @@
   <div class="container">
     <div class="espace__head-row reveal">
       <div>
-        <span class="label"><span class="label__bullet"></span>{{ texts.espace_label|default:"Location d'espace" }}</span>
-        <h2 class="section__title" style="margin-bottom:14px;">{{ texts.espace_title|default:"Un espace pensé pour vos événements." }}</h2>
+        <h2 class="section__title" style="margin-bottom:14px;">{{ texts.espace_title|default:"Louer une salle chez IMSO." }}</h2>
         <p class="section__intro">
-          {{ texts.espace_intro|default:"IMSO met à disposition une salle modulable au cœur de Port-au-Prince : conférences, séminaires, formations, anniversaires, mariages… Réservez directement en consultant les disponibilités ci-dessous." }}
+          {{ texts.espace_intro|default:"IMSO met à disposition une salle modulable aux Cayes : conférences, séminaires, formations, anniversaires, mariages… Réservez directement en consultant les disponibilités ci-dessous." }}
         </p>
         <div class="espace__pills">
           <span class="espace__pill">{{ texts.espace_pill1|default:"Conférence" }}</span>
@@ -241,7 +240,6 @@
       <div class="booking__cal">
         <div class="booking__head">
           <div>
-            <span class="label" style="margin-bottom:8px;"><span class="label__bullet"></span>Calendrier</span>
             <div class="booking__month" id="calMonth">mai 2026</div>
           </div>
           <div class="booking__nav">
@@ -266,7 +264,6 @@
       </div>
       <div class="booking__slots">
         <div class="slots__head">
-          <span class="label" style="margin-bottom:8px;"><span class="label__bullet"></span>Créneaux</span>
           <h3 class="slots__date" id="slotsDate">Sélectionnez une date</h3>
           <p class="slots__sub" id="slotsSub">Cliquez un jour disponible pour voir les plages horaires.</p>
         </div>

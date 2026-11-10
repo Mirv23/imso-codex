@@ -33,7 +33,7 @@
 }
 
 /* Bandeau : accueille la bannière du cours (uploadée dans l'admin) avec zoom
-   subtil au survol. Sans image, le dégradé global existant reste tel quel.
+   subtil au survol. Sans image, l'aplat vert global reste tel quel.
    isolation:isolate → les z-index négatifs restent internes à la carte. */
 #cours .course-card__band { height: 118px; isolation: isolate; }
 #cours .course-card__banner {
@@ -53,10 +53,37 @@
   background: linear-gradient(to top, rgba(12,16,10,.42), transparent 62%);
   pointer-events: none;
 }
-#cours .course-card__band::after { transition: transform .9s cubic-bezier(.2,.7,.2,1); }
 @media (hover: hover) {
   #cours .course-card:hover .course-card__banner { transform: scale(1.06); }
-  #cours .course-card:hover .course-card__band::after { transform: scale(1.18); }
+}
+
+/* Sans bannière : plus de grand bloc coloré vide, une fine bande claire qui ne
+   porte que la catégorie et le niveau, sur une seule ligne. */
+#cours .course-card__band--plain {
+  height: auto;
+  min-height: 54px;   /* meme hauteur avec ou sans badge niveau : titres alignes */
+  padding: 14px 22px;
+  align-items: center;
+  gap: 10px;
+  background: var(--green-soft);
+  border-bottom: 1px solid var(--border);
+}
+#cours .course-card__band--plain::before { content: none; }
+#cours .course-card__band--plain .course-card__tag {
+  color: var(--ink-on-tint);
+  background: none;
+  backdrop-filter: none;
+  padding: 0;
+}
+#cours .course-card__band--plain .course-card__level {
+  position: static;
+  order: 2;
+  margin-left: auto;
+  line-height: 1;
+  color: var(--ink-on-tint);
+  background: none;
+  border-color: color-mix(in srgb, var(--ink-on-tint) 30%, transparent);
+  backdrop-filter: none;
 }
 
 /* Badge niveau (Débutant / Intermédiaire / Avancé) en haut à droite du bandeau.
@@ -165,14 +192,6 @@
 /* Lien « Voir tous les cours » : zone tactile ≥44px sans casser l'alignement. */
 #cours .link-arrow { min-height: 44px; align-items: center; padding-bottom: 0; }
 
-/* Bandeau : lumière diagonale ajoutée AU voile de lisibilité existant
-   (blanc posé sur visuel : identique clair/nuit). */
-#cours .course-card__band::before {
-  background:
-    linear-gradient(120deg, rgba(255,255,255,.18), transparent 42%),
-    linear-gradient(to top, rgba(12,16,10,.42), transparent 62%);
-}
-
 /* Ombre colorée de marque au survol, en plus de l'élévation existante. */
 @media (hover: hover) {
   #cours .course-card:hover {
@@ -241,11 +260,9 @@
    geste de l'utilisateur, pas un décor animé. */
 @media (prefers-reduced-motion: reduce) {
   #cours .course-card__banner,
-  #cours .course-card__band::after,
   #cours .course-card__cta svg { transition: none !important; }
   #cours .course-card:hover { transform: none; }
   #cours .course-card:hover .course-card__banner,
-  #cours .course-card:hover .course-card__band::after,
   #cours .course-card:hover .course-card__cta svg { transform: none; }
 }
 </style>
@@ -253,8 +270,7 @@
   <div class="container">
     <div class="courses__head-row reveal">
       <div>
-        <span class="label"><span class="label__bullet"></span>{{ texts.cours_label|default:"Aperçu des cours" }}</span>
-        <h2 class="section__title">{{ texts.cours_title|default:"Apprendre, entreprendre, transmettre." }}</h2>
+        <h2 class="section__title">{{ texts.cours_title|default:"Cours ouverts aux inscriptions." }}</h2>
       </div>
       <a href="/formation/" class="link-arrow">
         {{ texts.cours_link_all|default:"Voir tous les cours" }}
@@ -267,7 +283,7 @@
         {% comment %} Entrée en cascade : chaque carte a son propre .reveal avec
            un délai qui cycle 1→3, en plus du .reveal du conteneur. {% endcomment %}
         <article class="course-card reveal" data-delay="{% cycle '1' '2' '3' %}">
-          <div class="course-card__band course-card__band--{% cycle 'g' 'a' 't' 'g' 'a' 't' %}">
+          <div class="course-card__band{% if not course.banner %} course-card__band--plain{% endif %}">
             {% if course.banner %}<img class="course-card__banner" src="{{ course.banner.url }}" alt="" loading="lazy">{% endif %}
             {% if course.level %}<span class="course-card__level">{{ course.get_level_display }}</span>{% endif %}
             <span class="course-card__tag">{{ course.category }}</span>

@@ -14,21 +14,6 @@
   transform: translateY(-5px);
   box-shadow: var(--shadow-lg);
 }
-#rejoindre .why__icon {
-  transition: transform .45s cubic-bezier(.34, 1.56, .64, 1);
-}
-#rejoindre .why__grid .why__item:hover .why__icon {
-  transform: scale(1.08) rotate(-5deg);
-}
-
-/* Accents du logo avec parcimonie : les 3 dernieres cartes satellites prennent
-   chacune une teinte (orange / bleu / rouge), la vedette et la 2e restent vertes. */
-#rejoindre .why__item:nth-child(3) .why__icon { background: var(--highlight-soft); color: var(--tint-amber-ink); }
-#rejoindre .why__item:nth-child(4) .why__icon { background: var(--tint-blue); color: var(--logo-blue); }
-#rejoindre .why__item:nth-child(5) .why__icon { background: var(--tint-red); color: var(--logo-red); }
-#rejoindre .why__grid .why__item:nth-child(3):hover { border-color: var(--highlight); }
-#rejoindre .why__grid .why__item:nth-child(4):hover { border-color: var(--logo-blue); }
-#rejoindre .why__grid .why__item:nth-child(5):hover { border-color: var(--logo-red); }
 
 /* Filet d'accent en tete de carte, revele au survol (cartes en overflow:hidden :
    le filet epouse les coins arrondis). Pas de filet sur la carte vedette verte. */
@@ -44,17 +29,13 @@
 }
 #rejoindre .why__item--featured::after { content: none; }
 #rejoindre .why__item:hover::after { transform: scaleX(1); }
-#rejoindre .why__item:nth-child(3)::after { background: linear-gradient(90deg, var(--highlight), var(--tint-amber-ink)); }
-#rejoindre .why__item:nth-child(4)::after { background: linear-gradient(90deg, var(--logo-blue), var(--accent)); }
-#rejoindre .why__item:nth-child(5)::after { background: linear-gradient(90deg, var(--logo-red), var(--highlight)); }
 
-/* ===== Processus : numerotation stylee (chasse mono, zero devant) ===== */
+/* ===== Processus : numerotation (zero devant, chiffres a chasse fixe) ===== */
 #processus .step__num {
-  font-family: 'JetBrains Mono', monospace;
   font-size: 17px;
   font-weight: 700;
-  letter-spacing: .04em;
-  background: linear-gradient(160deg, var(--green-soft) 0%, var(--surface) 75%);
+  font-variant-numeric: tabular-nums;
+  background: var(--surface);
   transition:
     transform .4s cubic-bezier(.34, 1.56, .64, 1),
     background .3s ease,
@@ -131,22 +112,10 @@
     linear-gradient(160deg, var(--primary) 0%, var(--primary-dark) 100%);
 }
 
-/* Ombres colorees de marque au survol, assorties a la teinte de chaque carte. */
+/* Ombre de marque au survol. */
 #rejoindre .why__grid .why__item:hover {
   box-shadow: var(--shadow-lg),
     0 18px 40px -18px color-mix(in srgb, var(--primary) 35%, transparent);
-}
-#rejoindre .why__grid .why__item:nth-child(3):hover {
-  box-shadow: var(--shadow-lg),
-    0 18px 40px -18px color-mix(in srgb, var(--highlight) 35%, transparent);
-}
-#rejoindre .why__grid .why__item:nth-child(4):hover {
-  box-shadow: var(--shadow-lg),
-    0 18px 40px -18px color-mix(in srgb, var(--logo-blue) 30%, transparent);
-}
-#rejoindre .why__grid .why__item:nth-child(5):hover {
-  box-shadow: var(--shadow-lg),
-    0 18px 40px -18px color-mix(in srgb, var(--logo-red) 28%, transparent);
 }
 
 /* ===== Rejoindre : composition mobile façon app native =====
@@ -161,9 +130,6 @@
     column-gap: 14px;
     row-gap: 10px;
     padding: 20px;
-  }
-  #rejoindre .why__item:not(.why__item--featured) .why__icon {
-    width: 44px; height: 44px;
   }
   #rejoindre .why__item:not(.why__item--featured) .why__title {
     font-size: clamp(16.5px, 4.5vw, 19px);
@@ -230,7 +196,6 @@
     transition-delay: 0s !important;
   }
   #rejoindre .why__grid .why__item:hover,
-  #rejoindre .why__grid .why__item:hover .why__icon,
   #processus .step:hover .step__num { transform: none; }
   #rejoindre .why__item:hover::after { transform: scaleX(1); }
   #rejoindre .why__item--featured::after { transform: none; }
@@ -242,8 +207,7 @@
 <section class="section" id="rejoindre">
   <div class="container">
     <div class="section__head reveal">
-      <span class="label"><span class="label__bullet"></span>{{ texts.why_label|default:"Pourquoi nous rejoindre" }}</span>
-      <h2 class="section__title">{{ texts.why_title|default:"Plus qu'une mutuelle, un véritable écosystème d'opportunités." }}</h2>
+      <h2 class="section__title">{{ texts.why_title|default:"Épargner ensemble, emprunter sans collatéral abusif." }}</h2>
     </div>
     <div class="why__grid">
       <div class="why__item why__item--featured reveal" data-delay="1">
@@ -311,8 +275,7 @@
 <section class="section process" id="processus">
   <div class="container">
     <div class="section__head reveal">
-      <span class="label"><span class="label__bullet"></span>{{ texts.process_label|default:"Notre processus" }}</span>
-      <h2 class="section__title">{{ texts.process_title|default:"Trois étapes simples pour rejoindre un GEI." }}</h2>
+      <h2 class="section__title">{{ texts.process_title|default:"Comment rejoindre un GEI." }}</h2>
       <p class="section__intro">
         {{ texts.process_intro|default:"Un parcours pensé pour vous accueillir progressivement, le temps de comprendre les règles communes et de bâtir des liens avec votre groupe." }}
       </p>
