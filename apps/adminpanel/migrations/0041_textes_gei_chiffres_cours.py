@@ -19,8 +19,9 @@
    ils sont désactivés (is_active=False), pas supprimés. Inscriptions et
    chapitres restent en base.
 
-5. Capacité de la salle : les deux nombres (sans tables / avec tables) étaient
-   écrits en dur dans le gabarit. Ils deviennent deux champs de « Textes du
+5. Capacité de la salle : plus de 65 personnes sans tables, une cinquantaine
+   et plus avec tables (au lieu de 60 / 40). Ces nombres étaient écrits en dur
+   dans le gabarit. Ils deviennent deux champs de « Textes du
    site » (espace_cap1_num, espace_cap2_num), modifiables depuis l'admin.
 """
 import re
@@ -84,8 +85,8 @@ COURS_RETIRES = (
 )
 
 CAPACITES = [
-    ("espace_cap1_num", "Capacité de la salle sans tables (nombre de personnes)", "60"),
-    ("espace_cap2_num", "Capacité de la salle avec tables (nombre de personnes)", "40"),
+    ("espace_cap1_num", "Capacité de la salle sans tables (nombre de personnes)", "65+"),
+    ("espace_cap2_num", "Capacité de la salle avec tables (nombre de personnes)", "50+"),
 ]
 
 
@@ -131,7 +132,7 @@ def forwards(apps, schema_editor):
             Course.objects.filter(pk=course.pk).update(is_active=False)
 
     for key, label, value in CAPACITES:
-        SiteText.objects.get_or_create(
+        SiteText.objects.update_or_create(
             key=key, defaults={"label": label, "group": "Location d'espace", "value": value}
         )
 

@@ -254,8 +254,8 @@
       <div class="field">
         <label for="fSetup">Configuration</label>
         <select id="fSetup" name="setup">
-          <option>Sans tables, jusqu'à {{ texts.espace_cap1_num|default:"60" }} personnes</option>
-          <option>Avec tables, jusqu'à {{ texts.espace_cap2_num|default:"40" }} personnes</option>
+          <option>Sans tables ({{ texts.espace_cap1_num|default:"65+" }} personnes)</option>
+          <option>Avec tables ({{ texts.espace_cap2_num|default:"50+" }} personnes)</option>
         </select>
       </div>
       <button type="submit" class="btn btn--primary btn--block" style="margin-top:8px;">{{ texts.cta_modal_submit|default:"Envoyer la demande" }}</button>

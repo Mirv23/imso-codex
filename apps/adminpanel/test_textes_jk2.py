@@ -64,8 +64,8 @@ def test_migration_corrige_les_donnees():
     assert not Course.objects.get(pk=rh.pk).is_active
     assert not Course.objects.get(pk=tg.pk).is_active
     assert Course.objects.get(pk=garde.pk).is_active
-    assert SiteText.objects.get(key="espace_cap1_num").value == "60"
-    assert SiteText.objects.get(key="espace_cap2_num").value == "40"
+    assert SiteText.objects.get(key="espace_cap1_num").value == "65+"
+    assert SiteText.objects.get(key="espace_cap2_num").value == "50+"
 
 
 @pytest.mark.django_db
@@ -80,4 +80,4 @@ def test_accueil_sans_prix_de_cours_et_avec_capacite_editable(client):
     assert "Comptabilité de base" in html
     assert '<div class="course-card__price">' not in html
     assert "Entraide Intégrée" not in html
-    assert "jusqu'à 75 personnes" in html
+    assert "Sans tables (75 personnes)" in html
