@@ -286,18 +286,7 @@
               <span class="avatar avatar--b">{% firstof course.instructor|make_list|first|upper course.instructor|first|upper %}</span>
               <span>{{ course.instructor }} · {{ course.city }}</span>
             </div>
-            <div class="course-card__rating">
-              <span class="stars" aria-label="5 sur 5">
-                <svg viewBox="0 0 24 24" fill="currentColor"><path d="M12 2l3 7h7l-5.5 4.5L18 21l-6-4-6 4 1.5-7.5L2 9h7z"></path></svg>
-                <svg viewBox="0 0 24 24" fill="currentColor"><path d="M12 2l3 7h7l-5.5 4.5L18 21l-6-4-6 4 1.5-7.5L2 9h7z"></path></svg>
-                <svg viewBox="0 0 24 24" fill="currentColor"><path d="M12 2l3 7h7l-5.5 4.5L18 21l-6-4-6 4 1.5-7.5L2 9h7z"></path></svg>
-                <svg viewBox="0 0 24 24" fill="currentColor"><path d="M12 2l3 7h7l-5.5 4.5L18 21l-6-4-6 4 1.5-7.5L2 9h7z"></path></svg>
-                <svg viewBox="0 0 24 24" fill="currentColor"><path d="M12 2l3 7h7l-5.5 4.5L18 21l-6-4-6 4 1.5-7.5L2 9h7z"></path></svg>
-              </span>
-              <span>{{ texts.cours_badge_new|default:"Nouveau" }}</span>
-            </div>
             <div class="course-card__meta">
-              <div class="course-card__price">{{ course.price_htg }}  <small>HTG</small></div>
               <span class="btn btn--ghost btn--small course-card__cta" aria-hidden="true">{{ texts.cours_card_cta|default:"S'inscrire" }}<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round"><path d="M5 12h14M13 5l7 7-7 7"></path></svg></span>
             </div>
           </div>

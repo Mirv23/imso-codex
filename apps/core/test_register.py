@@ -25,6 +25,17 @@ VALID = {
 
 
 @pytest.fixture(autouse=True)
+def _formation_ouverte():
+    """Les tests tournent « pendant » la formation : sans ce figeage, ils
+    dependent de la vraie date et echouent tous des le lendemain du dernier
+    jour (formulaire ferme). Le test de fermeture repatche lui-meme la date."""
+    with mock.patch(
+        "apps.core.views.timezone.localdate", return_value=CURRENT_TRAINING["last_day"]
+    ):
+        yield
+
+
+@pytest.fixture(autouse=True)
 def _clear_ratelimit():
     caches["ratelimit"].clear()
 
