@@ -19,10 +19,16 @@
    ils sont désactivés (is_active=False), pas supprimés. Inscriptions et
    chapitres restent en base.
 
-5. Capacité de la salle : plus de 65 personnes sans tables, une cinquantaine
-   et plus avec tables (au lieu de 60 / 40). Ces nombres étaient écrits en dur
-   dans le gabarit. Ils deviennent deux champs de « Textes du
-   site » (espace_cap1_num, espace_cap2_num), modifiables depuis l'admin.
+5. Capacité de la salle : 60 personnes sans tables, jusqu'à 45 avec tables.
+   Ces nombres étaient écrits en dur dans le gabarit. Ils deviennent deux
+   champs de « Textes du site » (espace_cap1_num, espace_cap2_num),
+   modifiables depuis l'admin.
+
+6. Part des femmes : le chiffre exact n'est pas affiché. La tuile indique
+   qu'une large part des fonds décaissés va aux femmes entrepreneures.
+
+7. Étape « Présentation PowerPoint du modèle GEI » : la durée « 1 jour » est
+   retirée (le champ meta est vidé, l'étape reste).
 """
 import re
 
@@ -34,7 +40,12 @@ STATS = {
     "stat_repayment_label": "HTG de projets financés",
     "stat_workshops": "+800",
     "stat_workshops_label": "Projets approuvés",
+    "stat_women": "Femmes",
+    "stat_women_label": "Une large part des fonds décaissés va aux entrepreneures",
 }
+
+ETAPE_SANS_DUREE = re.compile(r"powerpoint", re.IGNORECASE)
+DUREE_UN_JOUR = re.compile(r"^\W*1\s*jour\W*$", re.IGNORECASE)
 
 APOS = "['’]"
 GEI_PLURIEL = re.compile(r"Groupes d" + APOS + r"\s*Entraide\s+Int[ée]gr[ée]es?", re.IGNORECASE)
@@ -85,8 +96,8 @@ COURS_RETIRES = (
 )
 
 CAPACITES = [
-    ("espace_cap1_num", "Capacité de la salle sans tables (nombre de personnes)", "65+"),
-    ("espace_cap2_num", "Capacité de la salle avec tables (nombre de personnes)", "50+"),
+    ("espace_cap1_num", "Capacité de la salle sans tables (nombre de personnes)", "60"),
+    ("espace_cap2_num", "Capacité de la salle avec tables (nombre de personnes)", "45"),
 ]
 
 
@@ -126,6 +137,10 @@ def forwards(apps, schema_editor):
     _renomme_champs(SiteSetting, SETTING_TEXT_FIELDS)
     _renomme_champs(ProcessStep, ("title", "text", "meta"))
     _renomme_champs(CoreValue, ("title", "text"))
+
+    for step in ProcessStep.objects.all():
+        if ETAPE_SANS_DUREE.search(step.title or "") and DUREE_UN_JOUR.match(step.meta or ""):
+            ProcessStep.objects.filter(pk=step.pk).update(meta="")
 
     for course in Course.objects.filter(is_active=True):
         if any(p.search(course.title or "") for p in COURS_RETIRES):

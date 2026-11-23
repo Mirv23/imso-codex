@@ -45,6 +45,9 @@ def test_migration_corrige_les_donnees():
     )
     SiteText.objects.filter(key__in=["espace_cap1_num", "espace_cap2_num"]).delete()
     step = ProcessStep.objects.create(title="Étape", text="Groupe d'Entraide Intégrée local", sort_order=9)
+    ppt = ProcessStep.objects.create(title="Présentation PowerPoint du modèle GEI", text="t",
+                                     meta="⏱ 1 jour", sort_order=10)
+    autre = ProcessStep.objects.create(title="Candidature", text="t", meta="⏱ 1 jour", sort_order=11)
     rh = Course.objects.create(title="Gestion RH", category="c", instructor="i", city="Les Cayes")
     tg = Course.objects.create(title="Techniques de gestion", category="c", instructor="i", city="Les Cayes")
     garde = Course.objects.create(title="Comptabilité de base", category="c", instructor="i", city="Les Cayes")
@@ -64,8 +67,13 @@ def test_migration_corrige_les_donnees():
     assert not Course.objects.get(pk=rh.pk).is_active
     assert not Course.objects.get(pk=tg.pk).is_active
     assert Course.objects.get(pk=garde.pk).is_active
-    assert SiteText.objects.get(key="espace_cap1_num").value == "65+"
-    assert SiteText.objects.get(key="espace_cap2_num").value == "50+"
+    assert SiteText.objects.get(key="espace_cap1_num").value == "60"
+    assert SiteText.objects.get(key="espace_cap2_num").value == "45"
+    assert "%" not in s.stat_women
+    assert "femmes" in (s.stat_women + s.stat_women_label).lower()
+    # Seule l'étape PowerPoint perd sa durée « 1 jour ».
+    assert ProcessStep.objects.get(pk=ppt.pk).meta == ""
+    assert ProcessStep.objects.get(pk=autre.pk).meta == "⏱ 1 jour"
 
 
 @pytest.mark.django_db
@@ -81,3 +89,4 @@ def test_accueil_sans_prix_de_cours_et_avec_capacite_editable(client):
     assert '<div class="course-card__price">' not in html
     assert "Entraide Intégrée" not in html
     assert "Sans tables (75 personnes)" in html
+    assert "Avec tables (jusqu'à" in html
