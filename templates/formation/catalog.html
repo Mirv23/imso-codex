@@ -46,7 +46,6 @@
         {% if c.level %}<span class="pill-i">{{ c.get_level_display }}</span>{% endif %}
       </div>
       <div class="ccard__foot">
-        {% if c.price_htg %}<span class="price">{{ c.price_htg }} HTG</span>{% else %}<span class="price free">Gratuit</span>{% endif %}
         {% if c.pk in enrolled_ids %}<span class="tag tag--green">Inscrit</span>{% else %}<span class="btn btn--o btn--sm">Voir le cours →</span>{% endif %}
       </div>
     </div>
@@ -57,7 +56,7 @@
 <div class="card empty">
   <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6"><path d="M4 19.5A2.5 2.5 0 0 1 6.5 17H20"/><path d="M6.5 2H20v20H6.5A2.5 2.5 0 0 1 4 19.5v-15A2.5 2.5 0 0 1 6.5 2z"/></svg>
   <h3>Aucune formation disponible pour l'instant</h3>
-  <p>Revenez bientôt — de nouveaux cours arrivent.</p>
+  <p>Les prochains cours seront annoncés ici.</p>
 </div>
 {% endif %}
 {% endblock %}
