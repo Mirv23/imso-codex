@@ -309,8 +309,8 @@
             <svg viewBox="0 0 24 24" width="20" height="20" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 2l3 7h7l-5.5 4.5L18 21l-6-4-6 4 1.5-7.5L2 9h7z"></path></svg>
           </span>
           <div>
-            <div class="mission__tile-num">{{ site.stat_women|default:"Femmes" }}</div>
-            <div class="mission__tile-label">{{ site.stat_women_label|default:"23% du montant décaissé aux femmes entrepreneures" }}</div>
+            {% if site.stat_women %}<div class="mission__tile-num">{{ site.stat_women }}</div>{% endif %}
+            <div class="mission__tile-label">{{ site.stat_women_label|default:"23% du montant décaissé va aux femmes entrepreneures" }}</div>
           </div>
         </div>
       </div>
